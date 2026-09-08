@@ -1,4 +1,4 @@
-import { LLMProxyClient } from '../api/llmClient';
+import { LLMProxyClient, LLMUsage } from '../api/llmClient';
 import { PromptBuilder } from '../api/promptBuilder';
 import { ProofreadDiffItem, ProofreadOptions } from '../types/proofread';
 import { MarkdownFormatter } from './markdownFormatter';
@@ -40,7 +40,7 @@ export class ProofreadingEngine {
     totalTimeMs: number;
     tokensPerSec?: number;
     model: string;
-    usage?: any;
+    usage?: LLMUsage;
     id?: string;
     finish_reason?: string;
     system_fingerprint?: string;
@@ -137,9 +137,12 @@ export class ProofreadingEngine {
         jsonStr = codeBlockMatch[1];
       }
 
-      const parsed = JSON.parse(jsonStr);
-      if (Array.isArray(parsed.items)) {
-        return parsed.items.map((item: any, idx: number) => ({
+      interface ParsedProofreadResult {
+        items?: Array<Partial<ProofreadDiffItem>>;
+      }
+      const parsed = JSON.parse(jsonStr) as ParsedProofreadResult;
+      if (Array.isArray(parsed?.items)) {
+        return parsed.items.map((item: Partial<ProofreadDiffItem>, idx: number) => ({
           id: item.id || `item_${idx + 1}`,
           original: item.original || '',
           replacement: item.replacement || '',
@@ -149,7 +152,7 @@ export class ProofreadingEngine {
         }));
       }
       return [];
-    } catch (e) {
+    } catch {
       console.warn('[Assistant Emily] Could not parse LLM proofread response as JSON:', content);
       return [];
     }

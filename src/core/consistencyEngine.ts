@@ -72,9 +72,12 @@ export class ConsistencyEngine {
         jsonStr = codeBlockMatch[1];
       }
 
-      const parsed = JSON.parse(jsonStr);
-      if (Array.isArray(parsed.issues)) {
-        return parsed.issues.map((item: any) => ({
+      interface ParsedConsistencyResult {
+        issues?: Array<Partial<ConsistencyIssue>>;
+      }
+      const parsed = JSON.parse(jsonStr) as ParsedConsistencyResult;
+      if (Array.isArray(parsed?.issues)) {
+        return parsed.issues.map((item: Partial<ConsistencyIssue>) => ({
           originalText: item.originalText || '',
           sourceText: item.sourceText || '',
           sourceFile: item.sourceFile || sourceFileName,
@@ -84,7 +87,7 @@ export class ConsistencyEngine {
         }));
       }
       return [];
-    } catch (err) {
+    } catch {
       console.warn('[Assistant Emily] Could not parse consistency check response:', content);
       return [];
     }

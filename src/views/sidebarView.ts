@@ -3,13 +3,14 @@ import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
 import { ProofreadOptions, ProofreadDiffItem } from '../types/proofread';
-import { TranslationOptions, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
+import { TranslationOptions, TranslationTone, TranslationStyle } from '../types/translation';
 import { ProofreadDiffModal } from './proofreadDiffModal';
 import { TranslationDiffModal } from './translationDiffModal';
 import { detectDocumentLanguage, isSameLanguage } from '../core/languageDetector';
 import { PromptBuilder } from '../api/promptBuilder';
 import { MarkdownFormatter } from '../core/markdownFormatter';
 import { LLMUsage } from '../api/llmClient';
+import { TranslationKeys } from '../i18n/types';
 
 function getISODateTimeString(date: Date = new Date()): string {
   const pad = (num: number) => num.toString().padStart(2, '0');
@@ -236,13 +237,9 @@ export class EmilySidebarView extends ItemView {
 
     // 2. Scrollable Content Area (Holds History Sessions + Active Form)
     this.contentScrollEl = container.createDiv({ cls: 'emily-sidebar-content' });
-    this.contentScrollEl.style.position = 'relative';
 
     // Sessions history container
     this.sessionsContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-sessions-history-container' });
-    this.sessionsContainerEl.style.display = 'flex';
-    this.sessionsContainerEl.style.flexDirection = 'column';
-    this.sessionsContainerEl.style.gap = '10px';
 
     // Active Form container (Where the current/next form lives)
     this.activeFormContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-active-form-container' });
@@ -255,7 +252,7 @@ export class EmilySidebarView extends ItemView {
     this.containerEl.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
-        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
+        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
         if ((e.ctrlKey || e.metaKey) && isEnter) {
           const applyBtn = this.activeFormContainerEl?.querySelector('.emily-btn-primary') as HTMLButtonElement;
           if (applyBtn && !applyBtn.disabled && !this.isExecuting) {
@@ -313,12 +310,9 @@ export class EmilySidebarView extends ItemView {
     this.updateTargetDocument();
   }
 
-  private renderActiveForm(parent: HTMLElement, t: any) {
+  private renderActiveForm(parent: HTMLElement, t: TranslationKeys) {
     parent.empty();
     parent.removeClass('is-form-executing');
-    parent.style.display = 'flex';
-    parent.style.flexDirection = 'column';
-    parent.style.gap = '8px';
 
     if (this.sessions.length > 0) {
       const divider = parent.createDiv({ cls: 'emily-rolling-divider' });
@@ -335,7 +329,7 @@ export class EmilySidebarView extends ItemView {
     this.renderCustomPromptSection(parent, t);
   }
 
-  private renderProofreadingSection(parent: HTMLElement, t: any) {
+  private renderProofreadingSection(parent: HTMLElement, t: TranslationKeys) {
     const getProofreadCount = () => {
       let count = 0;
       if (this.proofreadOptions.checkSpelling) count++;
@@ -499,7 +493,7 @@ export class EmilySidebarView extends ItemView {
      */
   }
 
-  private renderTranslationSection(parent: HTMLElement, t: any) {
+  private renderTranslationSection(parent: HTMLElement, t: TranslationKeys) {
     const section = parent.createDiv({ cls: 'emily-accordion-section' });
 
     const header = section.createDiv({
@@ -737,7 +731,7 @@ export class EmilySidebarView extends ItemView {
         }
       ],
       this.translationOptions.tone || 'academic',
-      (val: any) => {
+      (val: TranslationTone) => {
         this.translationOptions.tone = val;
       }
     );
@@ -767,7 +761,7 @@ export class EmilySidebarView extends ItemView {
         }
       ],
       this.translationOptions.style || 'balanced',
-      (val: any) => {
+      (val: TranslationStyle) => {
         this.translationOptions.style = val;
       }
     );
@@ -789,27 +783,25 @@ export class EmilySidebarView extends ItemView {
     });
   }
 
-  private renderCustomPromptSection(parent: HTMLElement, t: any) {
+  private renderCustomPromptSection(parent: HTMLElement, t: TranslationKeys) {
     const section = parent.createDiv({ cls: 'emily-custom-prompt-container' });
-    section.style.display = 'flex';
-    section.style.flexDirection = 'column';
-    section.style.gap = '8px';
-    section.style.marginTop = '4px';
 
     // Textarea Wrap & Target Document Indicator
     const promptWrap = section.createDiv({ cls: 'emily-textarea-wrap' });
 
     // Dedicated target document indicator directly above textarea
     this.promptTargetFileEl = promptWrap.createDiv({ cls: 'emily-prompt-target-file' });
-    this.promptTargetFileEl.addEventListener('click', async () => {
-      if (this.isExecuting && this.lockedTargetFile) {
-        await this.openFileInTargetPane(this.lockedTargetFile.path);
-      } else {
-        const target = this.plugin.getTargetMarkdownView();
-        if (target?.leaf) {
-          this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
+    this.promptTargetFileEl.addEventListener('click', () => {
+      void (async () => {
+        if (this.isExecuting && this.lockedTargetFile) {
+          await this.openFileInTargetPane(this.lockedTargetFile.path);
+        } else {
+          const target = this.plugin.getTargetMarkdownView();
+          if (target?.leaf) {
+            this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
+          }
         }
-      }
+      })();
     });
     this.updateTargetDocument();
 
@@ -859,7 +851,7 @@ export class EmilySidebarView extends ItemView {
     // Keyboard shortcut (Ctrl+Enter or Cmd+Enter to start task)
     // capture: true prevents Obsidian global workspace hotkeys from intercepting Ctrl+Enter
     const handleCtrlEnter = (e: KeyboardEvent) => {
-      const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13;
+      const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       if ((e.ctrlKey || e.metaKey) && isEnter) {
         e.preventDefault();
         e.stopPropagation();
@@ -876,10 +868,9 @@ export class EmilySidebarView extends ItemView {
 
     // Live Status Output Box (Inside current form during execution)
     const statusBoxEl = section.createDiv({ cls: 'emily-status-box' });
-    statusBoxEl.style.display = 'none';
 
     applyBtn.addEventListener('click', () => {
-      this.executePipeline(applyBtn, statusBoxEl, textareaEl, t);
+      void this.executePipeline(applyBtn, statusBoxEl, textareaEl, t);
     });
   }
 
@@ -904,10 +895,10 @@ export class EmilySidebarView extends ItemView {
 
     formElements.forEach((el) => {
       if (
-        el instanceof HTMLInputElement ||
-        el instanceof HTMLSelectElement ||
-        el instanceof HTMLTextAreaElement ||
-        el instanceof HTMLButtonElement
+        el.instanceOf(HTMLInputElement) ||
+        el.instanceOf(HTMLSelectElement) ||
+        el.instanceOf(HTMLTextAreaElement) ||
+        el.instanceOf(HTMLButtonElement)
       ) {
         el.disabled = disabled;
       }
@@ -923,7 +914,7 @@ export class EmilySidebarView extends ItemView {
     applyBtn: HTMLButtonElement,
     statusBoxEl: HTMLElement,
     textareaEl: HTMLTextAreaElement,
-    t: any
+    t: TranslationKeys
   ) {
     const targetView = this.lockedTargetView || this.plugin.getTargetMarkdownView();
     if (!targetView || !targetView.file) {
@@ -977,7 +968,7 @@ export class EmilySidebarView extends ItemView {
     this.setFormDisabledState(true);
     this.updateTargetDocument();
     applyBtn.disabled = true;
-    statusBoxEl.style.display = 'flex';
+    statusBoxEl.addClass('is-visible');
 
     const initialStep2Title = hasTranslation
       ? t.sidebar.pipelineLlmTrans
@@ -986,51 +977,42 @@ export class EmilySidebarView extends ItemView {
           : t.sidebar.pipelineLlmCustom);
 
     const pipelineStartTime = Date.now();
-    let timerInterval: any = null;
+    let timerInterval: number | null = null;
     const stopPipelineTimer = () => {
-      if (timerInterval) {
-        clearInterval(timerInterval);
+      if (timerInterval !== null) {
+        window.clearInterval(timerInterval);
         timerInterval = null;
       }
     };
 
-    statusBoxEl.innerHTML = `
-      <div class="emily-status-header">
-        <span class="font-semibold text-xs">⚡ ${t.sidebar.pipelineStream}</span>
-        <span class="emily-badge is-active">
-          <span class="emily-badge-spinner"></span>
-          <span class="emily-badge-label">${t.sidebar.pipelineRunning}</span>
-          <span class="emily-timer-text">0.0s</span>
-          <span class="emily-dots-anim"><span>.</span><span>.</span><span>.</span></span>
-        </span>
-      </div>
-      <div class="emily-timeline-steps">
-        <div class="emily-timeline-step is-active" id="step-1">
-          <div class="emily-timeline-node"><span class="emily-timeline-dot"></span></div>
-          <div class="emily-timeline-body">
-            <div class="emily-timeline-title">${t.sidebar.pipelineParsing}</div>
-            <div class="emily-timeline-desc">${t.sidebar.pipelineParsingDesc}</div>
-          </div>
-        </div>
-        <div class="emily-timeline-step is-pending" id="step-2">
-          <div class="emily-timeline-node"><span class="emily-timeline-dot"></span></div>
-          <div class="emily-timeline-body">
-            <div class="emily-timeline-title">${initialStep2Title}</div>
-            <div class="emily-timeline-desc">${t.sidebar.pipelinePending}</div>
-          </div>
-        </div>
-        <div class="emily-timeline-step is-pending" id="step-3">
-          <div class="emily-timeline-node"><span class="emily-timeline-dot"></span></div>
-          <div class="emily-timeline-body">
-            <div class="emily-timeline-title">${t.sidebar.pipelineSync}</div>
-            <div class="emily-timeline-desc">${t.sidebar.pipelinePending}</div>
-          </div>
-        </div>
-      </div>
-    `;
+    statusBoxEl.empty();
+    const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
+    statusHeader.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+    const badgeSpan = statusHeader.createSpan({ cls: 'emily-badge is-active' });
+    badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
+    badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
+    const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
+    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
+    dotsAnim.createSpan({ text: '.' });
+    dotsAnim.createSpan({ text: '.' });
+    dotsAnim.createSpan({ text: '.' });
 
-    const timerTextEl = statusBoxEl.querySelector('.emily-timer-text') as HTMLElement;
-    timerInterval = setInterval(() => {
+    const timelineContainer = statusBoxEl.createDiv({ cls: 'emily-timeline-steps' });
+    const createStepNode = (id: string, title: string, desc: string, status: 'is-active' | 'is-pending' = 'is-pending') => {
+      const step = timelineContainer.createDiv({ cls: `emily-timeline-step ${status}`, attr: { id } });
+      const node = step.createDiv({ cls: 'emily-timeline-node' });
+      node.createSpan({ cls: 'emily-timeline-dot' });
+      const body = step.createDiv({ cls: 'emily-timeline-body' });
+      body.createDiv({ text: title, cls: 'emily-timeline-title' });
+      body.createDiv({ text: desc, cls: 'emily-timeline-desc' });
+      return step;
+    };
+
+    const step1 = createStepNode('step-1', t.sidebar.pipelineParsing, t.sidebar.pipelineParsingDesc, 'is-active');
+    const step2 = createStepNode('step-2', initialStep2Title, t.sidebar.pipelinePending, 'is-pending');
+    const step3 = createStepNode('step-3', t.sidebar.pipelineSync, t.sidebar.pipelinePending, 'is-pending');
+
+    timerInterval = window.setInterval(() => {
       if (timerTextEl) {
         const elapsed = ((Date.now() - pipelineStartTime) / 1000).toFixed(1);
         timerTextEl.textContent = `${elapsed}s`;
@@ -1041,11 +1023,9 @@ export class EmilySidebarView extends ItemView {
       const detectedLang = detectDocumentLanguage(currentDoc, this.plugin.settings.language);
       const isAutoSrc = !this.translationOptions.sourceLanguage ||
         normalizeLanguageCode(this.translationOptions.sourceLanguage) === 'auto';
-      const effectiveSrc = isAutoSrc ? detectedLang.name : this.translationOptions.sourceLanguage;
 
       // Step 1 Complete
-      await new Promise((r) => setTimeout(r, 150));
-      const step1 = statusBoxEl.querySelector('#step-1') as HTMLElement;
+      await new Promise((r) => window.setTimeout(r, 150));
       this.updateTimelineStep(
         step1,
         'done',
@@ -1068,7 +1048,7 @@ export class EmilySidebarView extends ItemView {
           new Notice(t.sidebar.selectTextToTranslateNotice);
           this.setFormDisabledState(false);
           applyBtn.disabled = false;
-          statusBoxEl.style.display = 'none';
+          statusBoxEl.removeClass('is-visible');
           return;
         }
 
@@ -1165,7 +1145,9 @@ export class EmilySidebarView extends ItemView {
         const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
         if (badgeEl) {
           badgeEl.className = 'emily-badge is-done';
-          badgeEl.innerHTML = `<span>${t.sidebar.pipelineDone}</span><span class="emily-timer-text">${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s</span>`;
+          badgeEl.empty();
+          badgeEl.createSpan({ text: t.sidebar.pipelineDone });
+          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
         }
 
         this.finalizeCompletedSession({
@@ -1233,7 +1215,9 @@ export class EmilySidebarView extends ItemView {
           const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
           if (badgeEl) {
             badgeEl.className = 'emily-badge is-done';
-            badgeEl.innerHTML = `<span>${t.sidebar.pipelineDone}</span><span class="emily-timer-text">${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s</span>`;
+            badgeEl.empty();
+            badgeEl.createSpan({ text: t.sidebar.pipelineDone });
+            badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
           }
 
           this.finalizeCompletedSession({
@@ -1263,7 +1247,9 @@ export class EmilySidebarView extends ItemView {
           const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
           if (badgeEl) {
             badgeEl.className = 'emily-badge is-done';
-            badgeEl.innerHTML = `<span>${t.sidebar.pipelineReviewPending}</span><span class="emily-timer-text">${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s</span>`;
+            badgeEl.empty();
+            badgeEl.createSpan({ text: t.sidebar.pipelineReviewPending });
+            badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
           }
 
           const modal = new ProofreadDiffModal(
@@ -1378,7 +1364,9 @@ export class EmilySidebarView extends ItemView {
         const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
         if (badgeEl) {
           badgeEl.className = 'emily-badge is-done';
-          badgeEl.innerHTML = `<span>${t.sidebar.pipelineDone}</span><span class="emily-timer-text">${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s</span>`;
+          badgeEl.empty();
+          badgeEl.createSpan({ text: t.sidebar.pipelineDone });
+          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
         }
 
         this.finalizeCompletedSession({
@@ -1397,10 +1385,10 @@ export class EmilySidebarView extends ItemView {
           t
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       stopPipelineTimer();
-      const rawMsg = err?.message || String(err);
+      const rawMsg = err instanceof Error ? err.message : String(err);
       const isContextOrSizeError = /context|chunk|memory|token|length|too large|413|rate_limit|exceeded|payload|overflow|maximum context/i.test(rawMsg);
 
       const userNotice = isContextOrSizeError
@@ -1413,7 +1401,9 @@ export class EmilySidebarView extends ItemView {
       const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
       if (badgeEl) {
         badgeEl.className = 'emily-badge is-error';
-        badgeEl.innerHTML = `<span>${t.sidebar.statusError}</span><span class="emily-timer-text">${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s</span>`;
+        badgeEl.empty();
+        badgeEl.createSpan({ text: t.sidebar.statusError });
+        badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
       }
 
       // 2. Mark active/pending timeline steps as Error
@@ -1438,11 +1428,11 @@ export class EmilySidebarView extends ItemView {
         ? t.sidebar.contextLimitDesc
         : t.sidebar.genericErrorDesc;
 
-      errBox.innerHTML = `
-        <div class="emily-error-title">${errorTitle}</div>
-        <div class="emily-error-desc">${errorDesc}</div>
-        <div class="emily-error-raw"><strong>${t.sidebar.systemErrorMsg}</strong> ${rawMsg}</div>
-      `;
+      errBox.createDiv({ cls: 'emily-error-title', text: errorTitle });
+      errBox.createDiv({ cls: 'emily-error-desc', text: errorDesc });
+      const rawDiv = errBox.createDiv({ cls: 'emily-error-raw' });
+      rawDiv.createEl('strong', { text: `${t.sidebar.systemErrorMsg} ` });
+      rawDiv.createSpan({ text: rawMsg });
 
       // 4. Action Buttons: [재시작하기] & [작업 취소]
       const actionsWrap = errBox.createDiv({ cls: 'emily-error-actions' });
@@ -1467,41 +1457,43 @@ export class EmilySidebarView extends ItemView {
           statusBoxEl.parentElement.insertBefore(newStatusBoxEl, statusBoxEl.nextSibling);
         }
 
-        this.executePipeline(applyBtn, newStatusBoxEl, textareaEl, t);
+        void this.executePipeline(applyBtn, newStatusBoxEl, textareaEl, t);
       });
 
       // [작업 취소] 핸들러: 임시 파일 삭제 및 상태 초기화
-      cancelBtn.addEventListener('click', async () => {
-        stopPipelineTimer();
-        retryBtn.disabled = true;
-        cancelBtn.disabled = true;
+      cancelBtn.addEventListener('click', () => {
+        void (async () => {
+          stopPipelineTimer();
+          retryBtn.disabled = true;
+          cancelBtn.disabled = true;
 
-        if (this.lastCreatedTempPath) {
-          try {
-            const tempFile = this.app.vault.getAbstractFileByPath(this.lastCreatedTempPath);
-            if (tempFile instanceof TFile) {
-              await this.app.vault.delete(tempFile);
+          if (this.lastCreatedTempPath) {
+            try {
+              const tempFile = this.app.vault.getAbstractFileByPath(this.lastCreatedTempPath);
+              if (tempFile instanceof TFile) {
+                await this.app.fileManager.trashFile(tempFile);
+              }
+            } catch (cleanErr) {
+              console.warn('Temporary file cleanup error:', cleanErr);
             }
-          } catch (cleanErr) {
-            console.warn('Temporary file cleanup error:', cleanErr);
+            this.lastCreatedTempPath = null;
           }
-          this.lastCreatedTempPath = null;
-        }
 
-        if (statusBoxEl.parentElement) {
-          const allStatusBoxes = statusBoxEl.parentElement.querySelectorAll('.emily-status-box');
-          allStatusBoxes.forEach((box) => {
-            (box as HTMLElement).style.display = 'none';
-            box.innerHTML = '';
-          });
-        } else {
-          statusBoxEl.style.display = 'none';
-          statusBoxEl.innerHTML = '';
-        }
+          if (statusBoxEl.parentElement) {
+            const allStatusBoxes = statusBoxEl.parentElement.querySelectorAll('.emily-status-box');
+            allStatusBoxes.forEach((box) => {
+              box.removeClass('is-visible');
+              box.empty();
+            });
+          } else {
+            statusBoxEl.removeClass('is-visible');
+            statusBoxEl.empty();
+          }
 
-        this.setFormDisabledState(false);
-        applyBtn.disabled = false;
-        new Notice(t.sidebar.cancelSuccess);
+          this.setFormDisabledState(false);
+          applyBtn.disabled = false;
+          new Notice(t.sidebar.cancelSuccess);
+        })();
       });
 
       applyBtn.disabled = false;
@@ -1544,7 +1536,7 @@ export class EmilySidebarView extends ItemView {
     originalMarkdown?: string;
     translatedMarkdown?: string;
     effectiveSrc?: string;
-    t: any;
+    t: TranslationKeys;
   }) {
     const {
       activeFile,
@@ -1623,7 +1615,7 @@ export class EmilySidebarView extends ItemView {
     }
 
     // Smooth scroll down to the newly created form
-    setTimeout(() => {
+    window.setTimeout(() => {
       if (this.activeFormContainerEl) {
         this.activeFormContainerEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -1808,7 +1800,7 @@ export class EmilySidebarView extends ItemView {
     }
   }
 
-  private getCategoryLabel(category: string, t: any): string {
+  private getCategoryLabel(category: string, t: TranslationKeys): string {
     switch (category) {
       case 'spelling':
         return t.sidebar.spelling;
@@ -1836,7 +1828,7 @@ export class EmilySidebarView extends ItemView {
     const statusBadge = header.createDiv({ cls: 'emily-session-status-badge' });
     const dot = statusBadge.createSpan({ cls: 'emily-status-dot' });
     if (session.status === 'cancelled') {
-      dot.style.backgroundColor = 'var(--color-orange, #cb7634)';
+      dot.addClass('is-cancelled');
       statusBadge.createSpan({ text: t.sidebar.cancelledBadge });
     } else {
       const badgeText = session.sessionType === 'translation'
@@ -1877,8 +1869,8 @@ export class EmilySidebarView extends ItemView {
       setIcon(fileIcon, 'file-text');
       outputRow.createSpan({ text: t.sidebar.createdOutputFile.replace('{file}', session.targetPath.split('/').pop() || '') });
       outputRow.setAttribute('title', t.sidebar.openCreatedFileTooltip);
-      outputRow.addEventListener('click', async () => {
-        await this.openFileInTargetPane(session.targetPath!, session.filePath);
+      outputRow.addEventListener('click', () => {
+        void this.openFileInTargetPane(session.targetPath!, session.filePath);
       });
     }
 
@@ -1942,7 +1934,8 @@ export class EmilySidebarView extends ItemView {
     // 4. Custom Prompt if any
     if (session.promptText && session.promptText.trim()) {
       const promptBox = body.createDiv({ cls: 'emily-session-prompt-box' });
-      promptBox.innerHTML = `<strong>${t.sidebar.customPrompt}:</strong> "${session.promptText}"`;
+      promptBox.createEl('strong', { text: `${t.sidebar.customPrompt}: ` });
+      promptBox.createSpan({ text: `"${session.promptText}"` });
     }
 
     // 5. Proofreading Detailed Changes Breakdown (only if proofread was run and items exist)
@@ -1957,9 +1950,9 @@ export class EmilySidebarView extends ItemView {
           text: t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length)),
           cls: 'emily-reopen-modal-btn'
         });
-        reopenBtn.addEventListener('click', async (e) => {
+        reopenBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          await this.reopenProofreadModalForSession(session, card);
+          void this.reopenProofreadModalForSession(session, card);
         });
       }
     } else if (session.sessionType === 'proofread' || (session.items && session.items.length > 0)) {
@@ -2003,9 +1996,9 @@ export class EmilySidebarView extends ItemView {
               cls: 'emily-session-diff-ins',
               attr: { title: t.sidebar.jumpToDocTooltip }
             });
-            insSpan.addEventListener('click', async (e) => {
+            insSpan.addEventListener('click', (e) => {
               e.stopPropagation();
-              await this.jumpToDiffLocation(session.filePath || session.fileName, item);
+              void this.jumpToDiffLocation(session.filePath || session.fileName, item);
             });
           }
 
@@ -2033,7 +2026,7 @@ export class EmilySidebarView extends ItemView {
           : t.sidebar.reopenTransBtnReview,
         cls: 'emily-reopen-modal-btn'
       });
-      reopenTransBtn.addEventListener('click', async (e) => {
+      reopenTransBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const targetPath = session.filePath || session.fileName;
         let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
@@ -2073,13 +2066,27 @@ export class EmilySidebarView extends ItemView {
     const summaryBar = metaContainer.createDiv({ cls: 'emily-meta-summary' });
     summaryBar.setAttribute('title', t.sidebar.toggleTelemetryTooltip);
     const summaryLeft = summaryBar.createDiv({ cls: 'emily-meta-summary-left' });
-    summaryLeft.innerHTML = `<span>🧠</span> <span>${session.model}</span> <span class="text-muted">· ${latencySec}s${speedText}${totalTokensText}</span>`;
+    summaryLeft.createSpan({ text: '🧠 ' });
+    summaryLeft.createSpan({ text: session.model });
+    summaryLeft.createSpan({
+      text: ` · ${latencySec}s${speedText}${totalTokensText}`,
+      cls: 'text-muted'
+    });
 
     const chevron = summaryBar.createSpan({ cls: 'emily-meta-chevron' });
     setIcon(chevron, 'chevron-down');
 
     // Expandable detail view (default collapsed)
     const detailsView = metaContainer.createDiv({ cls: 'emily-meta-details' });
+
+    // Helper for pure DOM telemetry grid items
+    const createMetaItem = (parent: HTMLElement, label: string, val: string, title?: string, valCls?: string) => {
+      const item = parent.createDiv({ cls: 'emily-meta-item' });
+      item.createSpan({ cls: 'emily-meta-item-label', text: label });
+      const valSpan = item.createSpan({ cls: `emily-meta-item-val ${valCls || ''}`.trim(), text: val });
+      if (title) valSpan.setAttribute('title', title);
+      return item;
+    };
 
     // Section 1: Performance & Model
     detailsView.createDiv({
@@ -2088,38 +2095,18 @@ export class EmilySidebarView extends ItemView {
     });
     const grid1 = detailsView.createDiv({ cls: 'emily-meta-grid' });
 
-    grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.modelLabel}</span>
-      <span class="emily-meta-item-val">${session.model}</span>
-    `;
-
-    grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.elapsedLabel}</span>
-      <span class="emily-meta-item-val">${latencySec}s (${session.totalTimeMs}ms)</span>
-    `;
-
-    grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.speedLabel}</span>
-      <span class="emily-meta-item-val">${session.tokensPerSec || 0} tokens/sec</span>
-    `;
-
-    grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.finishReasonLabel}</span>
-      <span class="emily-meta-item-val">${session.finishReason || 'stop'}</span>
-    `;
+    createMetaItem(grid1, t.sidebar.modelLabel, session.model);
+    createMetaItem(grid1, t.sidebar.elapsedLabel, `${latencySec}s (${session.totalTimeMs}ms)`);
+    createMetaItem(grid1, t.sidebar.speedLabel, `${session.tokensPerSec || 0} tokens/sec`);
+    createMetaItem(grid1, t.sidebar.finishReasonLabel, session.finishReason || 'stop');
 
     if (session.responseId) {
-      grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-        <span class="emily-meta-item-label">${t.sidebar.responseIdLabel}</span>
-        <span class="emily-meta-item-val" title="${session.responseId}">${session.responseId.length > 20 ? session.responseId.slice(0, 18) + '…' : session.responseId}</span>
-      `;
+      const displayId = session.responseId.length > 20 ? session.responseId.slice(0, 18) + '…' : session.responseId;
+      createMetaItem(grid1, t.sidebar.responseIdLabel, displayId, session.responseId);
     }
 
     if (session.systemFingerprint) {
-      grid1.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-        <span class="emily-meta-item-label">${t.sidebar.systemFingerprintLabel}</span>
-        <span class="emily-meta-item-val">${session.systemFingerprint}</span>
-      `;
+      createMetaItem(grid1, t.sidebar.systemFingerprintLabel, session.systemFingerprint);
     }
 
     // Section 2: Token Usage Breakdown
@@ -2133,33 +2120,16 @@ export class EmilySidebarView extends ItemView {
     const completionTokens = session.usage?.completion_tokens;
     const totalTokens = session.usage?.total_tokens ?? (typeof promptTokens === 'number' && typeof completionTokens === 'number' ? promptTokens + completionTokens : undefined);
 
-    grid2.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.promptTokensLabel}</span>
-      <span class="emily-meta-item-val">${typeof promptTokens === 'number' ? promptTokens.toLocaleString() : (promptTokens || '-')}</span>
-    `;
-
-    grid2.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.completionTokensLabel}</span>
-      <span class="emily-meta-item-val">${typeof completionTokens === 'number' ? completionTokens.toLocaleString() : (completionTokens || '-')}</span>
-    `;
-
-    grid2.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-      <span class="emily-meta-item-label">${t.sidebar.totalTokensLabel}</span>
-      <span class="emily-meta-item-val font-semibold">${typeof totalTokens === 'number' ? totalTokens.toLocaleString() : (totalTokens || '-')}</span>
-    `;
+    createMetaItem(grid2, t.sidebar.promptTokensLabel, typeof promptTokens === 'number' ? promptTokens.toLocaleString() : (promptTokens || '-'));
+    createMetaItem(grid2, t.sidebar.completionTokensLabel, typeof completionTokens === 'number' ? completionTokens.toLocaleString() : (completionTokens || '-'));
+    createMetaItem(grid2, t.sidebar.totalTokensLabel, typeof totalTokens === 'number' ? totalTokens.toLocaleString() : (totalTokens || '-'), undefined, 'font-semibold');
 
     if (session.usage?.prompt_tokens_details?.cached_tokens !== undefined) {
-      grid2.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-        <span class="emily-meta-item-label">${t.sidebar.cachedTokensLabel}</span>
-        <span class="emily-meta-item-val">${session.usage.prompt_tokens_details.cached_tokens.toLocaleString()}</span>
-      `;
+      createMetaItem(grid2, t.sidebar.cachedTokensLabel, session.usage.prompt_tokens_details.cached_tokens.toLocaleString());
     }
 
     if (session.usage?.completion_tokens_details?.reasoning_tokens !== undefined) {
-      grid2.createDiv({ cls: 'emily-meta-item' }).innerHTML = `
-        <span class="emily-meta-item-label">${t.sidebar.reasoningTokensLabel}</span>
-        <span class="emily-meta-item-val">${session.usage.completion_tokens_details.reasoning_tokens.toLocaleString()}</span>
-      `;
+      createMetaItem(grid2, t.sidebar.reasoningTokensLabel, session.usage.completion_tokens_details.reasoning_tokens.toLocaleString());
     }
 
     // Toggle click event
@@ -2217,7 +2187,9 @@ export class EmilySidebarView extends ItemView {
         if (cardEl) {
           const badge = cardEl.querySelector('.emily-session-status-badge');
           if (badge) {
-            badge.innerHTML = `<span class="emily-status-dot" style="background-color: var(--interactive-accent, #7b6cd9);"></span><span>${t.sidebar.proofreadDoneBadge}</span>`;
+            badge.empty();
+            badge.createSpan({ cls: 'emily-status-dot is-accent' });
+            badge.createSpan({ text: t.sidebar.proofreadDoneBadge });
           }
           const detailsSec = cardEl.querySelector('.emily-session-details-section');
           if (detailsSec) {

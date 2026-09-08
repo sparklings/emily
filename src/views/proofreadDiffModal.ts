@@ -1,4 +1,4 @@
-import { App, Editor, Modal, Notice, setIcon } from 'obsidian';
+import { App, Editor, Modal, Notice } from 'obsidian';
 import { ProofreadDiffItem } from '../types/proofread';
 import { getTranslation } from '../i18n';
 import { MarkdownFormatter } from '../core/markdownFormatter';
@@ -138,7 +138,7 @@ export class ProofreadDiffModal extends Modal {
     this.modalEl.classList.remove('emily-modal-shake');
     void this.modalEl.offsetWidth;
     this.modalEl.classList.add('emily-modal-shake');
-    setTimeout(() => {
+    window.setTimeout(() => {
       this.modalEl.classList.remove('emily-modal-shake');
     }, 400);
   }

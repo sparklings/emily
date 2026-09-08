@@ -1,4 +1,4 @@
-import { requestUrl, RequestUrlParam } from 'obsidian';
+import { requestUrl } from 'obsidian';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -16,16 +16,16 @@ export interface LLMUsage {
   prompt_tokens_details?: {
     cached_tokens?: number;
     audio_tokens?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   completion_tokens_details?: {
     reasoning_tokens?: number;
     audio_tokens?: number;
     accepted_prediction_tokens?: number;
     rejected_prediction_tokens?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface LLMResponse {
@@ -38,7 +38,34 @@ export interface LLMResponse {
   system_fingerprint?: string;
   finish_reason?: string;
   usage?: LLMUsage;
-  rawResponse?: any;
+  rawResponse?: unknown;
+}
+
+interface ChatCompletionPayload {
+  model: string;
+  messages: ChatMessage[];
+  temperature: number;
+  max_tokens?: number;
+  response_format?: { type: string };
+  stream?: boolean;
+}
+
+interface ChatCompletionChoice {
+  message?: {
+    content?: string;
+    role?: string;
+  };
+  finish_reason?: string;
+}
+
+interface ChatCompletionApiResponse {
+  id?: string;
+  model?: string;
+  created?: number;
+  system_fingerprint?: string;
+  choices?: ChatCompletionChoice[];
+  usage?: LLMUsage;
+  data?: Array<{ id: string; name?: string }>;
 }
 
 /**
@@ -128,7 +155,7 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       headers['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
-    const payload: any = {
+    const payload: ChatCompletionPayload = {
       model,
       messages,
       temperature: options?.temperature ?? 0.3,
@@ -154,7 +181,7 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
         throw new Error(`API returned HTTP ${response.status}: ${response.text}`);
       }
 
-      const data = response.json;
+      const data = response.json as ChatCompletionApiResponse;
       const choice = data.choices?.[0];
       const content = choice?.message?.content || '';
       const totalTimeMs = Date.now() - startTime;
@@ -181,9 +208,10 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
         } : undefined,
         rawResponse: data
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[Assistant Emily] LLM request failed:', err);
-      throw new Error(`LLM 통신 실패: ${err.message || err}`);
+      throw new Error(`LLM 통신 실패: ${errMsg}`);
     }
   }
 
@@ -204,7 +232,7 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
         method: 'GET',
         headers
       });
-      const data = response.json;
+      const data = response.json as ChatCompletionApiResponse;
       if (Array.isArray(data?.data)) {
         return data.data;
       }

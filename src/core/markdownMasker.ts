@@ -52,21 +52,21 @@ export class MarkdownMasker {
       maskMap.set(token, match);
       return token;
     });
-    target = target.replace(/(?<!\\)\$(?!\$)([^\$\n]+?)(?<!\\)\$/g, (match) => {
+    target = target.replace(/(?<!\\)\$(?!\$)([^$\n]+?)(?<!\\)\$/g, (match: string) => {
       const token = getPlaceholder('MATHINLINE');
       maskMap.set(token, match);
       return token;
     });
 
     // 5. 옵시디언 콜아웃 헤더 (> [!type] 또는 > [!type]+, > [!type]-)
-    target = target.replace(/^(>\s*\[!)([a-zA-Z0-9_-]+)(\][+-]?)/gm, (match, prefix, calloutType, suffix) => {
+    target = target.replace(/^(>\s*\[!)([a-zA-Z0-9_-]+)(\][+-]?)/gm, (match: string, prefix: string, calloutType: string, suffix: string) => {
       const token = getPlaceholder('CALLOUT');
       maskMap.set(token, calloutType);
       return `${prefix}${token}${suffix}`;
     });
 
     // 6. 옵시디언 내부 위키링크 ([[Note Name|Alias]] 또는 [[Note Name]])
-    target = target.replace(/\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g, (match, linkTarget, alias) => {
+    target = target.replace(/\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g, (match: string, linkTarget: string, alias: string | undefined) => {
       const targetToken = getPlaceholder('WIKITARGET');
       maskMap.set(targetToken, linkTarget);
       if (alias !== undefined) {
@@ -76,7 +76,7 @@ export class MarkdownMasker {
     });
 
     // 7. 옵시디언 해시태그 (#tag 또는 #parent/child)
-    target = target.replace(/(?<=^|\s)#([a-zA-Z가-힣0-9_\-]+(?:\/[a-zA-Z가-힣0-9_\-]+)*)(?=\s|$|[.,!?])/gm, (match, tagName) => {
+    target = target.replace(/(?<=^|\s)#([a-zA-Z가-힣0-9_-]+(?:\/[a-zA-Z가-힣0-9_-]+)*)(?=\s|$|[.,!?])/gm, (match: string, tagName: string) => {
       const token = getPlaceholder('TAG');
       maskMap.set(token, `#${tagName}`);
       return token;

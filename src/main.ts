@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, MarkdownView, Notice, setIcon, TFile } from 'obsidian';
+import { Plugin, WorkspaceLeaf, MarkdownView, Notice } from 'obsidian';
 import { EmilySettings, DEFAULT_SETTINGS } from './types/settings';
 import { EMILY_VIEW_TYPE, EMILY_ICON_NAME } from './constants';
 import { EmilySettingTab } from './views/settingsTab';
@@ -49,7 +49,7 @@ export default class EmilyPlugin extends Plugin {
 
     // 4. 리본 아이콘 등록 (클릭 시 사이드바 즉시 열기)
     this.addRibbonIcon(EMILY_ICON_NAME, t.commands.ribbonTooltip, () => {
-      this.activateView();
+      void this.activateView();
     });
 
     // 5. 옵시디언 커맨드 팔레트 명령어 등록
@@ -57,7 +57,7 @@ export default class EmilyPlugin extends Plugin {
       id: 'open-emily-sidebar',
       name: t.commands.openSidebar,
       callback: () => {
-        this.activateView();
+        void this.activateView();
       }
     });
 
@@ -68,7 +68,7 @@ export default class EmilyPlugin extends Plugin {
         const view = this.app.workspace.getActiveViewOfType(MarkdownView);
         if (view) {
           if (!checking) {
-            this.activateView();
+            void this.activateView();
           }
           return true;
         }
@@ -190,7 +190,7 @@ export default class EmilyPlugin extends Plugin {
    */
   async loadSettings() {
     try {
-      const loadedData = await this.loadData();
+      const loadedData = (await this.loadData()) as Partial<EmilySettings> | null;
       if (!loadedData) {
         // 최초 설치 시 data.json 안전 생성
         this.settings = Object.assign({}, DEFAULT_SETTINGS);
@@ -275,7 +275,7 @@ export default class EmilyPlugin extends Plugin {
     }
 
     if (leaf) {
-      workspace.revealLeaf(leaf);
+      void workspace.revealLeaf(leaf);
     }
   }
 

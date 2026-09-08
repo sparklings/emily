@@ -1,5 +1,5 @@
 import { App, TFile } from 'obsidian';
-import { LLMProxyClient } from '../api/llmClient';
+import { LLMProxyClient, LLMUsage, LLMResponse } from '../api/llmClient';
 import { PromptBuilder } from '../api/promptBuilder';
 import { TranslationOptions, TranslationResult } from '../types/translation';
 import { MarkdownFormatter } from './markdownFormatter';
@@ -45,7 +45,7 @@ export class TranslationEngine {
     options: TranslationOptions,
     customInstruction?: string,
     onProgress?: (current: number, total: number) => void
-  ): Promise<{ result: TranslationResult; totalTimeMs: number; tokensPerSec?: number; model: string; usage?: any; id?: string; finish_reason?: string; system_fingerprint?: string; created?: number }> {
+  ): Promise<{ result: TranslationResult; totalTimeMs: number; tokensPerSec?: number; model: string; usage?: LLMUsage; id?: string; finish_reason?: string; system_fingerprint?: string; created?: number }> {
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(markdownContent, this.CHUNK_SIZE_THRESHOLD);
     const totalChunks = chunks.length;
@@ -56,7 +56,7 @@ export class TranslationEngine {
     let totalCompletionTokens = 0;
     let totalTokens = 0;
     let lastModel = 'auto';
-    let lastResponse: any = null;
+    let lastResponse: LLMResponse | null = null;
 
     for (let i = 0; i < totalChunks; i++) {
       if (onProgress) {
@@ -240,7 +240,7 @@ export class TranslationEngine {
     markdownContent: string,
     translatedMarkdown: string,
     options: TranslationOptions,
-    result: TranslationResult
+    result: Partial<TranslationResult>
   ): Promise<void> {
     if (options.preservation === 'new_file') {
       const parentPath = activeFile.parent ? activeFile.parent.path : '';

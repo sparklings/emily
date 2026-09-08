@@ -183,12 +183,12 @@ export interface TranslationStrings {
     charCountSuffix: string;
     applyBtn: string;
     pipelineStream: string;
-    retryBtn?: string;
-    cancelBtn?: string;
-    statusError?: string;
-    errorOccurredTitle?: string;
-    contextLimitTitle?: string;
-    cancelSuccess?: string;
+    retryBtn: string;
+    cancelBtn: string;
+    statusError: string;
+    errorOccurredTitle: string;
+    contextLimitTitle: string;
+    cancelSuccess: string;
     noTargetDocNotice: string;
     emptyDocNotice: string;
     specifyTaskNotice: string;
@@ -335,3 +335,5 @@ export interface TranslationStrings {
     placeholder: string;
   };
 }
+
+export type TranslationKeys = TranslationStrings;

@@ -22,8 +22,9 @@ export function getObsidianLanguage(): string {
   }
 
   // 2. Moment locale from Obsidian window (only if explicitly starts with ko)
-  if (typeof window !== 'undefined' && (window as any).moment?.locale) {
-    const mLocale = (window as any).moment.locale();
+  const win = typeof window !== 'undefined' ? (window as unknown as { moment?: { locale?: () => string } }) : null;
+  if (win?.moment?.locale) {
+    const mLocale = win.moment.locale();
     if (mLocale && mLocale.toLowerCase().startsWith('ko')) {
       return 'ko';
     }

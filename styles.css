@@ -2356,4 +2356,47 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   box-sizing: border-box;
 }
 
+/* Clean layout classes to avoid static style assignment */
+.emily-say-hello-result-panel {
+  margin: 0 0 14px 0;
+  width: 100%;
+}
 
+.emily-sidebar-content {
+  position: relative;
+}
+
+.emily-sessions-history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.emily-active-form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emily-custom-prompt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.emily-status-box {
+  display: none;
+}
+
+.emily-status-box.is-visible {
+  display: flex;
+}
+
+.emily-status-dot.is-cancelled {
+  background-color: var(--color-orange, #cb7634);
+}
+
+.emily-status-dot.is-accent {
+  background-color: var(--interactive-accent, #7b6cd9);
+}

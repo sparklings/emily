@@ -1,8 +1,9 @@
-import { App, Modal, Notice, setIcon, TFile } from 'obsidian';
-import { TranslationOptions } from '../types/translation';
+import { App, Modal, Notice, TFile } from 'obsidian';
+import { TranslationOptions, TranslationResult } from '../types/translation';
 import { TranslationEngine } from '../core/translationEngine';
 import { isSameLanguage } from '../core/languageDetector';
 import { getTranslation, getLocalizedLanguageName } from '../i18n';
+import { TranslationKeys } from '../i18n/types';
 
 interface MarkdownBlock {
   type: 'frontmatter' | 'heading' | 'code' | 'list_item' | 'text' | 'empty';
@@ -168,7 +169,7 @@ export class TranslationDiffModal extends Modal {
     // 3. Fixed Footer (Pinned at bottom, always visible)
     const footerEl = contentEl.createDiv({ cls: 'emily-translation-modal-footer' });
     
-    const leftActions = footerEl.createDiv({ cls: 'emily-translation-footer-left' });
+    footerEl.createDiv({ cls: 'emily-translation-footer-left' });
 
     const rightActions = footerEl.createDiv({ cls: 'emily-translation-footer-right' });
 
@@ -176,14 +177,16 @@ export class TranslationDiffModal extends Modal {
       text: t.transDiffModal.saveNewFileBtn,
       cls: 'emily-btn-primary emily-translation-save-new-btn'
     });
-    newFileBtn.addEventListener('click', async () => {
-      const currentText = this.getCurrentText();
-      const opts = { ...this.options, preservation: 'new_file' as const };
-      const res: any = {};
-      await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-      new Notice(t.transDiffModal.saveNewFileNotice.replace('{path}', res.targetPath || ''));
-      if (this.onSaveCallback) this.onSaveCallback(currentText, 'new_file');
-      this.close();
+    newFileBtn.addEventListener('click', () => {
+      void (async () => {
+        const currentText = this.getCurrentText();
+        const opts = { ...this.options, preservation: 'new_file' as const };
+        const res: Partial<TranslationResult> = {};
+        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
+        new Notice(t.transDiffModal.saveNewFileNotice.replace('{path}', res.targetPath || ''));
+        if (this.onSaveCallback) this.onSaveCallback(currentText, 'new_file');
+        this.close();
+      })();
     });
 
     const subRow = rightActions.createDiv({ cls: 'emily-translation-footer-subrow' });
@@ -192,28 +195,32 @@ export class TranslationDiffModal extends Modal {
       text: t.transDiffModal.appendBtn,
       cls: 'emily-btn-secondary emily-translation-append-btn'
     });
-    appendBtn.addEventListener('click', async () => {
-      const currentText = this.getCurrentText();
-      const opts = { ...this.options, preservation: 'append' as const };
-      const res: any = {};
-      await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-      new Notice(t.transDiffModal.appendNotice);
-      if (this.onSaveCallback) this.onSaveCallback(currentText, 'append');
-      this.close();
+    appendBtn.addEventListener('click', () => {
+      void (async () => {
+        const currentText = this.getCurrentText();
+        const opts = { ...this.options, preservation: 'append' as const };
+        const res: Partial<TranslationResult> = {};
+        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
+        new Notice(t.transDiffModal.appendNotice);
+        if (this.onSaveCallback) this.onSaveCallback(currentText, 'append');
+        this.close();
+      })();
     });
 
     const overwriteBtn = subRow.createEl('button', {
       text: t.transDiffModal.overwriteBtn,
       cls: 'emily-btn-danger emily-translation-overwrite-btn'
     });
-    overwriteBtn.addEventListener('click', async () => {
-      const currentText = this.getCurrentText();
-      const opts = { ...this.options, preservation: 'overwrite' as const };
-      const res: any = {};
-      await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-      new Notice(t.transDiffModal.overwriteNotice);
-      if (this.onSaveCallback) this.onSaveCallback(currentText, 'overwrite');
-      this.close();
+    overwriteBtn.addEventListener('click', () => {
+      void (async () => {
+        const currentText = this.getCurrentText();
+        const opts = { ...this.options, preservation: 'overwrite' as const };
+        const res: Partial<TranslationResult> = {};
+        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
+        new Notice(t.transDiffModal.overwriteNotice);
+        if (this.onSaveCallback) this.onSaveCallback(currentText, 'overwrite');
+        this.close();
+      })();
     });
 
     const closeBtn = subRow.createEl('button', {
@@ -225,7 +232,7 @@ export class TranslationDiffModal extends Modal {
     });
   }
 
-  private renderBody(t: any, isSameLangEdit: boolean) {
+  private renderBody(t: TranslationKeys, isSameLangEdit: boolean) {
     if (!this.bodyContainerEl) return;
     this.bodyContainerEl.empty();
 
@@ -236,7 +243,7 @@ export class TranslationDiffModal extends Modal {
     }
   }
 
-  private renderAlignedView(parent: HTMLElement, t: any, isSameLangEdit: boolean) {
+  private renderAlignedView(parent: HTMLElement, t: TranslationKeys, isSameLangEdit: boolean) {
     // Column Header Bar
     const headerBar = parent.createDiv({ cls: 'emily-diff-rows-header-bar' });
     
@@ -279,11 +286,11 @@ export class TranslationDiffModal extends Modal {
       });
 
       // Adjust height after element attachment
-      setTimeout(() => this.autoResizeTextarea(textarea), 0);
+      window.setTimeout(() => this.autoResizeTextarea(textarea), 0);
     });
   }
 
-  private renderFullView(parent: HTMLElement, t: any, isSameLangEdit: boolean) {
+  private renderFullView(parent: HTMLElement, t: TranslationKeys, isSameLangEdit: boolean) {
     const gridContainer = parent.createDiv({ cls: 'emily-translation-side-by-side' });
 
     // Left Column: Original Markdown
@@ -330,8 +337,8 @@ export class TranslationDiffModal extends Modal {
   }
 
   private autoResizeTextarea(textarea: HTMLTextAreaElement) {
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.max(34, textarea.scrollHeight)}px`;
+    textarea.setCssStyles({ height: 'auto' });
+    textarea.setCssStyles({ height: `${Math.max(34, textarea.scrollHeight)}px` });
   }
 
   private computeAlignedRows(): AlignedRow[] {
@@ -499,7 +506,7 @@ export class TranslationDiffModal extends Modal {
       return base + proximity;
     }
 
-    const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
 
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {

@@ -2,7 +2,7 @@ import { App, PluginSettingTab, Setting, Notice, setIcon } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { getTranslation, getObsidianLanguage, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
 import { getSystemContext } from '../utils/systemInfo';
-import { TranslationScope, PreservationStrategy } from '../types/translation';
+import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
 
 /**
  * Assistant Emily 환경 설정 탭 뷰 클래스
@@ -24,8 +24,7 @@ export class EmilySettingTab extends PluginSettingTab {
     containerEl.empty();
     const t = getTranslation(this.plugin.settings.language);
 
-    containerEl.createEl('h2', { text: t.settings.title });
-    containerEl.createEl('p', { text: t.settings.description, cls: 'setting-item-description' });
+    new Setting(containerEl).setName(t.settings.title).setDesc(t.settings.description).setHeading();
 
     // Top Level: Interface Language Setting
     const detectedLangCode = getObsidianLanguage();
@@ -41,8 +40,8 @@ export class EmilySettingTab extends PluginSettingTab {
         dropdown.addOption('ko', t.settings.languageKo);
         dropdown
           .setValue(this.plugin.settings.language || 'auto')
-          .onChange(async (val: any) => {
-            this.plugin.settings.language = val;
+          .onChange(async (val: string) => {
+            this.plugin.settings.language = val as 'auto' | 'en' | 'ko';
             await this.plugin.saveSettings();
             this.display();
             this.plugin.syncSidebarSettings();
@@ -140,8 +139,6 @@ export class EmilySettingTab extends PluginSettingTab {
 
     // Say Hello Connectivity Test
     const helloResultDiv = containerEl.createDiv({ cls: 'emily-say-hello-result-panel' });
-    helloResultDiv.style.margin = '0 0 14px 0';
-    helloResultDiv.style.width = '100%';
 
     new Setting(containerEl)
       .setName(t.settings.sayHelloTitle)
@@ -160,26 +157,46 @@ export class EmilySettingTab extends PluginSettingTab {
               const client = this.plugin.getLLMClient();
               const res = await client.testSayHello(sysContext.languageName, sysContext.timePeriod);
 
-              helloResultDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; padding-top:4px;">
-                  <span class="emily-badge is-success">✓ ${t.settings.sayHelloSuccess} (${res.latencyMs}ms)</span>
-                  <span class="emily-badge">${res.model}</span>
-                </div>
-                <div style="color:var(--text-normal); font-size:13px; line-height:1.5; background:var(--background-secondary); padding:10px 14px; border-radius:6px; border-left:3px solid var(--interactive-accent);">
-                  💬 <strong>Assistant Emily:</strong> "${res.message}"
-                </div>
-              `;
+              helloResultDiv.empty();
+              const badgeRow = helloResultDiv.createDiv();
+              badgeRow.setCssStyles({ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', paddingTop: '4px' });
+              const successBadge = badgeRow.createSpan({ cls: 'emily-badge is-success' });
+              successBadge.setText(`✓ ${t.settings.sayHelloSuccess} (${res.latencyMs}ms)`);
+              const modelBadge = badgeRow.createSpan({ cls: 'emily-badge' });
+              modelBadge.setText(res.model);
+
+              const msgBox = helloResultDiv.createDiv();
+              msgBox.setCssStyles({
+                color: 'var(--text-normal)',
+                fontSize: '13px',
+                lineHeight: '1.5',
+                background: 'var(--background-secondary)',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                borderLeft: '3px solid var(--interactive-accent)'
+              });
+              msgBox.createSpan({ text: '💬 ' });
+              msgBox.createEl('strong', { text: 'Assistant Emily: ' });
+              msgBox.createSpan({ text: `"${res.message}"` });
               new Notice(t.settings.sayHelloNoticeSuccess);
-            } catch (err: any) {
-              helloResultDiv.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; padding-top:4px;">
-                  <span class="emily-badge is-warning">✗ ${t.settings.sayHelloFailed}</span>
-                </div>
-                <div style="color:var(--text-error); font-size:12px; background:var(--background-secondary); padding:8px 12px; border-radius:4px;">
-                  ${err.message || err}
-                </div>
-              `;
-              new Notice(`${t.settings.sayHelloNoticeFailed}${err.message || err}`);
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              helloResultDiv.empty();
+              const failRow = helloResultDiv.createDiv();
+              failRow.setCssStyles({ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', paddingTop: '4px' });
+              const failBadge = failRow.createSpan({ cls: 'emily-badge is-warning' });
+              failBadge.setText(`✗ ${t.settings.sayHelloFailed}`);
+
+              const errBox = helloResultDiv.createDiv();
+              errBox.setCssStyles({
+                color: 'var(--text-error)',
+                fontSize: '12px',
+                background: 'var(--background-secondary)',
+                padding: '8px 12px',
+                borderRadius: '4px'
+              });
+              errBox.setText(errMsg);
+              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
             } finally {
               btn.setDisabled(false);
               btn.setButtonText(t.settings.sayHelloBtn);
@@ -192,11 +209,7 @@ export class EmilySettingTab extends PluginSettingTab {
     // =========================================================================
     // Section 2: 교열 기본 설정 (Proofreading Preferences)
     // =========================================================================
-    containerEl.createEl('h3', { text: t.settings.proofreadSectionTitle });
-    containerEl.createEl('p', {
-      text: t.settings.proofreadSectionDesc,
-      cls: 'setting-item-description'
-    });
+    new Setting(containerEl).setName(t.settings.proofreadSectionTitle).setDesc(t.settings.proofreadSectionDesc).setHeading();
 
     new Setting(containerEl)
       .setName(t.settings.proofreadSpellingTitle)
@@ -240,11 +253,7 @@ export class EmilySettingTab extends PluginSettingTab {
     // =========================================================================
     // Section 3: 번역 기본 설정 (Translation Preferences)
     // =========================================================================
-    containerEl.createEl('h3', { text: t.settings.translationSectionTitle });
-    containerEl.createEl('p', {
-      text: t.settings.translationSectionDesc,
-      cls: 'setting-item-description'
-    });
+    new Setting(containerEl).setName(t.settings.translationSectionTitle).setDesc(t.settings.translationSectionDesc).setHeading();
 
     new Setting(containerEl)
       .setName(t.settings.transEnabledTitle)
@@ -351,8 +360,8 @@ export class EmilySettingTab extends PluginSettingTab {
         dropdown.addOption('casual', t.tones.casual);
         dropdown
           .setValue(this.plugin.settings.defaultTranslationTone || 'academic')
-          .onChange(async (val: any) => {
-            this.plugin.settings.defaultTranslationTone = val;
+          .onChange(async (val: string) => {
+            this.plugin.settings.defaultTranslationTone = val as TranslationTone;
             await this.plugin.saveSettings();
             this.plugin.syncSidebarSettings();
           });
@@ -367,8 +376,8 @@ export class EmilySettingTab extends PluginSettingTab {
         dropdown.addOption('natural', t.styles.natural);
         dropdown
           .setValue(this.plugin.settings.defaultTranslationStyle || 'balanced')
-          .onChange(async (val: any) => {
-            this.plugin.settings.defaultTranslationStyle = val;
+          .onChange(async (val: string) => {
+            this.plugin.settings.defaultTranslationStyle = val as TranslationStyle;
             await this.plugin.saveSettings();
             this.plugin.syncSidebarSettings();
           });
@@ -390,7 +399,7 @@ export class EmilySettingTab extends PluginSettingTab {
     // =========================================================================
     // Section 4: 에디터 및 인터페이스 환경설정 (Editor Preferences)
     // =========================================================================
-    containerEl.createEl('h3', { text: t.settings.editorPreferencesHeader });
+    new Setting(containerEl).setName(t.settings.editorPreferencesHeader).setHeading();
 
     new Setting(containerEl)
       .setName(t.settings.koreanBoldTitle)
