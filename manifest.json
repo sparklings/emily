@@ -1,10 +1,10 @@
 {
   "id": "assistant-emily",
   "name": "Assistant Emily",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "minAppVersion": "0.15.0",
   "description": "Intelligent Markdown proofreading and translation specialized plugin with OpenAI-compatible LLM proxy support.",
   "author": "Assistant Emily",
-  "authorUrl": "https://github.com/sparklings/emily",
+  "authorUrl": "https://github.com/sparklings",
   "isDesktopOnly": true
 }

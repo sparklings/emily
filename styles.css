@@ -427,43 +427,43 @@
 
 /* Responsive segmented labels: Hide parenthetical text when sidebar is narrow (< 380px) */
 .is-narrow-sidebar .emily-label-extra {
-  display: none !important;
+  display: none;
 }
 
 @container emily-sidebar (max-width: 380px) {
   .emily-label-extra {
-    display: none !important;
+    display: none;
   }
 }
 
 /* Tier 3: Compact icon-only square buttons when sidebar is small (< 320px) */
 .is-compact-sidebar .emily-segmented-btn .emily-segmented-label {
-  display: none !important;
+  display: none;
 }
 .is-compact-sidebar .emily-segmented-btn {
-  min-height: 42px !important;
-  height: 42px !important;
-  padding: 6px 4px !important;
-  gap: 0 !important;
+  min-height: 42px;
+  height: 42px;
+  padding: 6px 4px;
+  gap: 0;
 }
 .is-compact-sidebar .emily-segmented-icon svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 18px;
+  height: 18px;
 }
 
 @container emily-sidebar (max-width: 320px) {
   .emily-segmented-btn .emily-segmented-label {
-    display: none !important;
+    display: none;
   }
   .emily-segmented-btn {
-    min-height: 42px !important;
-    height: 42px !important;
-    padding: 6px 4px !important;
-    gap: 0 !important;
+    min-height: 42px;
+    height: 42px;
+    padding: 6px 4px;
+    gap: 0;
   }
   .emily-segmented-icon svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 18px;
+    height: 18px;
   }
 }
 
@@ -654,8 +654,8 @@ select.emily-select-input {
 
 .emily-select-box select option:checked,
 .emily-select-box select option:hover {
-  background-color: var(--interactive-accent) !important;
-  color: var(--text-on-accent, #ffffff) !important;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
 }
 
 /* Prompt Textarea & Header */
@@ -850,7 +850,7 @@ select.emily-select-input {
    Hide spacer, Ctrl+Enter hint, and char counter, keeping the main label cleanly centered. */
 .is-narrow-sidebar .emily-btn-primary:not(.emily-retry-btn),
 .is-compact-sidebar .emily-btn-primary:not(.emily-retry-btn) {
-  justify-content: center !important;
+  justify-content: center;
 }
 
 .is-narrow-sidebar .emily-btn-primary .emily-btn-spacer,
@@ -859,17 +859,17 @@ select.emily-select-input {
 .is-compact-sidebar .emily-btn-primary .emily-btn-spacer,
 .is-compact-sidebar .emily-btn-primary .emily-btn-shortcut-hint,
 .is-compact-sidebar .emily-btn-primary .emily-btn-char-counter {
-  display: none !important;
+  display: none;
 }
 
 @container emily-sidebar (max-width: 380px) {
   .emily-btn-primary:not(.emily-retry-btn) {
-    justify-content: center !important;
+    justify-content: center;
   }
   .emily-btn-primary .emily-btn-spacer,
   .emily-btn-primary .emily-btn-shortcut-hint,
   .emily-btn-primary .emily-btn-char-counter {
-    display: none !important;
+    display: none;
   }
 }
 
@@ -907,14 +907,14 @@ select.emily-select-input {
 .emily-active-form-container.is-form-executing .emily-error-banner,
 .emily-active-form-container.is-form-executing .emily-error-actions,
 .emily-active-form-container.is-form-executing .emily-error-actions button {
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  cursor: default !important;
-  filter: none !important;
+  opacity: 1;
+  pointer-events: auto;
+  cursor: default;
+  filter: none;
 }
 
 .emily-active-form-container.is-form-executing .emily-error-actions button {
-  cursor: pointer !important;
+  cursor: pointer;
 }
 
 .emily-btn-secondary {
@@ -1995,33 +1995,33 @@ select.emily-select-input {
 /* ==========================================================================
    Translation Side-by-Side Diff / Review Modal
    ========================================================================== */
-.modal.emily-translation-diff-modal-window {
-  width: 94vw !important;
-  max-width: 1400px !important;
-  height: 90vh !important;
-  max-height: 920px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  border-radius: var(--modal-radius, 8px) !important;
-  box-shadow: var(--shadow-l, 0 10px 30px rgba(0,0,0,0.35)) !important;
+body .modal-container .modal.emily-translation-diff-modal-window {
+  width: 94vw;
+  max-width: 1400px;
+  height: 90vh;
+  max-height: 920px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--modal-radius, 8px);
+  box-shadow: var(--shadow-l, 0 10px 30px rgba(0,0,0,0.35));
 }
 
-.emily-translation-diff-modal-window .modal-content {
-  display: flex !important;
-  flex-direction: column !important;
-  flex: 1 1 100% !important;
-  height: 100% !important;
-  max-height: 100% !important;
-  min-height: 0 !important;
-  overflow: hidden !important; /* CRITICAL: No modal-level scrollbar! */
-  padding: 16px 20px !important;
-  box-sizing: border-box !important;
+body .modal-container .modal.emily-translation-diff-modal-window .modal-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 100%;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden; /* CRITICAL: No modal-level scrollbar! */
+  padding: 16px 20px;
+  box-sizing: border-box;
 }
 
 .emily-translation-modal-header {
-  flex-shrink: 0 !important;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2091,11 +2091,11 @@ select.emily-select-input {
 
 /* Central Diff Comparison Body */
 .emily-translation-diff-body {
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden !important;
+  overflow: hidden;
   background-color: var(--background-secondary);
   border: 1px solid var(--divider-color);
   border-radius: var(--radius-m, 6px);
@@ -2296,7 +2296,7 @@ select.emily-select-input {
 
 /* Footer is pinned at bottom */
 .emily-translation-modal-footer {
-  flex-shrink: 0 !important;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2322,38 +2322,38 @@ select.emily-select-input {
 }
 
 .emily-translation-save-new-btn {
-  width: 100% !important;
-  justify-content: center !important;
-  padding: 6px 12px !important;
-  font-size: 12px !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 12px;
+  box-sizing: border-box;
 }
 
 .emily-translation-footer-subrow {
   display: flex;
   align-items: center;
   gap: 6px;
-  width: 100% !important;
-  box-sizing: border-box !important;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .emily-translation-footer-subrow .emily-translation-append-btn,
 .emily-translation-footer-subrow .emily-translation-overwrite-btn {
-  flex: 1 1 0 !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-  padding: 5px 8px !important;
-  font-size: 11.5px !important;
-  box-sizing: border-box !important;
+  flex: 1 1 0;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 5px 8px;
+  font-size: 11.5px;
+  box-sizing: border-box;
 }
 
 .emily-translation-footer-subrow .emily-translation-close-btn {
-  flex: 0 0 auto !important;
-  justify-content: center !important;
-  white-space: nowrap !important;
-  padding: 5px 14px !important;
-  font-size: 11.5px !important;
-  box-sizing: border-box !important;
+  flex: 0 0 auto;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 5px 14px;
+  font-size: 11.5px;
+  box-sizing: border-box;
 }
 
 

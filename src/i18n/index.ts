@@ -13,39 +13,15 @@ export interface LanguageOption {
  * All other languages or unknown states strictly fallback to 'en'.
  */
 export function getObsidianLanguage(): string {
-  // 1. Obsidian stored language in localStorage (Direct renderer value)
-  if (typeof window !== 'undefined' && window.localStorage) {
-    const stored = window.localStorage.getItem('language');
-    if (stored) {
-      return stored.toLowerCase();
+  // 1. HTML lang attribute (Obsidian sets <html lang="..."> according to user preference)
+  if (typeof document !== 'undefined' && document.documentElement?.lang) {
+    const htmlLang = document.documentElement.lang.toLowerCase();
+    if (htmlLang) {
+      return htmlLang;
     }
   }
 
-  // 2. Desktop Electron AppData obsidian.json check (Authoritative desktop config)
-  try {
-    if (typeof process !== 'undefined' && process.env?.APPDATA) {
-      const fs = (window as any).require ? (window as any).require('fs') : undefined;
-      const path = (window as any).require ? (window as any).require('path') : undefined;
-      if (fs && path) {
-        const confPath = path.join(process.env.APPDATA, 'obsidian', 'obsidian.json');
-        if (fs.existsSync(confPath)) {
-          const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
-          if (conf && conf.language) {
-            return conf.language.toLowerCase();
-          }
-        }
-      }
-    }
-  } catch (e) {
-    // Ignore fallback errors
-  }
-
-  // 3. HTML lang attribute
-  if (typeof document !== 'undefined' && document.documentElement.lang) {
-    return document.documentElement.lang.toLowerCase();
-  }
-
-  // 4. Moment locale from Obsidian window (only if explicitly starts with ko)
+  // 2. Moment locale from Obsidian window (only if explicitly starts with ko)
   if (typeof window !== 'undefined' && (window as any).moment?.locale) {
     const mLocale = (window as any).moment.locale();
     if (mLocale && mLocale.toLowerCase().startsWith('ko')) {
@@ -53,7 +29,7 @@ export function getObsidianLanguage(): string {
     }
   }
 
-  // 5. Navigator language (only if explicitly starts with ko)
+  // 3. Navigator language (only if explicitly starts with ko)
   if (typeof navigator !== 'undefined' && navigator.language) {
     if (navigator.language.toLowerCase().startsWith('ko')) {
       return 'ko';

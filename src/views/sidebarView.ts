@@ -2038,8 +2038,10 @@ export class EmilySidebarView extends ItemView {
         const targetPath = session.filePath || session.fileName;
         let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
         if (!(targetFile instanceof TFile)) {
-          const files = this.app.vault.getMarkdownFiles();
-          targetFile = files.find(f => f.name === session.fileName || f.path === session.filePath) || null;
+          const resolved = this.app.metadataCache.getFirstLinkpathDest(session.fileName || '', session.filePath || '');
+          if (resolved instanceof TFile) {
+            targetFile = resolved;
+          }
         }
         if (targetFile instanceof TFile) {
           const modal = new TranslationDiffModal(
