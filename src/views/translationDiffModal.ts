@@ -169,12 +169,6 @@ export class TranslationDiffModal extends Modal {
     const footerEl = contentEl.createDiv({ cls: 'emily-translation-modal-footer' });
     
     const leftActions = footerEl.createDiv({ cls: 'emily-translation-footer-left' });
-    const copyFullBtn = leftActions.createEl('button', { text: t.transDiffModal.copyFullBtn, cls: 'emily-btn-secondary' });
-    copyFullBtn.addEventListener('click', async () => {
-      const currentText = this.getCurrentText();
-      await navigator.clipboard.writeText(currentText);
-      new Notice(t.transDiffModal.copyFullNotice);
-    });
 
     const rightActions = footerEl.createDiv({ cls: 'emily-translation-footer-right' });
 
@@ -251,16 +245,6 @@ export class TranslationDiffModal extends Modal {
 
     const rightHead = headerBar.createDiv({ cls: 'emily-diff-rows-header-item' });
     rightHead.createSpan({ text: isSameLangEdit ? t.transDiffModal.resultEditHeader : t.transDiffModal.resultTransHeader });
-    const copyBtn = rightHead.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: isSameLangEdit ? t.transDiffModal.copyBtnTooltipEdit : t.transDiffModal.copyBtnTooltipTrans }
-    });
-    setIcon(copyBtn, 'copy');
-    copyBtn.addEventListener('click', async () => {
-      const textToCopy = this.reconstructMarkdownFromRows();
-      await navigator.clipboard.writeText(textToCopy);
-      new Notice(isSameLangEdit ? t.transDiffModal.copyNoticeEdit : t.transDiffModal.copyNoticeTrans);
-    });
 
     // Scrollable Rows Container
     const scrollArea = parent.createDiv({ cls: 'emily-diff-rows-scroll-area' });
@@ -313,15 +297,6 @@ export class TranslationDiffModal extends Modal {
     const rightCol = gridContainer.createDiv({ cls: 'emily-translation-col right' });
     const rightHeader = rightCol.createDiv({ cls: 'emily-translation-col-header' });
     rightHeader.createSpan({ text: isSameLangEdit ? t.transDiffModal.resultEditHeader : t.transDiffModal.resultTransHeader });
-    const copyBtn = rightHeader.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: isSameLangEdit ? t.transDiffModal.copyBtnTooltipEdit : t.transDiffModal.copyBtnTooltipTrans }
-    });
-    setIcon(copyBtn, 'copy');
-    copyBtn.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(this.fullRightTextarea?.value || this.currentEditedText);
-      new Notice(isSameLangEdit ? t.transDiffModal.copyNoticeEdit : t.transDiffModal.copyNoticeTrans);
-    });
 
     const rightTextarea = rightCol.createEl('textarea', { cls: 'emily-translation-edit-textarea' });
     rightTextarea.value = this.currentEditedText;

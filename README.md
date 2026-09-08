@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.2-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.3-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15.0+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-시스템-아키텍처-및-구조-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -297,7 +297,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.2-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.3-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v0.15.0+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>

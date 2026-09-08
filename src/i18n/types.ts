@@ -319,12 +319,6 @@ export interface TranslationStrings {
     originalTransHeader: string;
     resultEditHeader: string;
     resultTransHeader: string;
-    copyBtnTooltipEdit: string;
-    copyBtnTooltipTrans: string;
-    copyNoticeEdit: string;
-    copyNoticeTrans: string;
-    copyFullBtn: string;
-    copyFullNotice: string;
     saveNewFileBtn: string;
     saveNewFileNotice: string;
     appendBtn: string;

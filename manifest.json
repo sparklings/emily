@@ -1,7 +1,7 @@
 {
   "id": "assistant-emily",
   "name": "Assistant Emily",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "0.15.0",
   "description": "Intelligent Markdown proofreading and translation specialized plugin with OpenAI-compatible LLM proxy support.",
   "author": "Assistant Emily",
