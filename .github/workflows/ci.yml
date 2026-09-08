@@ -1,0 +1,44 @@
+name: CI & Build Verification
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  validate:
+    name: Typecheck & Build Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript Type Check
+        run: npm run check
+
+      - name: Run Integration Tests
+        run: npm test
+
+      - name: Build Production Bundle
+        run: npm run build
+
+      - name: Verify Generated Artifacts
+        run: |
+          test -f main.js || { echo "main.js is missing"; exit 1; }
+          test -f manifest.json || { echo "manifest.json is missing"; exit 1; }
+          test -f styles.css || { echo "styles.css is missing"; exit 1; }

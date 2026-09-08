@@ -7,6 +7,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
     "deploy": "node esbuild.config.mjs production",
+    "check": "tsc --noEmit",
     "test": "node tests/integration_test.mjs"
   },
   "keywords": [
