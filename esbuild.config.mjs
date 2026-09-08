@@ -47,8 +47,11 @@ function copyToVaults() {
 	const customVault = process.env.OBSIDIAN_VAULT_PATH;
 	const candidateVaults = [
 		...(customVault ? [customVault] : []),
+		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
+		path.join(userProfile, 'OneDrive', 'ObsidianVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'OneDrive', 'ObsidianVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
+		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily')
 	];
 

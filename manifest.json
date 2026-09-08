@@ -1,7 +1,7 @@
 {
-  "id": "obsidian-assistant-emily",
+  "id": "assistant-emily",
   "name": "Assistant Emily",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "0.15.0",
   "description": "Intelligent Markdown proofreading and translation specialized plugin with OpenAI-compatible LLM proxy support.",
   "author": "Assistant Emily",
