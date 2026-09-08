@@ -1,0 +1,2359 @@
+/* Assistant Emily - Obsidian Plugin Stylesheet */
+
+/* Root Variables & Obsidian Token Binding */
+:root {
+  --emily-accent: var(--interactive-accent, #7b6cd9);
+  --emily-accent-hover: var(--interactive-accent-hover, #6857cb);
+  --emily-success: var(--color-green, #48a56a);
+  --emily-warning: var(--color-orange, #cb7634);
+  --emily-error: var(--color-red, #e05252);
+  --emily-border-radius: var(--radius-m, 6px);
+}
+
+/* ==========================================================================
+   Sidebar View Styles
+   ========================================================================== */
+.emily-sidebar-container {
+  container-type: inline-size;
+  container-name: emily-sidebar;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  position: relative;
+  overflow: hidden;
+}
+
+.emily-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border-bottom: 1px solid var(--divider-color);
+  user-select: none;
+}
+
+.emily-target-doc-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: var(--background-primary);
+  border-bottom: 1px solid var(--divider-color);
+  font-size: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.emily-status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-accent, rgba(123, 108, 217, 0.25));
+  flex-shrink: 0;
+}
+
+.emily-doc-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-normal);
+  cursor: default;
+}
+
+.emily-doc-name:hover {
+  color: var(--interactive-accent);
+}
+
+.emily-sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-normal);
+}
+
+.emily-sidebar-title svg {
+  color: var(--emily-accent);
+}
+
+.emily-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emily-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-s, 4px);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.emily-icon-btn:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.emily-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Accordion Sections */
+.emily-accordion-section {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--emily-border-radius);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.emily-accordion-section:hover {
+  border-color: var(--interactive-accent);
+}
+
+.emily-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-normal);
+  font-size: 13px;
+  font-weight: 600;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.emily-accordion-header:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+.emily-accordion-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emily-chevron-icon {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.emily-accordion-header.is-expanded .emily-chevron-icon {
+  transform: rotate(90deg);
+}
+
+.emily-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  background-color: var(--background-secondary-alt);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.emily-badge.is-active {
+  background-color: rgba(123, 108, 217, 0.15);
+  color: var(--emily-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 0 6px rgba(123, 108, 217, 0.25);
+  animation: emily-badge-glow 2s infinite ease-in-out;
+}
+
+/* Animated Ellipsis Dots (율동 애니메이션) */
+.emily-dots-anim {
+  display: inline-flex;
+  margin-left: 1px;
+  letter-spacing: 1px;
+}
+
+.emily-dots-anim span {
+  display: inline-block;
+  animation: emily-dot-jump 1.3s infinite ease-in-out both;
+  font-weight: bold;
+}
+
+.emily-dots-anim span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.emily-dots-anim span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.emily-dots-anim span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes emily-dot-jump {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-2.5px);
+    opacity: 1;
+    color: var(--interactive-accent);
+  }
+}
+
+@keyframes emily-badge-glow {
+  0%, 100% {
+    background-color: rgba(123, 108, 217, 0.15);
+    box-shadow: 0 0 4px rgba(123, 108, 217, 0.15);
+  }
+  50% {
+    background-color: rgba(123, 108, 217, 0.28);
+    box-shadow: 0 0 8px rgba(123, 108, 217, 0.4);
+  }
+}
+
+.emily-badge.is-warning {
+  background-color: rgba(203, 118, 52, 0.15);
+  color: var(--emily-warning);
+}
+
+.emily-badge.is-success {
+  background-color: rgba(72, 165, 106, 0.15);
+  color: var(--emily-success);
+}
+
+.emily-badge.is-error {
+  background-color: rgba(224, 82, 82, 0.15);
+  color: var(--emily-error);
+}
+
+.emily-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.emily-count-badge.is-zero {
+  display: none;
+}
+
+/* Accordion Header Right Container */
+.emily-accordion-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  cursor: default;
+}
+
+/* Toggle Switch UI */
+.emily-toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 32px;
+  height: 18px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.emily-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.emily-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--background-modifier-border, rgba(255, 255, 255, 0.15));
+  border: 1px solid var(--divider-color);
+  transition: all 0.2s ease;
+  border-radius: 9999px;
+}
+
+.emily-toggle-slider::before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 2px;
+  bottom: 2px;
+  background-color: var(--text-muted);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+}
+
+.emily-toggle-switch input:checked + .emily-toggle-slider {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+
+.emily-toggle-switch input:checked + .emily-toggle-slider::before {
+  transform: translateX(14px);
+  background-color: #ffffff;
+}
+
+/* 3-Button Segmented Grid */
+.emily-segmented-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.emily-segmented-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  text-align: center;
+  min-height: 54px;
+  height: 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.emily-segmented-btn:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
+  transform: translateY(-1px);
+}
+
+.emily-segmented-btn.is-active {
+  background-color: var(--background-secondary-alt);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent), 0 2px 6px rgba(0, 0, 0, 0.15);
+  font-weight: 600;
+}
+
+.emily-segmented-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+
+.emily-segmented-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.emily-segmented-label {
+  font-size: 10.5px;
+  line-height: 1.2;
+  word-break: keep-all;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emily-label-main {
+  display: block;
+  font-weight: 500;
+  word-break: keep-all;
+}
+
+.emily-label-extra {
+  display: block;
+  font-size: 9px;
+  line-height: 1.15;
+  color: var(--text-muted);
+  opacity: 0.85;
+  margin-top: 1px;
+  word-break: keep-all;
+}
+
+/* Responsive segmented labels: Hide parenthetical text when sidebar is narrow (< 380px) */
+.is-narrow-sidebar .emily-label-extra {
+  display: none !important;
+}
+
+@container emily-sidebar (max-width: 380px) {
+  .emily-label-extra {
+    display: none !important;
+  }
+}
+
+/* Tier 3: Compact icon-only square buttons when sidebar is small (< 320px) */
+.is-compact-sidebar .emily-segmented-btn .emily-segmented-label {
+  display: none !important;
+}
+.is-compact-sidebar .emily-segmented-btn {
+  min-height: 42px !important;
+  height: 42px !important;
+  padding: 6px 4px !important;
+  gap: 0 !important;
+}
+.is-compact-sidebar .emily-segmented-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+@container emily-sidebar (max-width: 320px) {
+  .emily-segmented-btn .emily-segmented-label {
+    display: none !important;
+  }
+  .emily-segmented-btn {
+    min-height: 42px !important;
+    height: 42px !important;
+    padding: 6px 4px !important;
+    gap: 0 !important;
+  }
+  .emily-segmented-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+}
+
+.emily-translation-body-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.emily-translation-body-content.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  filter: grayscale(0.5);
+}
+
+.emily-accordion-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--divider-color);
+  background-color: var(--background-primary);
+}
+
+.emily-accordion-body.is-collapsed {
+  display: none;
+}
+
+/* Checkbox & Option Item Lists */
+.emily-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emily-option-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-s, 4px);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.emily-option-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+/* Code Comment Checkbox Row */
+.emily-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-checkbox-input {
+  accent-color: var(--interactive-accent);
+  cursor: pointer;
+  width: 13px;
+  height: 13px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.emily-checkbox-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.3;
+  transition: color 0.15s ease;
+}
+
+.emily-checkbox-row:hover .emily-checkbox-label {
+  color: var(--text-normal);
+}
+
+.emily-option-item input[type="checkbox"],
+.emily-option-item input[type="radio"] {
+  accent-color: var(--interactive-accent);
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.emily-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-option-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-normal);
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-option-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Dropdown & Direction Row */
+.emily-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emily-field-label {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.emily-direction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.emily-direction-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  user-select: none;
+  padding: 0 2px;
+}
+
+.emily-select-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.emily-select-box select,
+select.emily-select-input {
+  background-color: var(--background-secondary);
+  color: var(--text-normal);
+  border: 1px solid var(--interactive-border, var(--divider-color));
+  border-radius: var(--radius-s, 4px);
+  padding: 6px 8px;
+  font-family: var(--font-interface);
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  accent-color: var(--interactive-accent);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emily-select-box select:hover {
+  border-color: var(--interactive-accent);
+}
+
+.emily-select-box select:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.emily-select-box select option {
+  background-color: var(--background-secondary-alt, var(--background-secondary));
+  color: var(--text-normal);
+  padding: 6px 8px;
+}
+
+.emily-select-box select option:checked,
+.emily-select-box select option:hover {
+  background-color: var(--interactive-accent) !important;
+  color: var(--text-on-accent, #ffffff) !important;
+}
+
+/* Prompt Textarea & Header */
+.emily-textarea-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+
+.emily-prompt-target-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: var(--background-secondary-alt);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  font-size: 11.5px;
+  color: var(--text-normal);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  min-width: 0;
+  width: 100%;
+}
+
+.emily-prompt-target-file:hover {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-prompt-target-file.is-locked {
+  border-color: var(--interactive-accent);
+  background-color: var(--background-primary);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.emily-prompt-file-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--interactive-accent);
+  flex-shrink: 0;
+}
+
+.emily-prompt-file-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.emily-prompt-file-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--text-normal);
+}
+
+.emily-prompt-file-name.is-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.emily-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px 10px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--interactive-border, var(--divider-color));
+  border-radius: var(--radius-s, 4px);
+  color: var(--text-normal);
+  font-size: 12px;
+  font-family: var(--font-interface);
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emily-textarea:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+/* Error Banner with Context/Chunk Limit Warning */
+.emily-error-banner {
+  background-color: rgba(224, 82, 82, 0.1);
+  border: 1px solid var(--color-red, #e05252);
+  border-radius: var(--radius-s, 4px);
+  padding: 8px 10px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emily-error-title {
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--color-red, #e05252);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emily-error-desc {
+  font-size: 11px;
+  color: var(--text-normal);
+  line-height: 1.4;
+}
+
+.emily-error-raw {
+  font-size: 10.5px;
+  font-family: var(--font-monospace);
+  color: var(--text-muted);
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  border-radius: 3px;
+  padding: 4px 6px;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+/* Apply & Action Buttons */
+.emily-btn-primary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
+  border: none;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.emily-btn-primary.emily-retry-btn {
+  justify-content: center;
+}
+
+.emily-btn-spacer {
+  flex: 1;
+  min-width: 0;
+}
+
+.emily-btn-center-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.emily-btn-main-label {
+  font-weight: 600;
+  color: inherit;
+}
+
+.emily-btn-shortcut-hint {
+  font-size: 11.5px;
+  font-weight: 400;
+  opacity: 0.7;
+  color: inherit;
+  white-space: nowrap;
+}
+
+.emily-btn-char-counter {
+  flex: 1;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 400;
+  font-family: var(--font-monospace, monospace);
+  opacity: 0.7;
+  color: inherit;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* Responsive Start Task button:
+   When sidebar width is narrow (< 380px), show ONLY 'Start Task' / '작업 시작하기'.
+   Hide spacer, Ctrl+Enter hint, and char counter, keeping the main label cleanly centered. */
+.is-narrow-sidebar .emily-btn-primary:not(.emily-retry-btn),
+.is-compact-sidebar .emily-btn-primary:not(.emily-retry-btn) {
+  justify-content: center !important;
+}
+
+.is-narrow-sidebar .emily-btn-primary .emily-btn-spacer,
+.is-narrow-sidebar .emily-btn-primary .emily-btn-shortcut-hint,
+.is-narrow-sidebar .emily-btn-primary .emily-btn-char-counter,
+.is-compact-sidebar .emily-btn-primary .emily-btn-spacer,
+.is-compact-sidebar .emily-btn-primary .emily-btn-shortcut-hint,
+.is-compact-sidebar .emily-btn-primary .emily-btn-char-counter {
+  display: none !important;
+}
+
+@container emily-sidebar (max-width: 380px) {
+  .emily-btn-primary:not(.emily-retry-btn) {
+    justify-content: center !important;
+  }
+  .emily-btn-primary .emily-btn-spacer,
+  .emily-btn-primary .emily-btn-shortcut-hint,
+  .emily-btn-primary .emily-btn-char-counter {
+    display: none !important;
+  }
+}
+
+.emily-btn-primary:hover:not(:disabled) {
+  background-color: var(--interactive-accent-hover);
+}
+
+.emily-btn-primary:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.emily-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Executing State for Active Form Container (Lock all options during pipeline execution) */
+.emily-active-form-container.is-form-executing .emily-accordion-section,
+.emily-active-form-container.is-form-executing .emily-textarea-wrap,
+.emily-active-form-container.is-form-executing .emily-btn-primary:not(.emily-retry-btn) {
+  opacity: 0.55;
+  pointer-events: none;
+  cursor: not-allowed;
+  user-select: none;
+  filter: grayscale(0.25);
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}
+
+.emily-active-form-container.is-form-executing .emily-accordion-header {
+  cursor: not-allowed;
+}
+
+/* Ensure Live Status Box and Error Actions remain fully interactive and clearly visible */
+.emily-active-form-container.is-form-executing .emily-status-box,
+.emily-active-form-container.is-form-executing .emily-error-banner,
+.emily-active-form-container.is-form-executing .emily-error-actions,
+.emily-active-form-container.is-form-executing .emily-error-actions button {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  cursor: default !important;
+  filter: none !important;
+}
+
+.emily-active-form-container.is-form-executing .emily-error-actions button {
+  cursor: pointer !important;
+}
+
+.emily-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--background-secondary-alt);
+  color: var(--text-normal);
+  border: 1px solid var(--divider-color);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emily-btn-secondary:hover {
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent);
+}
+
+.emily-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--background-secondary-alt);
+  color: var(--text-error, var(--color-red, #e05252));
+  border: 1px solid var(--divider-color);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emily-btn-danger:hover {
+  background-color: rgba(224, 82, 82, 0.12);
+  border-color: var(--text-error, var(--color-red, #e05252));
+  color: var(--text-error, var(--color-red, #e05252));
+}
+
+/* Verbose Status & Stream Log Box */
+.emily-status-box {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+}
+
+.emily-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+/* ==========================================================================
+   Status Badge & Dynamic Processing Animation Components
+   ========================================================================== */
+.emily-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  background-color: var(--background-modifier-form-field, rgba(255, 255, 255, 0.05));
+  color: var(--text-muted);
+  border: 1px solid var(--divider-color);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.emily-badge.is-active {
+  background: linear-gradient(135deg, rgba(123, 108, 217, 0.2), rgba(123, 108, 217, 0.08));
+  color: var(--interactive-accent, #7b6cd9);
+  border-color: var(--interactive-accent, #7b6cd9);
+  box-shadow: 0 0 10px rgba(123, 108, 217, 0.4);
+  animation: emily-badge-glow 2s ease-in-out infinite;
+}
+
+.emily-badge.is-done,
+.emily-badge.is-success {
+  background-color: rgba(72, 165, 106, 0.15);
+  color: var(--color-green, #48a56a);
+  border-color: rgba(72, 165, 106, 0.4);
+}
+
+.emily-badge.is-error {
+  background-color: rgba(224, 82, 82, 0.15);
+  color: var(--color-red, #e05252);
+  border-color: rgba(224, 82, 82, 0.45);
+}
+
+.emily-badge.is-warning {
+  background-color: rgba(203, 118, 52, 0.15);
+  color: var(--color-orange, #cb7634);
+  border-color: rgba(203, 118, 52, 0.4);
+}
+
+/* Spinner inside Processing Badge */
+.emily-badge-spinner {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 1.8px solid var(--interactive-accent, #7b6cd9);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: emily-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Live Elapsed Timer in Badge */
+.emily-timer-text {
+  font-family: var(--font-monospace, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-normal);
+  background: rgba(0, 0, 0, 0.18);
+  padding: 1px 4.5px;
+  border-radius: 4px;
+  display: inline-block;
+  letter-spacing: 0;
+}
+
+/* Animated Jumping Ellipsis Dots */
+.emily-dots-anim {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.5px;
+  margin-left: -1px;
+}
+
+.emily-dots-anim span {
+  display: inline-block;
+  animation: emily-dot-jump 1.4s ease-in-out infinite;
+  font-weight: bold;
+}
+
+.emily-dots-anim span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.emily-dots-anim span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.emily-dots-anim span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes emily-dot-jump {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+    color: var(--interactive-accent, #7b6cd9);
+  }
+}
+
+@keyframes emily-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes emily-badge-glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(123, 108, 217, 0.25);
+    border-color: var(--interactive-accent, #7b6cd9);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(123, 108, 217, 0.65);
+    border-color: var(--interactive-accent-hover, #9284e8);
+  }
+}
+
+@keyframes emily-pulse-dot {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 3px var(--background-modifier-accent, rgba(123, 108, 217, 0.25));
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 0 0 6px var(--background-modifier-accent, rgba(123, 108, 217, 0.5));
+  }
+}
+
+/* ==========================================================================
+   Timeline Steps Component (Dot-Line UI)
+   ========================================================================== */
+.emily-timeline-steps {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding: 6px 0 2px 2px;
+}
+
+.emily-timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.emily-timeline-step:last-child {
+  padding-bottom: 0;
+}
+
+/* Vertical Connecting Line */
+.emily-timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  bottom: -2px;
+  left: 4px;
+  width: 2px;
+  background-color: var(--background-modifier-border, rgba(255, 255, 255, 0.1));
+  transition: background-color 0.25s ease;
+  z-index: 1;
+}
+
+.emily-timeline-step.is-done:not(:last-child)::after {
+  background-color: var(--interactive-accent, #7b6cd9);
+}
+
+/* Dot / Marker Node */
+.emily-timeline-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  flex-shrink: 0;
+  padding-top: 3px;
+  z-index: 2;
+}
+
+.emily-timeline-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--text-faint, #666);
+  background-color: var(--background-secondary, #262626);
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+/* Step Content Body */
+.emily-timeline-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.35;
+}
+
+.emily-timeline-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-faint);
+  transition: color 0.2s ease;
+}
+
+.emily-timeline-desc {
+  font-size: 11px;
+  color: var(--text-faint);
+  opacity: 0.8;
+  transition: color 0.2s ease;
+}
+
+/* --- Status States --- */
+
+/* 1. Pending / Disabled State (Default) */
+.emily-timeline-step.is-pending .emily-timeline-dot {
+  border-color: var(--text-faint);
+  background-color: transparent;
+  opacity: 0.45;
+}
+
+.emily-timeline-step.is-pending .emily-timeline-title {
+  color: var(--text-faint);
+  opacity: 0.55;
+}
+
+.emily-timeline-step.is-pending .emily-timeline-desc {
+  color: var(--text-faint);
+  opacity: 0.4;
+}
+
+/* 2. Active / In-Progress State */
+.emily-timeline-step.is-active .emily-timeline-dot {
+  border-color: var(--interactive-accent, #7b6cd9);
+  background-color: var(--background-primary);
+  box-shadow: 0 0 0 3px var(--background-modifier-accent, rgba(123, 108, 217, 0.25));
+  animation: emily-pulse-dot 1.5s ease-in-out infinite;
+}
+
+.emily-timeline-step.is-active .emily-timeline-title {
+  color: var(--interactive-accent, #7b6cd9);
+  font-weight: 600;
+}
+
+.emily-timeline-step.is-active .emily-timeline-desc {
+  color: var(--text-normal);
+  opacity: 0.95;
+}
+
+/* 3. Done / Completed State (Obsidian Accent Color) */
+.emily-timeline-step.is-done .emily-timeline-dot {
+  border-color: var(--interactive-accent, #7b6cd9);
+  background-color: var(--interactive-accent, #7b6cd9);
+  box-shadow: 0 0 0 2px var(--background-modifier-accent, rgba(123, 108, 217, 0.2));
+}
+
+.emily-timeline-step.is-done .emily-timeline-title {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.emily-timeline-step.is-done .emily-timeline-desc {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* 4. Warning / Cancelled State */
+.emily-timeline-step.is-warning .emily-timeline-dot {
+  border-color: var(--color-orange, #cb7634);
+  background-color: var(--color-orange, #cb7634);
+  box-shadow: 0 0 0 2px rgba(203, 118, 52, 0.2);
+}
+
+.emily-timeline-step.is-warning .emily-timeline-title {
+  color: var(--color-orange, #cb7634);
+  font-weight: 600;
+}
+
+.emily-timeline-step.is-warning .emily-timeline-desc {
+  color: var(--text-muted);
+}
+
+/* 5. Error / Failed State */
+.emily-timeline-step.is-error .emily-timeline-dot {
+  border-color: var(--color-red, #e05252);
+  background-color: var(--color-red, #e05252);
+  box-shadow: 0 0 0 2px rgba(224, 82, 82, 0.25);
+}
+
+.emily-timeline-step.is-error .emily-timeline-title {
+  color: var(--color-red, #e05252);
+  font-weight: 600;
+}
+
+.emily-timeline-step.is-error .emily-timeline-desc {
+  color: var(--text-muted);
+}
+
+/* Error Banner & Action Buttons */
+.emily-error-banner {
+  background-color: rgba(224, 82, 82, 0.08);
+  border: 1px solid rgba(224, 82, 82, 0.35);
+  border-radius: var(--radius-s, 4px);
+  padding: 8px 10px;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emily-error-title {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--color-red, #e05252);
+}
+
+.emily-error-desc {
+  font-size: 11px;
+  color: var(--text-normal);
+  line-height: 1.4;
+}
+
+.emily-error-raw {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  padding: 4px 6px;
+  border-radius: 3px;
+  word-break: break-all;
+  margin-top: 4px;
+  font-family: var(--font-monospace);
+}
+
+.emily-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.emily-retry-btn {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 11.5px;
+}
+
+.emily-cancel-btn {
+  flex: 1;
+  padding: 5px 10px;
+  font-size: 11.5px;
+}
+
+.emily-metadata-panel {
+  background-color: var(--background-primary);
+  border-radius: var(--radius-s, 4px);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text-muted);
+  font-size: 10.5px;
+}
+
+.emily-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Collapsible Telemetry / Metadata Panel */
+.emily-meta-collapsible {
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  overflow: hidden;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.emily-meta-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  cursor: pointer;
+  background-color: var(--background-primary);
+  user-select: none;
+  transition: background-color 0.15s ease;
+  color: var(--text-muted);
+}
+
+.emily-meta-summary:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.emily-meta-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emily-meta-chevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  color: var(--text-faint);
+}
+
+.emily-meta-collapsible.is-expanded .emily-meta-chevron {
+  transform: rotate(180deg);
+}
+
+.emily-meta-details {
+  display: none;
+  padding: 8px 10px;
+  border-top: 1px solid var(--divider-color);
+  background-color: var(--background-secondary);
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emily-meta-collapsible.is-expanded .emily-meta-details {
+  display: flex;
+}
+
+.emily-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+.emily-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  border-bottom: 1px dashed var(--divider-color);
+  padding-bottom: 2px;
+}
+
+.emily-meta-item-label {
+  color: var(--text-muted);
+}
+
+.emily-meta-item-val {
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-weight: 500;
+}
+
+.emily-meta-section-title {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--interactive-accent);
+  margin-top: 4px;
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   Sidebar Rolling Sessions & Internal Floating Navigator
+   ========================================================================== */
+.emily-sidebar-navigator {
+  position: absolute;
+  bottom: 16px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 50;
+  opacity: 0.9;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.emily-sidebar-navigator:hover {
+  opacity: 1;
+}
+
+.emily-sidebar-nav-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  color: var(--text-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.emily-sidebar-nav-btn:hover {
+  background-color: var(--background-secondary);
+  color: var(--emily-accent);
+  border-color: var(--emily-accent);
+  transform: scale(1.08);
+}
+
+.emily-sidebar-nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Rolling History Session Card */
+.emily-session-card {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--emily-border-radius);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.emily-session-card:hover {
+  border-color: var(--interactive-accent);
+}
+
+.emily-session-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--divider-color);
+  padding-bottom: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.emily-session-card-header:hover {
+  color: var(--interactive-accent);
+}
+
+.emily-session-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emily-session-header-chevron {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+  color: var(--text-muted);
+}
+
+.emily-session-card.is-collapsed {
+  padding-bottom: 8px;
+}
+
+.emily-session-card.is-collapsed .emily-session-card-header {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.emily-session-card.is-collapsed .emily-session-header-chevron {
+  transform: rotate(-90deg);
+}
+
+.emily-session-card.is-collapsed .emily-session-card-body {
+  display: none;
+}
+
+.emily-session-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emily-session-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.emily-session-time {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+}
+
+.emily-session-file-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background-color: var(--background-primary);
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--divider-color);
+  font-size: 11.5px;
+  min-width: 0;
+}
+
+.emily-session-file-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.emily-session-file-name {
+  font-weight: 600;
+  color: var(--text-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.emily-session-output-file {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: var(--background-secondary-alt);
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--interactive-accent);
+  color: var(--text-normal);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emily-session-output-file:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--interactive-accent);
+}
+
+.emily-session-output-file svg {
+  color: var(--interactive-accent);
+}
+
+.emily-session-options-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  background-color: var(--background-primary);
+  padding: 6px 8px;
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--divider-color);
+}
+
+.emily-session-options-summary .emily-meta-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.emily-option-tag-title {
+  color: var(--text-muted);
+  font-size: 11px;
+  min-width: 32px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+
+.emily-option-tags {
+  color: var(--text-normal);
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 1.4;
+  word-break: break-word;
+  flex: 1;
+}
+
+.emily-session-prompt-box {
+  background-color: var(--background-primary);
+  border-radius: var(--radius-s, 4px);
+  padding: 6px 8px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-left: 2px solid var(--interactive-accent);
+  line-height: 1.4;
+}
+
+/* Session Card - Proofread Detailed Items Breakdown */
+.emily-session-details-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--background-primary);
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--divider-color);
+  padding: 8px 10px;
+}
+
+.emily-session-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--divider-color);
+}
+
+.emily-session-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.emily-session-diff-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  padding: 6px 8px;
+  font-size: 11.5px;
+}
+
+.emily-session-diff-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.emily-session-diff-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: var(--background-secondary-alt);
+  color: var(--interactive-accent);
+  border: 1px solid var(--divider-color);
+}
+
+.emily-session-diff-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.emily-session-diff-del {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  background-color: rgba(239, 68, 68, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.emily-session-diff-arrow {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.emily-session-diff-ins {
+  color: var(--text-normal);
+  font-weight: 600;
+  background-color: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.emily-session-diff-ins:hover {
+  background-color: rgba(34, 197, 94, 0.3);
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+  transform: translateY(-1px);
+}
+
+.emily-session-diff-ins.is-non-interactive {
+  cursor: default;
+}
+
+.emily-session-diff-ins.is-non-interactive:hover {
+  background-color: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: none;
+  transform: none;
+}
+
+.emily-session-diff-explanation {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
+.emily-rolling-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.emily-rolling-divider::before,
+.emily-rolling-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--divider-color);
+}
+
+/* ==========================================================================
+   Proofreading Diff Modal
+   ========================================================================== */
+.emily-diff-modal-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 75vh;
+}
+
+.emily-diff-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-m, 6px);
+  font-size: 13px;
+}
+
+.emily-diff-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  max-height: 50vh;
+  padding-right: 4px;
+}
+
+.emily-diff-card {
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-m, 6px);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emily-diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.emily-diff-content {
+  font-family: var(--font-interface);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.emily-diff-original {
+  color: var(--emily-error);
+  text-decoration: line-through;
+  background-color: rgba(224, 82, 82, 0.1);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.emily-diff-replacement {
+  color: var(--emily-success);
+  font-weight: 500;
+  background-color: rgba(72, 165, 106, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+}
+
+.emily-diff-explanation {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  border-left: 2px solid var(--emily-accent);
+  padding-left: 8px;
+  margin-top: 2px;
+}
+
+.emily-diff-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider-color);
+}
+
+/* Modal Backdrop Click Shake Animation & Accidental Dismissal Protection */
+@keyframes emily-modal-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-7px);
+  }
+  40%, 80% {
+    transform: translateX(7px);
+  }
+}
+
+.emily-modal-shake {
+  animation: emily-modal-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Reopen Diff Modal Button in Session Card */
+.emily-reopen-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--interactive-accent, #7b6cd9);
+  color: var(--text-on-accent, #ffffff);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.emily-reopen-modal-btn:hover {
+  background-color: var(--interactive-accent-hover, #6857cb);
+  box-shadow: 0 0 8px rgba(123, 108, 217, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   Callout Styles (Native Injected)
+   ========================================================================== */
+.callout[data-callout="emily-suggestion"] {
+  --callout-color: 123, 108, 217;
+}
+
+.callout[data-callout="emily-consistency"] {
+  --callout-color: 203, 118, 52;
+}
+
+/* Animations */
+@keyframes emily-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes emily-pulse-dot {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(123, 108, 217, 0.5);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 5px rgba(123, 108, 217, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(123, 108, 217, 0);
+  }
+}
+
+/* ==========================================================================
+   Translation Side-by-Side Diff / Review Modal
+   ========================================================================== */
+.modal.emily-translation-diff-modal-window {
+  width: 94vw !important;
+  max-width: 1400px !important;
+  height: 90vh !important;
+  max-height: 920px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  border-radius: var(--modal-radius, 8px) !important;
+  box-shadow: var(--shadow-l, 0 10px 30px rgba(0,0,0,0.35)) !important;
+}
+
+.emily-translation-diff-modal-window .modal-content {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important; /* CRITICAL: No modal-level scrollbar! */
+  padding: 16px 20px !important;
+  box-sizing: border-box !important;
+}
+
+.emily-translation-modal-header {
+  flex-shrink: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--divider-color);
+  padding-bottom: 10px;
+}
+
+.emily-translation-modal-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.emily-translation-modal-title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.emily-translation-modal-title-left h2 {
+  margin: 0;
+  font-size: 18px;
+  color: var(--text-normal);
+}
+
+.emily-translation-view-toggle-group {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  padding: 2px;
+  gap: 2px;
+}
+
+.emily-translation-view-toggle-btn {
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-s, 3px);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.emily-translation-view-toggle-btn:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-translation-view-toggle-btn.is-active {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
+  font-weight: 600;
+}
+
+.emily-translation-modal-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Central Diff Comparison Body */
+.emily-translation-diff-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-m, 6px);
+}
+
+/* 1. Aligned Row Grid View */
+.emily-diff-rows-header-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 8px 16px;
+  background-color: var(--background-primary);
+  border-bottom: 1px solid var(--divider-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.emily-diff-rows-header-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emily-diff-rows-scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emily-diff-row-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch; /* CRITICAL: Both sides stretch to identical height! */
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 5px);
+  padding: 6px;
+  transition: border-color 0.15s ease;
+}
+
+.emily-diff-row-card:hover {
+  border-color: var(--interactive-accent);
+}
+
+.emily-diff-row-card.is-heading {
+  background-color: var(--background-primary-alt, var(--background-secondary));
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.emily-diff-cell {
+  display: flex;
+  flex-direction: column;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+.emily-diff-cell.left {
+  padding: 8px 10px;
+  font-family: var(--font-monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-normal);
+  user-select: text;
+  background-color: var(--background-secondary);
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid transparent;
+}
+
+.emily-diff-cell.right {
+  position: relative;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--background-primary);
+  border: 1px solid var(--divider-color);
+  box-sizing: border-box;
+}
+
+.emily-diff-cell.right:focus-within {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.emily-diff-cell-editor {
+  flex: 1;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  font-family: var(--font-monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-normal);
+  resize: none;
+  outline: none;
+  box-shadow: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.emily-diff-cell.is-empty {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--background-secondary),
+    var(--background-secondary) 8px,
+    var(--background-primary) 8px,
+    var(--background-primary) 16px
+  );
+  opacity: 0.55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding: 8px;
+  user-select: none;
+}
+
+/* 2. Full Dual Textarea View */
+.emily-translation-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.emily-translation-col {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-m, 6px);
+  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+}
+
+.emily-translation-col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--background-primary);
+  border-bottom: 1px solid var(--divider-color);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.emily-translation-view-pre {
+  margin: 0;
+  padding: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  font-family: var(--font-monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: transparent;
+  color: var(--text-normal);
+  user-select: text;
+}
+
+.emily-translation-edit-textarea {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px;
+  background-color: var(--background-primary);
+  border: none;
+  font-family: var(--font-monospace);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-normal);
+  resize: none;
+  outline: none;
+  box-shadow: none;
+  overflow-y: auto;
+}
+
+.emily-translation-edit-textarea:focus {
+  background-color: var(--background-primary-alt, var(--background-primary));
+}
+
+/* Footer is pinned at bottom */
+.emily-translation-modal-footer {
+  flex-shrink: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--divider-color);
+  gap: 12px;
+  background-color: var(--background-primary);
+}
+
+.emily-translation-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.emily-translation-footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 320px;
+}
+
+.emily-translation-save-new-btn {
+  width: 100% !important;
+  justify-content: center !important;
+  padding: 6px 12px !important;
+  font-size: 12px !important;
+  box-sizing: border-box !important;
+}
+
+.emily-translation-footer-subrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.emily-translation-footer-subrow .emily-translation-append-btn,
+.emily-translation-footer-subrow .emily-translation-overwrite-btn {
+  flex: 1 1 0 !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  padding: 5px 8px !important;
+  font-size: 11.5px !important;
+  box-sizing: border-box !important;
+}
+
+.emily-translation-footer-subrow .emily-translation-close-btn {
+  flex: 0 0 auto !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  padding: 5px 14px !important;
+  font-size: 11.5px !important;
+  box-sizing: border-box !important;
+}
+
+
