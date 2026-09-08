@@ -1,6 +1,6 @@
 {
   "name": "assistant-emily",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Intelligent Markdown proofreading and translation specialized plugin for Obsidian",
   "main": "main.js",
   "scripts": {
@@ -19,7 +19,7 @@
     "ai-assistant",
     "markdown"
   ],
-  "author": "SUNGWON.PARK@GMAIL.COM",
+  "author": "SUNGWON PARK",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.0",
