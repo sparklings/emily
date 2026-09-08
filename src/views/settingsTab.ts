@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, Notice, setIcon } from 'obsidian';
+import { App, PluginSettingTab, Setting, Notice, setIcon, SettingDefinitionItem } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { getTranslation, getObsidianLanguage, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
 import { getSystemContext } from '../utils/systemInfo';
@@ -17,10 +17,20 @@ export class EmilySettingTab extends PluginSettingTab {
   }
 
   /**
+   * Declarative setting definitions for Obsidian 1.13+ settings search compatibility.
+   */
+  getSettingDefinitions(): SettingDefinitionItem[] {
+    return [];
+  }
+
+  /**
    * 설정 탭 화면 요소를 렌더링하고 사용자 입력 이벤트를 바인딩합니다.
    */
   display(): void {
-    const { containerEl } = this;
+    this.renderSettings(this.containerEl);
+  }
+
+  private renderSettings(containerEl: HTMLElement): void {
     containerEl.empty();
     const t = getTranslation(this.plugin.settings.language);
 
@@ -43,7 +53,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onChange(async (val: string) => {
             this.plugin.settings.language = val as 'auto' | 'en' | 'ko';
             await this.plugin.saveSettings();
-            this.display();
+            this.renderSettings(containerEl);
             this.plugin.syncSidebarSettings();
             this.plugin.refreshFloatingControls();
           });
@@ -68,7 +78,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.apiBaseUrl = 'https://api.openai.com/v1';
             await this.plugin.saveSettings();
-            this.display();
+            this.renderSettings(containerEl);
           });
       });
 
@@ -110,7 +120,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.apiKey = '';
             await this.plugin.saveSettings();
-            this.display();
+            this.renderSettings(containerEl);
           });
       });
 
@@ -133,7 +143,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.modelName = 'auto';
             await this.plugin.saveSettings();
-            this.display();
+            this.renderSettings(containerEl);
           });
       });
 

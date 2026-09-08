@@ -1009,8 +1009,8 @@ export class EmilySidebarView extends ItemView {
     };
 
     const step1 = createStepNode('step-1', t.sidebar.pipelineParsing, t.sidebar.pipelineParsingDesc, 'is-active');
-    const step2 = createStepNode('step-2', initialStep2Title, t.sidebar.pipelinePending, 'is-pending');
-    const step3 = createStepNode('step-3', t.sidebar.pipelineSync, t.sidebar.pipelinePending, 'is-pending');
+    createStepNode('step-2', initialStep2Title, t.sidebar.pipelinePending, 'is-pending');
+    createStepNode('step-3', t.sidebar.pipelineSync, t.sidebar.pipelinePending, 'is-pending');
 
     timerInterval = window.setInterval(() => {
       if (timerTextEl) {
