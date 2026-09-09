@@ -490,7 +490,7 @@ export class TranslationDiffModal extends Modal {
     // Token extractor for matching shared proper nouns, code identifiers, URLs, etc.
     function extractTokens(text: string): Set<string> {
       const tokens = new Set<string>();
-      const matches = text.toLowerCase().match(/[a-z0-9_\-\.\:\/]{3,}/g) || [];
+      const matches = text.toLowerCase().match(/[a-z0-9_.:/-]{3,}/g) || [];
       for (const token of matches) tokens.add(token);
       return tokens;
     }
