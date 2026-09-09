@@ -62,6 +62,11 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
+    // =========================================================================
+    // Section 1: AI 서비스 프로바이더 (AI Service Providers)
+    // =========================================================================
+    new Setting(containerEl).setName(t.settings.providerSectionHeading).setDesc(t.settings.providerSectionDesc).setHeading();
+
     // AI 서비스 프로바이더 설정 (Tab 네비게이션)
     this.renderProviderTabs(containerEl, t);
 
@@ -504,7 +509,9 @@ export class EmilySettingTab extends PluginSettingTab {
 
   private renderProvider1Content(containerEl: HTMLElement, t: TranslationStrings): void {
     containerEl.empty();
-    new Setting(containerEl).setName(t.settings.provider1Heading).setDesc(t.settings.provider1Desc).setHeading();
+    const infoBanner = containerEl.createDiv({ cls: 'emily-tab-info-banner' });
+    infoBanner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
+    infoBanner.createSpan({ cls: 'emily-tab-info-text', text: t.settings.provider1Desc });
 
     new Setting(containerEl)
       .setName(t.settings.apiBaseUrlTitle)
@@ -631,10 +638,12 @@ export class EmilySettingTab extends PluginSettingTab {
 
   private renderProvider2Content(containerEl: HTMLElement, t: TranslationStrings): void {
     containerEl.empty();
-    new Setting(containerEl).setName(t.settings.provider2Heading).setDesc(t.settings.provider2Desc).setHeading();
+    const infoBanner = containerEl.createDiv({ cls: 'emily-tab-info-banner' });
+    infoBanner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
+    infoBanner.createSpan({ cls: 'emily-tab-info-text', text: t.settings.provider2Desc });
 
     new Setting(containerEl)
-      .setName(t.settings.secondaryApiBaseUrlTitle)
+      .setName(t.settings.apiBaseUrlTitle)
       .setDesc(t.settings.secondaryApiBaseUrlDesc)
       .addText((text) =>
         text
@@ -658,8 +667,8 @@ export class EmilySettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName(t.settings.secondaryApiKeyTitle)
-      .setDesc(t.settings.secondaryApiKeyDesc)
+      .setName(t.settings.apiKeyTitle)
+      .setDesc(t.settings.apiKeyDesc)
       .addText((text) => {
         text.inputEl.type = 'password';
         text
@@ -699,8 +708,8 @@ export class EmilySettingTab extends PluginSettingTab {
       });
 
     new Setting(containerEl)
-      .setName(t.settings.secondaryModelTitle)
-      .setDesc(t.settings.secondaryModelDesc)
+      .setName(t.settings.modelTitle)
+      .setDesc(t.settings.modelDesc)
       .addText((text) =>
         text
           .setPlaceholder(t.settings.modelPlaceholder)

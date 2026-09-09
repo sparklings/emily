@@ -1,7 +1,7 @@
 {
   "id": "assistant-emily",
   "name": "Assistant Emily",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "minAppVersion": "1.7.2",
   "description": "Intelligent Markdown proofreading and translation specialized plugin with OpenAI-compatible LLM proxy support.",
   "author": "SUNGWON PARK",

@@ -2603,4 +2603,29 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   }
 }
 
+.emily-tab-info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  margin: 6px 0 14px 0;
+  border-radius: var(--radius-m, 6px);
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.emily-tab-info-banner .emily-tab-info-icon {
+  font-size: 14px;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.emily-tab-info-banner .emily-tab-info-text {
+  flex: 1;
+}
+
+
 

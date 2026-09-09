@@ -3048,15 +3048,34 @@ Large language models provide powerful reasoning capabilities for diverse downst
 
   let renderCount1 = 0;
   let renderCount2 = 0;
+  let currentTabMenuNames = [];
 
   const renderActiveContent41 = () => {
     tabContentEl41.empty();
     if (selectedTab41 === 'secondary') {
       renderCount2++;
-      tabContentEl41.createDiv({ cls: 'setting-item-heading', text: '프로바이더 2 설정' });
+      const banner = tabContentEl41.createDiv({ cls: 'emily-tab-info-banner' });
+      banner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
+      banner.createSpan({ cls: 'emily-tab-info-text', text: '보조 엔드포인트 설명' });
+
+      // Render the 4 settings in tab 2
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 기본 URL' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 키' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '모델 이름' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '연결 테스트' });
+      currentTabMenuNames = ['API 기본 URL', 'API 키', '모델 이름', '연결 테스트'];
     } else {
       renderCount1++;
-      tabContentEl41.createDiv({ cls: 'setting-item-heading', text: '프로바이더 1 설정' });
+      const banner = tabContentEl41.createDiv({ cls: 'emily-tab-info-banner' });
+      banner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
+      banner.createSpan({ cls: 'emily-tab-info-text', text: '기본 엔드포인트 설명' });
+
+      // Render the 4 settings in tab 1
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 기본 URL' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 키' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '모델 이름' });
+      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '연결 테스트' });
+      currentTabMenuNames = ['API 기본 URL', 'API 키', '모델 이름', '연결 테스트'];
     }
   };
 
@@ -3096,8 +3115,9 @@ Large language models provide powerful reasoning capabilities for diverse downst
     }
   });
 
-  // Initial render
+  // Initial render (Tab 1)
   renderActiveContent41();
+  const tab1Menus = [...currentTabMenuNames];
 
   // 1) Test initial tab state
   const tc41_1 = selectedTab41 === 'primary' &&
@@ -3122,8 +3142,12 @@ Large language models provide powerful reasoning capabilities for diverse downst
   const tc41_2 = tc41_2_initialHidden && tc41_2_shown && tc41_2_hiddenAgain;
   console.log(`  - 2) 프로바이더 2 설정 여부에 따른 인디케이터 점등/숨김(dot badge) 동적 반응: ${tc41_2}`);
 
-  // 3) Test tab click switching
+  // 3) Test tab click switching and 100% menu name consistency
   btn2_41.click();
+  const tab2Menus = [...currentTabMenuNames];
+  const menusAreIdentical = JSON.stringify(tab1Menus) === JSON.stringify(tab2Menus);
+  const noProvider2PrefixInMenus = tab2Menus.every(name => !name.includes('프로바이더 2'));
+
   const tc41_3 = selectedTab41 === 'secondary' &&
                  !btn1_41.classList.contains('is-active') &&
                  btn1_41.getAttribute('aria-selected') === 'false' &&
@@ -3132,8 +3156,10 @@ Large language models provide powerful reasoning capabilities for diverse downst
                  btn2_41.getAttribute('aria-selected') === 'true' &&
                  btn2_41.getAttribute('tabindex') === '0' &&
                  renderCount2 === 1 &&
-                 tabContentEl41.children[0].textContent === '프로바이더 2 설정';
-  console.log(`  - 3) 프로바이더 2 탭 클릭 시 독립 패널 전환 및 DOM 국소 갱신(전체 탭 리렌더링 배제): ${tc41_3}`);
+                 menusAreIdentical &&
+                 noProvider2PrefixInMenus &&
+                 tabContentEl41.children[0].classList.contains('emily-tab-info-banner');
+  console.log(`  - 3) 탭 1과 탭 2 메뉴명 100% 일원화([API 기본 URL, API 키, 모델 이름, 연결 테스트]) 및 정보 배너 검증: ${tc41_3}`);
 
   // 4) Test keyboard navigation (ArrowLeft / ArrowRight)
   btn1_41.blur();

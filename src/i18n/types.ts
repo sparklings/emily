@@ -49,6 +49,8 @@ export interface TranslationStrings {
     sayHelloFailed: string;
     sayHelloNoticeSuccess: string;
     sayHelloNoticeFailed: string;
+    providerSectionHeading: string;
+    providerSectionDesc: string;
     providerTab1: string;
     providerTab2: string;
     providerConfiguredBadge: string;
