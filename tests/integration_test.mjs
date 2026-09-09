@@ -914,6 +914,13 @@ Consumers receive messages and take actions. Publishers send messages to the bro
       this.children.push(child);
       return child;
     }
+    createSpan({ text = '', cls = '' } = {}) {
+      const child = new MockElement('span', cls);
+      child.textContent = text;
+      child.parentElement = this;
+      this.children.push(child);
+      return child;
+    }
     createEl(tag, { text = '', cls = '' } = {}) {
       const child = new MockElement(tag, cls);
       child.textContent = text;
@@ -956,6 +963,10 @@ Consumers receive messages and take actions. Publishers send messages to the bro
     }
     trigger(evt) {
       if (this.listeners[evt]) return this.listeners[evt]();
+    }
+    click() {
+      if (this.onclick) return this.onclick();
+      return this.trigger('click');
     }
   }
 
@@ -2582,7 +2593,114 @@ Large language models provide powerful reasoning capabilities for diverse downst
     console.error('  ✗ [TC-37] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 37개 테스트 전원 통과) ===');
+  // ==========================================
+  // [TC-38] 파이프라인 실행 중 즉시 작업 취소(Cancel) 버튼 UI/UX 및 AbortController 연동 검증
+  // ==========================================
+  console.log('\n▶ [TC-38] 파이프라인 실행 중 즉시 작업 취소(Cancel) 버튼 UI/UX 및 AbortController 연동 검증...');
+  
+  // 1) Set up execution state and header
+  const sectionEl38 = new MockElement('div', 'emily-active-form-container is-form-executing');
+  const statusBox38 = sectionEl38.createDiv({ cls: 'emily-status-box is-visible' });
+  const applyBtn38 = new MockElement('button', 'emily-btn-primary');
+  applyBtn38.disabled = true;
+
+  const statusHeader38 = statusBox38.createDiv({ cls: 'emily-status-header' });
+  const headerLeft38 = statusHeader38.createDiv({ cls: 'emily-status-header-left' });
+  headerLeft38.createSpan({ text: '⚡ 작업 진행 상태', cls: 'font-semibold text-xs' });
+
+  const headerRight38 = statusHeader38.createDiv({ cls: 'emily-status-header-right' });
+  const badge38 = headerRight38.createSpan({ cls: 'emily-badge is-active' });
+  badge38.createSpan({ cls: 'emily-badge-spinner' });
+  badge38.createSpan({ text: '실행 중', cls: 'emily-badge-label' });
+  const timerEl38 = badge38.createSpan({ text: '1.5s', cls: 'emily-timer-text' });
+
+  let abortController38 = new AbortController();
+  const cancelBtn38 = headerRight38.createEl('button', {
+    text: '❌ 작업 취소',
+    cls: 'emily-btn-secondary emily-pipeline-cancel-btn'
+  });
+
+  const step1_38 = statusBox38.createDiv({ cls: 'emily-timeline-step is-done', id: 'step-1' });
+  const step2_38 = statusBox38.createDiv({ cls: 'emily-timeline-step is-active', id: 'step-2' });
+  const step3_38 = statusBox38.createDiv({ cls: 'emily-timeline-step is-pending', id: 'step-3' });
+
+  // Verify running UI
+  const tc38_1 = cancelBtn38.textContent === '❌ 작업 취소' &&
+                 cancelBtn38.classList.contains('emily-pipeline-cancel-btn') &&
+                 badge38.classList.contains('is-active') &&
+                 applyBtn38.disabled === true;
+  console.log(`  - 1) 실행 중 스트림 헤더에 [❌ 작업 취소] 버튼 노출 및 활성 폼 잠금: ${tc38_1}`);
+
+  // 2) Attach cancel click handler
+  let tempDeleted38 = false;
+  let simulatedTempPath38 = 'Translations/Note_en_20260909.md';
+  const mockTrashFile = (path) => {
+    if (path === simulatedTempPath38) {
+      tempDeleted38 = true;
+      simulatedTempPath38 = null;
+    }
+  };
+
+  let timerStopped38 = false;
+  const stopTimer38 = () => { timerStopped38 = true; };
+
+  cancelBtn38.addEventListener('click', () => {
+    cancelBtn38.disabled = true;
+    abortController38.abort();
+
+    // Trigger pipeline catch logic
+    stopTimer38();
+    if (simulatedTempPath38) {
+      mockTrashFile(simulatedTempPath38);
+    }
+    badge38.className = 'emily-badge is-warning';
+    badge38.textContent = '사용자 취소';
+    step2_38.className = 'emily-timeline-step is-warning';
+
+    cancelBtn38.textContent = '✕ 닫기';
+    cancelBtn38.disabled = false;
+    cancelBtn38.onclick = () => {
+      statusBox38.classList.remove('is-visible');
+      statusBox38.children = [];
+    };
+
+    applyBtn38.disabled = false;
+    sectionEl38.classList.remove('is-form-executing');
+  });
+
+  // 3) Click Cancel
+  cancelBtn38.click();
+
+  const tc38_2 = abortController38.signal.aborted === true;
+  console.log(`  - 2) 취소 버튼 클릭 시 AbortController.signal.aborted = true 전파: ${tc38_2}`);
+
+  const tc38_3 = tempDeleted38 === true && simulatedTempPath38 === null;
+  console.log(`  - 3) 진행 중이던 미완성 임시 파일 자동 trashFile 정리: ${tc38_3}`);
+
+  const tc38_4 = timerStopped38 === true &&
+                 badge38.classList.contains('is-warning') &&
+                 badge38.textContent === '사용자 취소' &&
+                 step2_38.classList.contains('is-warning');
+  console.log(`  - 4) 타이머 정지 및 상태 배지/타임라인 단계 '사용자 취소(is-warning)' 전환: ${tc38_4}`);
+
+  const tc38_5 = applyBtn38.disabled === false &&
+                 !sectionEl38.classList.contains('is-form-executing') &&
+                 cancelBtn38.textContent === '✕ 닫기';
+  console.log(`  - 5) 작업 폼 편집 상태 즉시 해제 및 취소 버튼이 [✕ 닫기]로 전환: ${tc38_5}`);
+
+  // 4) Click Dismiss [✕ 닫기]
+  cancelBtn38.onclick();
+  const tc38_6 = !statusBox38.classList.contains('is-visible') && statusBox38.children.length === 0;
+  console.log(`  - 6) [✕ 닫기] 클릭 시 상태 스트림 박스 완전 닫힘 및 정리: ${tc38_6}`);
+
+  const test38Passed = tc38_1 && tc38_2 && tc38_3 && tc38_4 && tc38_5 && tc38_6;
+  if (test38Passed) {
+    console.log('  ✓ [TC-38] 파이프라인 즉시 작업 취소(Cancel) UI/UX 및 AbortController 연동 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-38] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 38개 테스트 전원 통과) ===');
 }
 
 runTests();

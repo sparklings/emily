@@ -44,8 +44,15 @@ export class TranslationEngine {
     markdownContent: string,
     options: TranslationOptions,
     customInstruction?: string,
-    onProgress?: (current: number, total: number) => void
+    onProgress?: (current: number, total: number) => void,
+    signal?: AbortSignal
   ): Promise<{ result: TranslationResult; totalTimeMs: number; tokensPerSec?: number; model: string; usage?: LLMUsage; id?: string; finish_reason?: string; system_fingerprint?: string; created?: number }> {
+    if (signal?.aborted) {
+      const abortError = new Error('Task was cancelled by the user.');
+      abortError.name = 'AbortError';
+      throw abortError;
+    }
+
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(markdownContent, this.CHUNK_SIZE_THRESHOLD);
     const totalChunks = chunks.length;
@@ -59,6 +66,12 @@ export class TranslationEngine {
     let lastResponse: LLMResponse | null = null;
 
     for (let i = 0; i < totalChunks; i++) {
+      if (signal?.aborted) {
+        const abortError = new Error('Task was cancelled by the user.');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+
       if (onProgress) {
         onProgress(i + 1, totalChunks);
       }
@@ -81,7 +94,7 @@ export class TranslationEngine {
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        { temperature: 0.3 }
+        { temperature: 0.3, signal }
       );
 
       lastResponse = response;
@@ -111,6 +124,12 @@ export class TranslationEngine {
       );
 
       accumulatedTranslatedMarkdown += (accumulatedTranslatedMarkdown ? '\n\n' : '') + restoredChunk.trim();
+    }
+
+    if (signal?.aborted) {
+      const abortError = new Error('Task was cancelled by the user.');
+      abortError.name = 'AbortError';
+      throw abortError;
     }
 
     // 2. 동아시아 볼드 닫는 태그 뒤 조사 공백 자동 보정 (**단어**는 -> **단어** 는)

@@ -90,6 +90,7 @@ export class EmilySidebarView extends ItemView {
   private isExecuting: boolean = false;
   private lockedTargetFile: TFile | null = null;
   private lockedTargetView: MarkdownView | null = null;
+  private currentAbortController: AbortController | null = null;
   private resizeObserver: ResizeObserver | null = null;
 
   // UI Containers
@@ -965,6 +966,8 @@ export class EmilySidebarView extends ItemView {
     this.lockedTargetFile = activeFile;
     this.lockedTargetView = targetView;
     this.isExecuting = true;
+    this.currentAbortController = new AbortController();
+    const signal = this.currentAbortController.signal;
     this.setFormDisabledState(true);
     this.updateTargetDocument();
     applyBtn.disabled = true;
@@ -987,8 +990,11 @@ export class EmilySidebarView extends ItemView {
 
     statusBoxEl.empty();
     const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
-    statusHeader.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
-    const badgeSpan = statusHeader.createSpan({ cls: 'emily-badge is-active' });
+    const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
+    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+
+    const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
+    const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
     badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
     badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
     const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
@@ -996,6 +1002,19 @@ export class EmilySidebarView extends ItemView {
     dotsAnim.createSpan({ text: '.' });
     dotsAnim.createSpan({ text: '.' });
     dotsAnim.createSpan({ text: '.' });
+
+    const cancelPipelineBtn = headerRight.createEl('button', {
+      text: t.sidebar.cancelBtn,
+      cls: 'emily-btn-secondary emily-pipeline-cancel-btn',
+      attr: { type: 'button', 'aria-label': t.sidebar.cancelBtn }
+    });
+    cancelPipelineBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelPipelineBtn.disabled = true;
+      if (this.currentAbortController) {
+        this.currentAbortController.abort();
+      }
+    });
 
     const timelineContainer = statusBoxEl.createDiv({ cls: 'emily-timeline-steps' });
     const createStepNode = (id: string, title: string, desc: string, status: 'is-active' | 'is-pending' = 'is-pending') => {
@@ -1020,6 +1039,12 @@ export class EmilySidebarView extends ItemView {
     }, 100);
 
     try {
+      if (signal.aborted) {
+        const abortError = new Error('Task was cancelled by the user.');
+        abortError.name = 'AbortError';
+        throw abortError;
+      }
+
       const detectedLang = detectDocumentLanguage(currentDoc, this.plugin.settings.language);
       const isAutoSrc = !this.translationOptions.sourceLanguage ||
         normalizeLanguageCode(this.translationOptions.sourceLanguage) === 'auto';
@@ -1094,7 +1119,8 @@ export class EmilySidebarView extends ItemView {
                 t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total))
               );
             }
-          }
+          },
+          signal
         );
 
         if (transResult.result.targetPath) {
@@ -1142,6 +1168,7 @@ export class EmilySidebarView extends ItemView {
         );
 
         stopPipelineTimer();
+        cancelPipelineBtn.remove();
         const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
         if (badgeEl) {
           badgeEl.className = 'emily-badge is-done';
@@ -1193,7 +1220,8 @@ export class EmilySidebarView extends ItemView {
         const proofResult = await proofreader.runProofreading(
           currentDoc,
           this.proofreadOptions,
-          promptText
+          promptText,
+          signal
         );
 
         this.updateTimelineStep(
@@ -1212,6 +1240,7 @@ export class EmilySidebarView extends ItemView {
           );
 
           stopPipelineTimer();
+          cancelPipelineBtn.remove();
           const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
           if (badgeEl) {
             badgeEl.className = 'emily-badge is-done';
@@ -1244,6 +1273,7 @@ export class EmilySidebarView extends ItemView {
           );
 
           stopPipelineTimer();
+          cancelPipelineBtn.remove();
           const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
           if (badgeEl) {
             badgeEl.className = 'emily-badge is-done';
@@ -1325,7 +1355,7 @@ export class EmilySidebarView extends ItemView {
         const response = await llmClient.chatCompletion([
           { role: 'system', content: promptPayload.system },
           { role: 'user', content: promptPayload.user }
-        ]);
+        ], { signal });
 
         let editedDoc = response.content.trim();
         // Remove markdown block wrapper if LLM wrapped entire output in ```markdown ... ```
@@ -1361,6 +1391,7 @@ export class EmilySidebarView extends ItemView {
         );
 
         stopPipelineTimer();
+        cancelPipelineBtn.remove();
         const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
         if (badgeEl) {
           badgeEl.className = 'emily-badge is-done';
@@ -1386,8 +1417,61 @@ export class EmilySidebarView extends ItemView {
         });
       }
     } catch (err: unknown) {
-      console.error(err);
       stopPipelineTimer();
+      const isAbort = (err instanceof Error && err.name === 'AbortError') || Boolean(this.currentAbortController?.signal.aborted);
+      if (isAbort) {
+        if (this.lastCreatedTempPath) {
+          try {
+            const tempFile = this.app.vault.getAbstractFileByPath(this.lastCreatedTempPath);
+            if (tempFile instanceof TFile) {
+              await this.app.fileManager.trashFile(tempFile);
+            }
+          } catch (cleanErr) {
+            console.warn('Temporary file cleanup error:', cleanErr);
+          }
+          this.lastCreatedTempPath = null;
+        }
+
+        const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
+        if (badgeEl) {
+          badgeEl.className = 'emily-badge is-warning';
+          badgeEl.empty();
+          badgeEl.createSpan({ text: t.sidebar.pipelineCancelled });
+          const elapsed = ((Date.now() - pipelineStartTime) / 1000).toFixed(1);
+          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${elapsed}s` });
+        }
+
+        const activeStep = statusBoxEl.querySelector('.emily-timeline-step.is-active') as HTMLElement;
+        if (activeStep) {
+          this.updateTimelineStep(activeStep, 'warning', undefined, t.sidebar.pipelineCancelled);
+        }
+
+        if (cancelPipelineBtn) {
+          cancelPipelineBtn.textContent = `✕ ${t.common.close}`;
+          cancelPipelineBtn.disabled = false;
+          cancelPipelineBtn.onclick = (e) => {
+            e.stopPropagation();
+            statusBoxEl.removeClass('is-visible');
+            statusBoxEl.empty();
+          };
+        }
+
+        this.isExecuting = false;
+        this.currentAbortController = null;
+        this.setFormDisabledState(false);
+        applyBtn.disabled = false;
+        this.lockedTargetFile = null;
+        this.lockedTargetView = null;
+        this.updateTargetDocument();
+        new Notice(t.sidebar.cancelSuccess);
+        return;
+      }
+
+      if (cancelPipelineBtn) {
+        cancelPipelineBtn.remove();
+      }
+      this.currentAbortController = null;
+      console.error(err);
       const rawMsg = err instanceof Error ? err.message : String(err);
       const isContextOrSizeError = /context|chunk|memory|token|length|too large|413|rate_limit|exceeded|payload|overflow|maximum context/i.test(rawMsg);
 
@@ -1603,6 +1687,7 @@ export class EmilySidebarView extends ItemView {
 
     // Release execution lock and restore controls
     this.isExecuting = false;
+    this.currentAbortController = null;
     this.lockedTargetFile = null;
     this.lockedTargetView = null;
     this.setFormDisabledState(false);
@@ -2497,6 +2582,10 @@ export class EmilySidebarView extends ItemView {
   }
 
   async onClose() {
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;

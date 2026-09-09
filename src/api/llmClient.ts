@@ -1,4 +1,4 @@
-import { requestUrl } from 'obsidian';
+import { requestUrl, RequestUrlResponse } from 'obsidian';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -141,11 +141,18 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       temperature?: number;
       max_tokens?: number;
       response_format?: { type: string };
+      signal?: AbortSignal;
     }
   ): Promise<LLMResponse> {
     const startTime = Date.now();
     const model = options?.model || this.defaultModel || 'auto';
     const endpoint = `${this.baseUrl}/chat/completions`;
+
+    if (options?.signal?.aborted) {
+      const abortError = new Error('Task was cancelled by the user.');
+      abortError.name = 'AbortError';
+      throw abortError;
+    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
@@ -170,12 +177,34 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
     }
 
     try {
-      const response = await requestUrl({
+      let requestPromise: Promise<RequestUrlResponse> = requestUrl({
         url: endpoint,
         method: 'POST',
         headers,
         body: JSON.stringify(payload)
       });
+
+      if (options?.signal) {
+        const signal = options.signal;
+        requestPromise = Promise.race([
+          requestPromise,
+          new Promise<never>((_, reject) => {
+            const onAbort = () => {
+              signal.removeEventListener('abort', onAbort);
+              const abortError = new Error('Task was cancelled by the user.');
+              abortError.name = 'AbortError';
+              reject(abortError);
+            };
+            if (signal.aborted) {
+              onAbort();
+            } else {
+              signal.addEventListener('abort', onAbort, { once: true });
+            }
+          })
+        ]);
+      }
+
+      const response = await requestPromise;
 
       if (response.status >= 400) {
         throw new Error(`API returned HTTP ${response.status}: ${response.text}`);
@@ -209,6 +238,14 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
         rawResponse: data
       };
     } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw err;
+      }
+      if (options?.signal?.aborted) {
+        const abortErr = new Error('Task was cancelled by the user.');
+        abortErr.name = 'AbortError';
+        throw abortErr;
+      }
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[Assistant Emily] LLM request failed:', err);
       throw new Error(`LLM 통신 실패: ${errMsg}`);

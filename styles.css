@@ -906,14 +906,16 @@ select.emily-select-input {
 .emily-active-form-container.is-form-executing .emily-status-box,
 .emily-active-form-container.is-form-executing .emily-error-banner,
 .emily-active-form-container.is-form-executing .emily-error-actions,
-.emily-active-form-container.is-form-executing .emily-error-actions button {
+.emily-active-form-container.is-form-executing .emily-error-actions button,
+.emily-active-form-container.is-form-executing .emily-pipeline-cancel-btn {
   opacity: 1;
   pointer-events: auto;
   cursor: default;
   filter: none;
 }
 
-.emily-active-form-container.is-form-executing .emily-error-actions button {
+.emily-active-form-container.is-form-executing .emily-error-actions button,
+.emily-active-form-container.is-form-executing .emily-pipeline-cancel-btn {
   cursor: pointer;
 }
 
@@ -978,8 +980,51 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
   padding-bottom: 6px;
   border-bottom: 1px solid var(--divider-color);
+}
+
+.emily-status-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emily-status-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emily-pipeline-cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--background-secondary-alt);
+  color: var(--text-muted);
+  border: 1px solid var(--divider-color);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.emily-pipeline-cancel-btn:hover:not(:disabled) {
+  background-color: rgba(224, 82, 82, 0.12);
+  border-color: var(--text-error, var(--color-red, #e05252));
+  color: var(--text-error, var(--color-red, #e05252));
+}
+
+.emily-pipeline-cancel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ==========================================================================

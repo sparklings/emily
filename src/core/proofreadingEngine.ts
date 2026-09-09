@@ -34,7 +34,8 @@ export class ProofreadingEngine {
   async runProofreading(
     markdownContent: string,
     options: ProofreadOptions,
-    customInstruction?: string
+    customInstruction?: string,
+    signal?: AbortSignal
   ): Promise<{
     items: ProofreadDiffItem[];
     totalTimeMs: number;
@@ -46,6 +47,12 @@ export class ProofreadingEngine {
     system_fingerprint?: string;
     created?: number;
   }> {
+    if (signal?.aborted) {
+      const abortError = new Error('Task was cancelled by the user.');
+      abortError.name = 'AbortError';
+      throw abortError;
+    }
+
     const { system, user } = PromptBuilder.buildProofreadingPrompt(markdownContent, options, customInstruction);
 
     const response = await this.client.chatCompletion(
@@ -53,7 +60,7 @@ export class ProofreadingEngine {
         { role: 'system', content: system },
         { role: 'user', content: user }
       ],
-      { temperature: 0.2 }
+      { temperature: 0.2, signal }
     );
 
     const allowedCategories = new Set<string>();
