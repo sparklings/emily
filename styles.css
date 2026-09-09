@@ -2445,3 +2445,79 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
 .emily-status-dot.is-accent {
   background-color: var(--interactive-accent, #7b6cd9);
 }
+
+/* Multi-Provider Test & Badge Styles */
+.emily-test-result-box {
+  margin: 0 0 14px 0;
+  width: 100%;
+}
+
+.emily-test-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-top: 4px;
+}
+
+.emily-test-msg-box {
+  color: var(--text-normal);
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--background-secondary);
+  padding: 10px 14px;
+  border-radius: 6px;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.emily-test-err-box {
+  color: var(--text-error);
+  font-size: 12px;
+  background: var(--background-secondary);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+
+.emily-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
+}
+
+.emily-provider-badge.is-primary {
+  background: rgba(123, 108, 217, 0.15);
+  color: var(--interactive-accent);
+  border: 1px solid rgba(123, 108, 217, 0.3);
+}
+
+.emily-provider-badge.is-secondary {
+  background: rgba(45, 156, 219, 0.15);
+  color: var(--color-blue, #2d9cdb);
+  border: 1px solid rgba(45, 156, 219, 0.3);
+}
+
+.emily-provider-badge.is-distributed {
+  background: rgba(72, 165, 106, 0.15);
+  color: var(--color-green, #48a56a);
+  border: 1px solid rgba(72, 165, 106, 0.3);
+}
+
+.emily-failover-callout {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 6px;
+  background-color: rgba(203, 118, 52, 0.15);
+  border-left: 3px solid var(--color-orange, #cb7634);
+  color: var(--text-normal);
+  font-size: 12px;
+}
+

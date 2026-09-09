@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting, Notice, setIcon, SettingDefinitionItem } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { getTranslation, getObsidianLanguage, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
+import { TranslationStrings } from '../i18n/types';
 import { getSystemContext } from '../utils/systemInfo';
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
 
@@ -59,7 +60,9 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
-    // Section 1: API / LLM Proxy Config
+    // Section 1: AI 서비스 프로바이더 1 (기본)
+    new Setting(containerEl).setName(t.settings.provider1Heading).setDesc(t.settings.provider1Desc).setHeading();
+
     new Setting(containerEl)
       .setName(t.settings.apiBaseUrlTitle)
       .setDesc(t.settings.apiBaseUrlDesc)
@@ -124,7 +127,6 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
-    // Model Name Text Input
     new Setting(containerEl)
       .setName(t.settings.modelTitle)
       .setDesc(t.settings.modelDesc)
@@ -147,8 +149,7 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
-    // Say Hello Connectivity Test
-    const helloResultDiv = containerEl.createDiv({ cls: 'emily-say-hello-result-panel' });
+    const p1ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
 
     new Setting(containerEl)
       .setName(t.settings.sayHelloTitle)
@@ -160,52 +161,21 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             btn.setDisabled(true);
             btn.setButtonText(t.settings.sayHelloTesting);
-            helloResultDiv.empty();
+            p1ResultDiv.empty();
 
             try {
               const sysContext = getSystemContext();
               const client = this.plugin.getLLMClient();
-              const res = await client.testSayHello(sysContext.languageName, sysContext.timePeriod);
-
-              helloResultDiv.empty();
-              const badgeRow = helloResultDiv.createDiv();
-              badgeRow.setCssStyles({ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', paddingTop: '4px' });
-              const successBadge = badgeRow.createSpan({ cls: 'emily-badge is-success' });
-              successBadge.setText(`✓ ${t.settings.sayHelloSuccess} (${res.latencyMs}ms)`);
-              const modelBadge = badgeRow.createSpan({ cls: 'emily-badge' });
-              modelBadge.setText(res.model);
-
-              const msgBox = helloResultDiv.createDiv();
-              msgBox.setCssStyles({
-                color: 'var(--text-normal)',
-                fontSize: '13px',
-                lineHeight: '1.5',
-                background: 'var(--background-secondary)',
-                padding: '10px 14px',
-                borderRadius: '6px',
-                borderLeft: '3px solid var(--interactive-accent)'
-              });
-              msgBox.createSpan({ text: '💬 ' });
-              msgBox.createEl('strong', { text: 'Assistant Emily: ' });
-              msgBox.createSpan({ text: `"${res.message}"` });
-              new Notice(t.settings.sayHelloNoticeSuccess);
+              const res = await client.testProvider('primary', sysContext.languageName, sysContext.timePeriod);
+              this.renderTestResult(p1ResultDiv, res, t);
+              if (res.success) {
+                new Notice(t.settings.sayHelloNoticeSuccess);
+              } else {
+                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
+              }
             } catch (err: unknown) {
               const errMsg = err instanceof Error ? err.message : String(err);
-              helloResultDiv.empty();
-              const failRow = helloResultDiv.createDiv();
-              failRow.setCssStyles({ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', paddingTop: '4px' });
-              const failBadge = failRow.createSpan({ cls: 'emily-badge is-warning' });
-              failBadge.setText(`✗ ${t.settings.sayHelloFailed}`);
-
-              const errBox = helloResultDiv.createDiv();
-              errBox.setCssStyles({
-                color: 'var(--text-error)',
-                fontSize: '12px',
-                background: 'var(--background-secondary)',
-                padding: '8px 12px',
-                borderRadius: '4px'
-              });
-              errBox.setText(errMsg);
+              this.renderTestResult(p1ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
               new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
             } finally {
               btn.setDisabled(false);
@@ -214,7 +184,240 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
-    containerEl.appendChild(helloResultDiv);
+    containerEl.appendChild(p1ResultDiv);
+
+    // =========================================================================
+    // Section 2: AI 서비스 프로바이더 2 (보조 / 선택 사항)
+    // =========================================================================
+    new Setting(containerEl).setName(t.settings.provider2Heading).setDesc(t.settings.provider2Desc).setHeading();
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryApiBaseUrlTitle)
+      .setDesc(t.settings.secondaryApiBaseUrlDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder('https://api.groq.com/openai/v1')
+          .setValue(this.plugin.settings.secondaryApiBaseUrl || '')
+          .onChange(async (value) => {
+            this.plugin.settings.secondaryApiBaseUrl = value.trim();
+            await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.common.reset)
+          .onClick(async () => {
+            this.plugin.settings.secondaryApiBaseUrl = '';
+            await this.plugin.saveSettings();
+            this.renderSettings(containerEl);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryApiKeyTitle)
+      .setDesc(t.settings.secondaryApiKeyDesc)
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text
+          .setPlaceholder(t.settings.apiKeyPlaceholder)
+          .setValue(this.plugin.settings.secondaryApiKey || '')
+          .onChange(async (value) => {
+            this.plugin.settings.secondaryApiKey = value.trim();
+            await this.plugin.saveSettings();
+          });
+
+        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
+          cls: 'emily-icon-btn',
+          attr: { title: 'Password' }
+        });
+        if (toggleBtn) {
+          setIcon(toggleBtn, 'eye');
+          toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (text.inputEl.type === 'password') {
+              text.inputEl.type = 'text';
+              setIcon(toggleBtn, 'eye-off');
+            } else {
+              text.inputEl.type = 'password';
+              setIcon(toggleBtn, 'eye');
+            }
+          });
+        }
+      })
+      .addExtraButton((btn) => {
+        btn.setIcon('trash')
+          .setTooltip(t.common.delete)
+          .onClick(async () => {
+            this.plugin.settings.secondaryApiKey = '';
+            await this.plugin.saveSettings();
+            this.renderSettings(containerEl);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryModelTitle)
+      .setDesc(t.settings.secondaryModelDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder(t.settings.modelPlaceholder)
+          .setValue(this.plugin.settings.secondaryModelName || 'auto')
+          .onChange(async (val) => {
+            this.plugin.settings.secondaryModelName = val.trim() || 'auto';
+            await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.settings.modelResetTooltip)
+          .onClick(async () => {
+            this.plugin.settings.secondaryModelName = 'auto';
+            await this.plugin.saveSettings();
+            this.renderSettings(containerEl);
+          });
+      });
+
+    const p2ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
+
+    new Setting(containerEl)
+      .setName(t.settings.sayHelloTitle)
+      .setDesc(t.settings.sayHelloDesc)
+      .addButton((btn) => {
+        btn
+          .setButtonText(t.settings.sayHelloBtn)
+          .onClick(async () => {
+            if (!this.plugin.settings.secondaryApiBaseUrl) {
+              new Notice('Provider 2 API Base URL is not configured.');
+              return;
+            }
+            btn.setDisabled(true);
+            btn.setButtonText(t.settings.sayHelloTesting);
+            p2ResultDiv.empty();
+
+            try {
+              const sysContext = getSystemContext();
+              const client = this.plugin.getLLMClient();
+              const res = await client.testProvider('secondary', sysContext.languageName, sysContext.timePeriod);
+              this.renderTestResult(p2ResultDiv, res, t);
+              if (res.success) {
+                new Notice(t.settings.sayHelloNoticeSuccess);
+              } else {
+                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              this.renderTestResult(p2ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
+              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
+            } finally {
+              btn.setDisabled(false);
+              btn.setButtonText(t.settings.sayHelloBtn);
+            }
+          });
+      });
+
+    containerEl.appendChild(p2ResultDiv);
+
+    // =========================================================================
+    // Section 3: 다중 프로바이더 운영 정책 (Multi-Provider Policies)
+    // =========================================================================
+    new Setting(containerEl).setName(t.settings.multiProviderPolicyHeading).setDesc(t.settings.multiProviderPolicyDesc).setHeading();
+
+    new Setting(containerEl)
+      .setName(t.settings.activeProviderTitle)
+      .setDesc(t.settings.activeProviderDesc)
+      .addDropdown((dropdown) => {
+        dropdown.addOption('auto', t.settings.activeProviderAuto);
+        dropdown.addOption('primary', t.settings.activeProviderPrimary);
+        dropdown.addOption('secondary', t.settings.activeProviderSecondary);
+        dropdown
+          .setValue(this.plugin.settings.activeProvider || 'auto')
+          .onChange(async (val: 'auto' | 'primary' | 'secondary') => {
+            this.plugin.settings.activeProvider = val;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.enableFallbackTitle)
+      .setDesc(t.settings.enableFallbackDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableFallback ?? true)
+          .onChange(async (val) => {
+            this.plugin.settings.enableFallback = val;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.enableChunkDistributionTitle)
+      .setDesc(t.settings.enableChunkDistributionDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.enableChunkDistribution ?? true)
+          .onChange(async (val) => {
+            this.plugin.settings.enableChunkDistribution = val;
+            await this.plugin.saveSettings();
+          })
+      );
+
+    const allTestResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
+
+    new Setting(containerEl)
+      .setName(t.settings.testAllBtn)
+      .setDesc(t.settings.testAllDesc)
+      .addButton((btn) => {
+        btn
+          .setButtonText(t.settings.testAllBtn)
+          .setCta()
+          .onClick(async () => {
+            btn.setDisabled(true);
+            btn.setButtonText(t.settings.testAllTesting);
+            allTestResultDiv.empty();
+
+            try {
+              const sysContext = getSystemContext();
+              const client = this.plugin.getLLMClient();
+              const summary = await client.testAllProviders(sysContext.languageName, sysContext.timePeriod);
+
+              const p1Status = summary.primary.success
+                ? t.settings.providerStatusConnected.replace('{latency}', String(summary.primary.latencyMs))
+                : t.settings.providerStatusFailed;
+
+              let p2Status = t.settings.providerStatusNotConfigured;
+              if (summary.secondary) {
+                p2Status = summary.secondary.success
+                  ? t.settings.providerStatusConnected.replace('{latency}', String(summary.secondary.latencyMs))
+                  : t.settings.providerStatusFailed;
+              }
+
+              const summaryText = t.settings.testAllSummary
+                .replace('{p1}', p1Status)
+                .replace('{p2}', p2Status);
+
+              const badgeRow = allTestResultDiv.createDiv({ cls: 'emily-test-badge-row' });
+              const badge = badgeRow.createSpan({ cls: 'emily-badge is-success' });
+              badge.setText(summaryText);
+
+              const recLabel = summary.recommended === 'primary' ? 'Provider 1' : 'Provider 2';
+              const noticeMsg = t.settings.providerRecommendedNotice.replace('{provider}', recLabel);
+              const infoBox = allTestResultDiv.createDiv({ cls: 'emily-test-msg-box' });
+              infoBox.setText(`⚡ ${noticeMsg}`);
+
+              if (this.plugin.settings.activeProvider === 'auto') {
+                new Notice(noticeMsg);
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              const errBox = allTestResultDiv.createDiv({ cls: 'emily-test-err-box' });
+              errBox.setText(errMsg);
+            } finally {
+              btn.setDisabled(false);
+              btn.setButtonText(t.settings.testAllBtn);
+            }
+          });
+      });
+
+    containerEl.appendChild(allTestResultDiv);
 
     // =========================================================================
     // Section 2: 교열 기본 설정 (Proofreading Preferences)
@@ -436,5 +639,31 @@ export class EmilySettingTab extends PluginSettingTab {
           })
       );
   }
+
+  private renderTestResult(
+    container: HTMLElement,
+    result: { success: boolean; message: string; latencyMs: number; model: string; error?: string },
+    t: TranslationStrings
+  ): void {
+    container.empty();
+    const badgeRow = container.createDiv({ cls: 'emily-test-badge-row' });
+    if (result.success) {
+      const successBadge = badgeRow.createSpan({ cls: 'emily-badge is-success' });
+      successBadge.setText(`✓ ${t.settings.sayHelloSuccess} (${result.latencyMs}ms)`);
+      const modelBadge = badgeRow.createSpan({ cls: 'emily-badge' });
+      modelBadge.setText(result.model);
+
+      const msgBox = container.createDiv({ cls: 'emily-test-msg-box' });
+      msgBox.createSpan({ text: '💬 ' });
+      msgBox.createEl('strong', { text: 'Assistant Emily: ' });
+      msgBox.createSpan({ text: `"${result.message}"` });
+    } else {
+      const failBadge = badgeRow.createSpan({ cls: 'emily-badge is-warning' });
+      failBadge.setText(`✗ ${t.settings.sayHelloFailed}`);
+      const errBox = container.createDiv({ cls: 'emily-test-err-box' });
+      errBox.setText(result.error || 'Connection failed');
+    }
+  }
 }
+
 

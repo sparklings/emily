@@ -11,6 +11,23 @@ export interface EmilySettings {
   apiKey: string;
   /** 사용할 LLM 모델 식별자 (auto, gpt-4o, gemini-3.6-flash 등) */
   modelName: string;
+
+  // AI 서비스 프로바이더 2 (Secondary / Backup - 선택 사항)
+  /** 보조 OpenAI 호환 API 엔드포인트 URL */
+  secondaryApiBaseUrl: string;
+  /** 보조 LLM API 인증 토큰 */
+  secondaryApiKey: string;
+  /** 보조 LLM 모델 식별자 */
+  secondaryModelName: string;
+
+  // 다중 프로바이더 운영 정책
+  /** 기본 질의 대상 프로바이더 ('auto': 헬스체크 기반 자동 선정, 'primary': 프로바이더 1 고정, 'secondary': 프로바이더 2 고정) */
+  activeProvider: 'primary' | 'secondary' | 'auto';
+  /** 주 프로바이더 통신 장애 시 보조 프로바이더로 자동 전환(Failover) 여부 */
+  enableFallback: boolean;
+  /** 대용량 마크다운 청킹 번역 시 두 프로바이더에 청크를 교차 분산할지 여부 */
+  enableChunkDistribution: boolean;
+
   /** 플러그인 UI 표시 언어 (auto: 옵시디언 언어 추종, ko: 한국어, en: 영어) */
   language: 'auto' | 'ko' | 'en';
   /** 한글/동아시아 마크다운 볼드(**) 공백 규칙 자동 교정 활성화 여부 */
@@ -53,6 +70,17 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   apiBaseUrl: 'https://api.openai.com/v1',
   apiKey: '',
   modelName: 'auto',
+
+  // 보조 프로바이더 기본값 (비활성화 상태)
+  secondaryApiBaseUrl: '',
+  secondaryApiKey: '',
+  secondaryModelName: 'auto',
+
+  // 다중 프로바이더 정책 기본값
+  activeProvider: 'auto',
+  enableFallback: true,
+  enableChunkDistribution: true,
+
   language: 'auto',
   autoProofreadKoreanBold: true,
   showFloatingScrollButtons: true,

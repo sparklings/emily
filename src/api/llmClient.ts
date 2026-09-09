@@ -1,4 +1,5 @@
 import { requestUrl, RequestUrlResponse } from 'obsidian';
+import { EmilySettings } from '../types/settings';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -39,6 +40,31 @@ export interface LLMResponse {
   finish_reason?: string;
   usage?: LLMUsage;
   rawResponse?: unknown;
+  providerUsed?: 'primary' | 'secondary';
+  failedOver?: boolean;
+}
+
+export interface ProviderConfig {
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+export type ProviderId = 'primary' | 'secondary';
+export type ActiveProviderOption = 'primary' | 'secondary' | 'auto';
+
+export interface ProviderTestResult {
+  success: boolean;
+  message: string;
+  latencyMs: number;
+  model: string;
+  error?: string;
+}
+
+export interface MultiProviderTestSummary {
+  primary: ProviderTestResult;
+  secondary?: ProviderTestResult;
+  recommended: ProviderId;
 }
 
 interface ChatCompletionPayload {
@@ -69,72 +95,109 @@ interface ChatCompletionApiResponse {
 }
 
 /**
- * OpenAI 호환 LLM API 통신을 전담하는 클라이언트 클래스
+ * OpenAI 호환 LLM API 통신을 전담하는 듀얼 프로바이더 클라이언트 클래스
+ * - 기본(Primary) 및 보조(Secondary) 2개 프로바이더 구성 지원
+ * - 자동 헬스체크 및 동적 기본값 선출
+ * - 장애 발생 시 보조 프로바이더로 무중단 자동 우회(Auto Failover)
+ * - 대용량 문서 청크 분산(Distributed Chunk Processing) 요청 지원
  * - Obsidian 네이티브 requestUrl API를 사용하여 CORS 제약 없이 통신
- * - 스트리밍 또는 일괄 응답, 토큰 사용량 계산 및 속도(tokens/sec) 측정
  */
 export class LLMProxyClient {
-  private baseUrl: string;
-  private apiKey: string;
-  private defaultModel: string;
+  private primaryConfig: ProviderConfig;
+  private secondaryConfig: ProviderConfig | null = null;
+  private activeProvider: ActiveProviderOption = 'auto';
+  private enableFallback = true;
+  private enableChunkDistribution = true;
 
   /**
    * LLMProxyClient 생성자
-   * @param baseUrl API 엔드포인트 URL (후행 슬래시 자동 제거)
-   * @param apiKey API 인증 토큰 (미입력 시 인증 헤더 제외)
+   * @param baseUrl 기본 API 엔드포인트 URL (후행 슬래시 자동 제거)
+   * @param apiKey 기본 API 인증 토큰 (미입력 시 인증 헤더 제외)
    * @param defaultModel 기본 요청 모델 (기본값: 'auto')
    */
   constructor(baseUrl: string, apiKey: string, defaultModel = 'auto') {
-    this.baseUrl = baseUrl.replace(/\/+$/, '');
-    this.apiKey = apiKey;
-    this.defaultModel = defaultModel;
-  }
-
-  /**
-   * 런타임 설정 변경 시 클라이언트의 엔드포인트 및 인증 키를 갱신합니다.
-   * @param baseUrl 새로운 API 엔드포인트
-   * @param apiKey 새로운 API 키
-   * @param defaultModel 새로운 기본 모델
-   */
-  updateConfig(baseUrl: string, apiKey: string, defaultModel: string) {
-    this.baseUrl = baseUrl.replace(/\/+$/, '');
-    this.apiKey = apiKey;
-    this.defaultModel = defaultModel;
-  }
-
-  /**
-   * 설정 화면의 API 연결 테스트용 인사말 생성 요청
-   * @param locale 사용자 언어 로케일 (ko, en 등)
-   * @param timePeriod 현재 시간대 (morning, afternoon, evening, night)
-   * @returns 인사말 메시지, 지연 시간(ms), 응답 모델 정보
-   */
-  async testSayHello(locale: string, timePeriod: string): Promise<{ message: string; latencyMs: number; model: string }> {
-    const startTime = Date.now();
-    const prompt = `You are Assistant Emily. The user is connecting to your LLM proxy from Obsidian.
-User Locale: ${locale}
-Current Time Period: ${timePeriod}
-Respond strictly with a single natural, friendly, 1-2 sentence greeting in the user's primary language (${locale}) that mentions the time of day and introduces yourself as Assistant Emily.`;
-
-    const response = await this.chatCompletion([
-      { role: 'system', content: 'You are Assistant Emily, an intelligent Markdown editorial assistant for Obsidian.' },
-      { role: 'user', content: prompt }
-    ], { temperature: 0.7, max_tokens: 150 });
-
-    const latencyMs = Date.now() - startTime;
-    return {
-      message: response.content.trim(),
-      latencyMs,
-      model: response.model
+    this.primaryConfig = {
+      baseUrl: baseUrl.replace(/\/+$/, ''),
+      apiKey,
+      model: defaultModel
     };
   }
 
   /**
-   * OpenAI 호환 엔드포인트(/chat/completions)로 챗 완성 요청을 전송합니다.
-   * @param messages 대화 메시지 배열 (system, user, assistant)
-   * @param options 모델, 온도(temperature), 최대 토큰 수, JSON 응답 포맷 등 추가 옵션
-   * @returns 파싱된 LLMResponse (응답 본문, 지연 시간, 토큰 사용량, 속도 등)
+   * 단일 설정 갱신 (하위 호환성 유지)
    */
-  async chatCompletion(
+  updateConfig(baseUrl: string, apiKey: string, defaultModel: string) {
+    this.primaryConfig = {
+      baseUrl: baseUrl.replace(/\/+$/, ''),
+      apiKey,
+      model: defaultModel
+    };
+  }
+
+  /**
+   * 전체 플러그인 설정을 반영하여 듀얼 프로바이더 구성을 일괄 갱신합니다.
+   */
+  updateMultiConfig(settings: EmilySettings) {
+    this.primaryConfig = {
+      baseUrl: (settings.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, ''),
+      apiKey: settings.apiKey || '',
+      model: settings.modelName || 'auto'
+    };
+
+    if (settings.secondaryApiBaseUrl && settings.secondaryApiBaseUrl.trim().length > 0) {
+      this.secondaryConfig = {
+        baseUrl: settings.secondaryApiBaseUrl.trim().replace(/\/+$/, ''),
+        apiKey: settings.secondaryApiKey || '',
+        model: settings.secondaryModelName || 'auto'
+      };
+    } else {
+      this.secondaryConfig = null;
+    }
+
+    this.activeProvider = settings.activeProvider || 'auto';
+    this.enableFallback = settings.enableFallback ?? true;
+    this.enableChunkDistribution = settings.enableChunkDistribution ?? true;
+  }
+
+  /**
+   * 보조 프로바이더가 유효하게 구성되어 있는지 여부를 반환합니다.
+   */
+  isMultiProviderAvailable(): boolean {
+    return this.secondaryConfig !== null && this.secondaryConfig.baseUrl.length > 0;
+  }
+
+  /**
+   * 청크 분산 처리가 활성화되어 있고 다중 프로바이더가 준비되었는지 확인합니다.
+   */
+  isChunkDistributionEnabled(): boolean {
+    return this.isMultiProviderAvailable() && this.enableChunkDistribution;
+  }
+
+  /**
+   * 현재 활성화된 정책에 따른 기본 프로바이더를 판별합니다.
+   */
+  getEffectiveProvider(): ProviderId {
+    if (this.activeProvider === 'secondary' && this.isMultiProviderAvailable()) {
+      return 'secondary';
+    }
+    return 'primary';
+  }
+
+  /**
+   * 특정 프로바이더 설정 정보를 조회합니다.
+   */
+  getProviderConfig(providerId: ProviderId): ProviderConfig {
+    if (providerId === 'secondary' && this.secondaryConfig) {
+      return this.secondaryConfig;
+    }
+    return this.primaryConfig;
+  }
+
+  /**
+   * 단일 프로바이더를 대상으로 LLM HTTP 요청을 직접 수행합니다.
+   */
+  private async executeSingleProviderRequest(
+    providerId: ProviderId,
     messages: ChatMessage[],
     options?: {
       model?: string;
@@ -144,9 +207,10 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       signal?: AbortSignal;
     }
   ): Promise<LLMResponse> {
+    const config = this.getProviderConfig(providerId);
     const startTime = Date.now();
-    const model = options?.model || this.defaultModel || 'auto';
-    const endpoint = `${this.baseUrl}/chat/completions`;
+    const model = options?.model || config.model || 'auto';
+    const endpoint = `${config.baseUrl}/chat/completions`;
 
     if (options?.signal?.aborted) {
       const abortError = new Error('Task was cancelled by the user.');
@@ -158,8 +222,8 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       'Content-Type': 'application/json'
     };
 
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    if (config.apiKey) {
+      headers['Authorization'] = `Bearer ${config.apiKey}`;
     }
 
     const payload: ChatCompletionPayload = {
@@ -176,67 +240,180 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       payload.response_format = options.response_format;
     }
 
+    let requestPromise: Promise<RequestUrlResponse> = requestUrl({
+      url: endpoint,
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    if (options?.signal) {
+      const signal = options.signal;
+      requestPromise = Promise.race([
+        requestPromise,
+        new Promise<never>((_, reject) => {
+          const onAbort = () => {
+            signal.removeEventListener('abort', onAbort);
+            const abortError = new Error('Task was cancelled by the user.');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          };
+          if (signal.aborted) {
+            onAbort();
+          } else {
+            signal.addEventListener('abort', onAbort, { once: true });
+          }
+        })
+      ]);
+    }
+
+    const response = await requestPromise;
+
+    if (response.status >= 400) {
+      throw new Error(`HTTP ${response.status}: ${response.text}`);
+    }
+
+    const data = response.json as ChatCompletionApiResponse;
+    const choice = data.choices?.[0];
+    const content = choice?.message?.content || '';
+    const totalTimeMs = Date.now() - startTime;
+    const usage = data.usage;
+    const completionTokens = usage?.completion_tokens ?? Math.round(content.length / 3);
+    const tokensPerSec = totalTimeMs > 0 ? Math.round((completionTokens / (totalTimeMs / 1000)) * 10) / 10 : 0;
+
+    return {
+      content,
+      totalTimeMs,
+      tokensPerSec,
+      model: data.model || model,
+      id: data.id,
+      created: data.created,
+      system_fingerprint: data.system_fingerprint,
+      finish_reason: choice?.finish_reason,
+      usage: usage ? {
+        prompt_tokens: usage.prompt_tokens,
+        completion_tokens: usage.completion_tokens,
+        total_tokens: usage.total_tokens,
+        prompt_tokens_details: usage.prompt_tokens_details,
+        completion_tokens_details: usage.completion_tokens_details,
+        ...usage
+      } : undefined,
+      rawResponse: data,
+      providerUsed: providerId,
+      failedOver: false
+    };
+  }
+
+  /**
+   * 지정된 프로바이더에 대해 개별 연결 테스트를 수행합니다.
+   */
+  async testProvider(providerId: ProviderId, locale: string, timePeriod: string): Promise<ProviderTestResult> {
+    const config = (providerId === 'secondary') ? this.secondaryConfig : this.primaryConfig;
+    if (!config || !config.baseUrl) {
+      return {
+        success: false,
+        message: '',
+        latencyMs: 0,
+        model: '',
+        error: 'Not configured'
+      };
+    }
+
+    const startTime = Date.now();
+    const prompt = `You are Assistant Emily. The user is connecting to your LLM proxy from Obsidian.
+User Locale: ${locale}
+Current Time Period: ${timePeriod}
+Respond strictly with a single natural, friendly, 1-2 sentence greeting in the user's primary language (${locale}) that mentions the time of day and introduces yourself as Assistant Emily.`;
+
     try {
-      let requestPromise: Promise<RequestUrlResponse> = requestUrl({
-        url: endpoint,
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload)
-      });
-
-      if (options?.signal) {
-        const signal = options.signal;
-        requestPromise = Promise.race([
-          requestPromise,
-          new Promise<never>((_, reject) => {
-            const onAbort = () => {
-              signal.removeEventListener('abort', onAbort);
-              const abortError = new Error('Task was cancelled by the user.');
-              abortError.name = 'AbortError';
-              reject(abortError);
-            };
-            if (signal.aborted) {
-              onAbort();
-            } else {
-              signal.addEventListener('abort', onAbort, { once: true });
-            }
-          })
-        ]);
-      }
-
-      const response = await requestPromise;
-
-      if (response.status >= 400) {
-        throw new Error(`API returned HTTP ${response.status}: ${response.text}`);
-      }
-
-      const data = response.json as ChatCompletionApiResponse;
-      const choice = data.choices?.[0];
-      const content = choice?.message?.content || '';
-      const totalTimeMs = Date.now() - startTime;
-      const usage = data.usage;
-      const completionTokens = usage?.completion_tokens ?? Math.round(content.length / 3);
-      const tokensPerSec = totalTimeMs > 0 ? Math.round((completionTokens / (totalTimeMs / 1000)) * 10) / 10 : 0;
+      const response = await this.executeSingleProviderRequest(providerId, [
+        { role: 'system', content: 'You are Assistant Emily, an intelligent Markdown editorial assistant for Obsidian.' },
+        { role: 'user', content: prompt }
+      ], { temperature: 0.7, max_tokens: 150 });
 
       return {
-        content,
-        totalTimeMs,
-        tokensPerSec,
-        model: data.model || model,
-        id: data.id,
-        created: data.created,
-        system_fingerprint: data.system_fingerprint,
-        finish_reason: choice?.finish_reason,
-        usage: usage ? {
-          prompt_tokens: usage.prompt_tokens,
-          completion_tokens: usage.completion_tokens,
-          total_tokens: usage.total_tokens,
-          prompt_tokens_details: usage.prompt_tokens_details,
-          completion_tokens_details: usage.completion_tokens_details,
-          ...usage
-        } : undefined,
-        rawResponse: data
+        success: true,
+        message: response.content.trim(),
+        latencyMs: Date.now() - startTime,
+        model: response.model
       };
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      return {
+        success: false,
+        message: '',
+        latencyMs: Date.now() - startTime,
+        model: config.model || 'unknown',
+        error: errorMsg
+      };
+    }
+  }
+
+  /**
+   * 모든 등록된 프로바이더의 헬스체크를 동시에 실행하고 권장 기본 프로바이더를 산출합니다.
+   */
+  async testAllProviders(locale: string, timePeriod: string): Promise<MultiProviderTestSummary> {
+    const primaryPromise = this.testProvider('primary', locale, timePeriod);
+    const secondaryPromise = this.isMultiProviderAvailable()
+      ? this.testProvider('secondary', locale, timePeriod)
+      : Promise.resolve(undefined);
+
+    const [primaryResult, secondaryResult] = await Promise.all([primaryPromise, secondaryPromise]);
+
+    let recommended: ProviderId = 'primary';
+    if (primaryResult.success) {
+      recommended = 'primary';
+    } else if (secondaryResult && secondaryResult.success) {
+      recommended = 'secondary';
+    }
+
+    return {
+      primary: primaryResult,
+      secondary: secondaryResult,
+      recommended
+    };
+  }
+
+  /**
+   * 하위 호환성을 위한 단일 연결 테스트 메서드
+   */
+  async testSayHello(locale: string, timePeriod: string): Promise<{ message: string; latencyMs: number; model: string }> {
+    const result = await this.testProvider('primary', locale, timePeriod);
+    if (!result.success) {
+      throw new Error(result.error || 'Connection failed');
+    }
+    return {
+      message: result.message,
+      latencyMs: result.latencyMs,
+      model: result.model
+    };
+  }
+
+  /**
+   * OpenAI 호환 엔드포인트(/chat/completions)로 챗 완성 요청을 전송합니다.
+   * - 장애 발생 시 설정에 따라 보조 프로바이더로 자동 Failover 재시도합니다.
+   * - options.providerId 지정 시 특정 프로바이더(예: 청크 분산 처리)를 직접 타겟팅합니다.
+   */
+  async chatCompletion(
+    messages: ChatMessage[],
+    options?: {
+      model?: string;
+      temperature?: number;
+      max_tokens?: number;
+      response_format?: { type: string };
+      signal?: AbortSignal;
+      providerId?: ProviderId;
+    }
+  ): Promise<LLMResponse> {
+    let targetProvider: ProviderId = options?.providerId || this.getEffectiveProvider();
+
+    // 지정된 프로바이더가 보조인데 보조 프로바이더가 미설정된 경우 기본으로 전락
+    if (targetProvider === 'secondary' && !this.isMultiProviderAvailable()) {
+      targetProvider = 'primary';
+    }
+
+    try {
+      return await this.executeSingleProviderRequest(targetProvider, messages, options);
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') {
         throw err;
@@ -246,21 +423,50 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
         abortErr.name = 'AbortError';
         throw abortErr;
       }
+
+      // Failover 조건 검사: 자동 우회 활성화 및 대체 프로바이더가 사용 가능한 경우
+      const fallbackTarget: ProviderId = targetProvider === 'primary' ? 'secondary' : 'primary';
+      const isFallbackPossible = this.enableFallback &&
+        ((fallbackTarget === 'secondary' && this.isMultiProviderAvailable()) ||
+         (fallbackTarget === 'primary'));
+
+      if (isFallbackPossible) {
+        console.warn(`[Assistant Emily] Provider '${targetProvider}' request failed. Auto-failing over to '${fallbackTarget}'...`, err);
+        try {
+          const fallbackResponse = await this.executeSingleProviderRequest(fallbackTarget, messages, options);
+          fallbackResponse.failedOver = true;
+          return fallbackResponse;
+        } catch (fallbackErr: unknown) {
+          if (fallbackErr instanceof Error && fallbackErr.name === 'AbortError') {
+            throw fallbackErr;
+          }
+          if (options?.signal?.aborted) {
+            const abortErr = new Error('Task was cancelled by the user.');
+            abortErr.name = 'AbortError';
+            throw abortErr;
+          }
+          const originalMsg = err instanceof Error ? err.message : String(err);
+          const fbMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          console.error(`[Assistant Emily] Both providers failed. P1: ${originalMsg}, P2: ${fbMsg}`);
+          throw new Error(`LLM 통신 실패 (P1: ${originalMsg}, P2: ${fbMsg})`);
+        }
+      }
+
       const errMsg = err instanceof Error ? err.message : String(err);
-      console.error('[Assistant Emily] LLM request failed:', err);
+      console.error(`[Assistant Emily] LLM request failed on provider '${targetProvider}':`, err);
       throw new Error(`LLM 통신 실패: ${errMsg}`);
     }
   }
 
   /**
    * API 엔드포인트(/models)에서 사용 가능한 LLM 모델 목록을 조회합니다.
-   * @returns 조회된 모델 목록 객체 배열 (실패 시 빈 배열 반환)
    */
-  async getModels(): Promise<Array<{ id: string; name?: string }>> {
-    const endpoint = `${this.baseUrl}/models`;
+  async getModels(providerId: ProviderId = 'primary'): Promise<Array<{ id: string; name?: string }>> {
+    const config = this.getProviderConfig(providerId);
+    const endpoint = `${config.baseUrl}/models`;
     const headers: Record<string, string> = {};
-    if (this.apiKey) {
-      headers['Authorization'] = `Bearer ${this.apiKey}`;
+    if (config.apiKey) {
+      headers['Authorization'] = `Bearer ${config.apiKey}`;
     }
 
     try {
@@ -275,8 +481,9 @@ Respond strictly with a single natural, friendly, 1-2 sentence greeting in the u
       }
       return [];
     } catch (err) {
-      console.warn('[Assistant Emily] Could not fetch models from proxy:', err);
+      console.warn(`[Assistant Emily] Could not fetch models from provider '${providerId}':`, err);
       return [];
     }
   }
 }
+

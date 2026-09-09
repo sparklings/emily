@@ -46,6 +46,8 @@ export class ProofreadingEngine {
     finish_reason?: string;
     system_fingerprint?: string;
     created?: number;
+    providerUsed?: 'primary' | 'secondary';
+    failedOver?: boolean;
   }> {
     if (signal?.aborted) {
       const abortError = new Error('Task was cancelled by the user.');
@@ -132,7 +134,9 @@ export class ProofreadingEngine {
       id: response.id,
       finish_reason: response.finish_reason,
       system_fingerprint: response.system_fingerprint,
-      created: response.created
+      created: response.created,
+      providerUsed: response.providerUsed,
+      failedOver: response.failedOver
     };
   }
 

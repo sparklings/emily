@@ -178,6 +178,7 @@ export default class EmilyPlugin extends Plugin {
       this.settings.apiKey,
       this.settings.modelName
     );
+    this.llmClient.updateMultiConfig(this.settings);
     this.proofreadingEngine = new ProofreadingEngine(this.llmClient, this.settings.language);
     this.translationEngine = new TranslationEngine(this.llmClient, this.app, this.settings.language);
     this.consistencyEngine = new ConsistencyEngine(this.llmClient, this.app);
@@ -219,11 +220,7 @@ export default class EmilyPlugin extends Plugin {
     try {
       await this.saveData(this.settings);
       if (this.llmClient) {
-        this.llmClient.updateConfig(
-          this.settings.apiBaseUrl,
-          this.settings.apiKey,
-          this.settings.modelName
-        );
+        this.llmClient.updateMultiConfig(this.settings);
       }
       if (this.proofreadingEngine) {
         this.proofreadingEngine.setDisplayLanguage(this.settings.language);

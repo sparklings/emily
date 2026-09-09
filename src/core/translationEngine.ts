@@ -44,9 +44,21 @@ export class TranslationEngine {
     markdownContent: string,
     options: TranslationOptions,
     customInstruction?: string,
-    onProgress?: (current: number, total: number) => void,
+    onProgress?: (current: number, total: number, provider?: 'primary' | 'secondary') => void,
     signal?: AbortSignal
-  ): Promise<{ result: TranslationResult; totalTimeMs: number; tokensPerSec?: number; model: string; usage?: LLMUsage; id?: string; finish_reason?: string; system_fingerprint?: string; created?: number }> {
+  ): Promise<{
+    result: TranslationResult;
+    totalTimeMs: number;
+    tokensPerSec?: number;
+    model: string;
+    usage?: LLMUsage;
+    id?: string;
+    finish_reason?: string;
+    system_fingerprint?: string;
+    created?: number;
+    providerUsed?: 'primary' | 'secondary' | 'distributed';
+    failedOver?: boolean;
+  }> {
     if (signal?.aborted) {
       const abortError = new Error('Task was cancelled by the user.');
       abortError.name = 'AbortError';
@@ -56,6 +68,7 @@ export class TranslationEngine {
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(markdownContent, this.CHUNK_SIZE_THRESHOLD);
     const totalChunks = chunks.length;
+    const isDistributed = totalChunks > 1 && this.client.isChunkDistributionEnabled();
 
     let accumulatedTranslatedMarkdown = '';
     let totalTimeMs = 0;
@@ -64,6 +77,8 @@ export class TranslationEngine {
     let totalTokens = 0;
     let lastModel = 'auto';
     let lastResponse: LLMResponse | null = null;
+    const providersUsed = new Set<'primary' | 'secondary'>();
+    let anyFailover = false;
 
     for (let i = 0; i < totalChunks; i++) {
       if (signal?.aborted) {
@@ -72,8 +87,13 @@ export class TranslationEngine {
         throw abortError;
       }
 
+      let chunkProvider: 'primary' | 'secondary' | undefined;
+      if (isDistributed) {
+        chunkProvider = (i % 2 === 0) ? 'primary' : 'secondary';
+      }
+
       if (onProgress) {
-        onProgress(i + 1, totalChunks);
+        onProgress(i + 1, totalChunks, chunkProvider);
       }
 
       const chunk = chunks[i];
@@ -94,8 +114,19 @@ export class TranslationEngine {
           { role: 'system', content: system },
           { role: 'user', content: user }
         ],
-        { temperature: 0.3, signal }
+        {
+          temperature: 0.3,
+          signal,
+          providerId: chunkProvider
+        }
       );
+
+      if (response.providerUsed) {
+        providersUsed.add(response.providerUsed);
+      }
+      if (response.failedOver) {
+        anyFailover = true;
+      }
 
       lastResponse = response;
       lastModel = response.model || lastModel;
@@ -153,6 +184,15 @@ export class TranslationEngine {
       ? Number(((totalCompletionTokens / totalTimeMs) * 1000).toFixed(1))
       : lastResponse?.tokensPerSec;
 
+    let effectiveProviderUsed: 'primary' | 'secondary' | 'distributed' = 'primary';
+    if (providersUsed.size > 1) {
+      effectiveProviderUsed = 'distributed';
+    } else if (providersUsed.has('secondary')) {
+      effectiveProviderUsed = 'secondary';
+    } else if (lastResponse?.providerUsed) {
+      effectiveProviderUsed = lastResponse.providerUsed;
+    }
+
     return {
       result,
       totalTimeMs,
@@ -166,7 +206,9 @@ export class TranslationEngine {
       id: lastResponse?.id,
       finish_reason: lastResponse?.finish_reason,
       system_fingerprint: lastResponse?.system_fingerprint,
-      created: lastResponse?.created
+      created: lastResponse?.created,
+      providerUsed: effectiveProviderUsed,
+      failedOver: anyFailover
     };
   }
 

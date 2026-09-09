@@ -47,6 +47,8 @@ interface RollingSessionData {
   finishReason?: string;
   systemFingerprint?: string;
   createdTimestamp?: number;
+  providerUsed?: 'primary' | 'secondary' | 'distributed';
+  failedOver?: boolean;
   itemsCount: number;
   items?: ProofreadDiffItem[];
   originalMarkdown?: string;
@@ -284,6 +286,7 @@ export class EmilySidebarView extends ItemView {
         t.sidebar.targetLockedTooltip.replace('{path}', this.lockedTargetFile.path)
       );
       this.promptTargetFileEl.addClass('is-locked');
+      this.renderProviderBadgeInTargetDocBar(t);
       return;
     }
 
@@ -303,6 +306,26 @@ export class EmilySidebarView extends ItemView {
       const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name is-empty' });
       nameSpan.setText(t.sidebar.noActiveDoc);
       this.promptTargetFileEl.setAttribute('title', t.sidebar.noActiveDoc);
+    }
+    this.renderProviderBadgeInTargetDocBar(t);
+  }
+
+  private renderProviderBadgeInTargetDocBar(t: TranslationKeys) {
+    if (!this.promptTargetFileEl) return;
+    const client = this.plugin.getLLMClient();
+    if (client.isMultiProviderAvailable()) {
+      const active = this.plugin.settings.activeProvider || 'auto';
+      let pText = t.sidebar.providerBadgePrimary;
+      let pClass = 'is-primary';
+      if (active === 'secondary') {
+        pText = t.sidebar.providerBadgeSecondary;
+        pClass = 'is-secondary';
+      } else if (this.plugin.settings.enableChunkDistribution) {
+        pText = t.sidebar.providerBadgeDistributed;
+        pClass = 'is-distributed';
+      }
+      const pBadge = this.promptTargetFileEl.createSpan({ cls: `emily-provider-badge ${pClass}` });
+      pBadge.setText(pText);
     }
   }
 
@@ -1110,12 +1133,13 @@ export class EmilySidebarView extends ItemView {
           contentToTranslate,
           transOptionsWithDetected,
           promptText,
-          (current, total) => {
+          (current, total, provider) => {
             if (total > 1) {
+              const pBadge = provider ? (provider === 'secondary' ? '[P2] ' : '[P1] ') : '';
               this.updateTimelineStep(
                 step2,
                 'active',
-                `LLM ${opLabel} (${langLabel}) [${current}/${total}]`,
+                `LLM ${opLabel} (${langLabel}) ${pBadge}[${current}/${total}]`,
                 t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total))
               );
             }
@@ -1131,10 +1155,14 @@ export class EmilySidebarView extends ItemView {
           ? t.sidebar.chunkSplitInfo.replace('{count}', String(transResult.result.chunksCount))
           : '';
 
+        const failoverTimelineText = transResult.failedOver
+          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', transResult.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          : '';
+
         this.updateTimelineStep(
           step2,
           'done',
-          `LLM ${opLabel} (${langLabel})${chunkInfo}`,
+          `LLM ${opLabel} (${langLabel})${chunkInfo}${failoverTimelineText}`,
           t.sidebar.opCompletedDesc.replace('{op}', opLabel).replace('{time}', String(transResult.totalTimeMs)).replace('{speed}', String(transResult.tokensPerSec || 0))
         );
 
@@ -1194,6 +1222,8 @@ export class EmilySidebarView extends ItemView {
           originalMarkdown: contentToTranslate,
           translatedMarkdown: transResult.result.translatedMarkdown,
           effectiveSrc: transEffectiveSrc,
+          providerUsed: transResult.providerUsed,
+          failedOver: transResult.failedOver,
           t
         });
       } else if (hasProofreadOptions) {
@@ -1224,10 +1254,14 @@ export class EmilySidebarView extends ItemView {
           signal
         );
 
+        const proofFailoverText = proofResult.failedOver
+          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', proofResult.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          : '';
+
         this.updateTimelineStep(
           step2,
           'done',
-          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary})`,
+          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary})${proofFailoverText}`,
           t.sidebar.opProofCompletedDesc.replace('{time}', String(proofResult.totalTimeMs)).replace('{speed}', String(proofResult.tokensPerSec || 0))
         );
 
@@ -1262,6 +1296,8 @@ export class EmilySidebarView extends ItemView {
             createdTimestamp: proofResult.created,
             items: [],
             effectiveSrc: detectedLang.name,
+            providerUsed: proofResult.providerUsed,
+            failedOver: proofResult.failedOver,
             t
           });
         } else {
@@ -1306,6 +1342,8 @@ export class EmilySidebarView extends ItemView {
                 createdTimestamp: proofResult.created,
                 items: appliedItems,
                 effectiveSrc: detectedLang.name,
+                providerUsed: proofResult.providerUsed,
+                failedOver: proofResult.failedOver,
                 t
               });
             },
@@ -1331,6 +1369,8 @@ export class EmilySidebarView extends ItemView {
                 createdTimestamp: proofResult.created,
                 items: proofResult.items,
                 effectiveSrc: detectedLang.name,
+                providerUsed: proofResult.providerUsed,
+                failedOver: proofResult.failedOver,
                 t
               });
             },
@@ -1373,10 +1413,14 @@ export class EmilySidebarView extends ItemView {
         const totalTimeMs = Date.now() - startTime;
         const tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));
 
+        const editFailoverText = response.failedOver
+          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', response.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          : '';
+
         this.updateTimelineStep(
           step2,
           'done',
-          t.sidebar.pipelineLlmCustom,
+          `${t.sidebar.pipelineLlmCustom}${editFailoverText}`,
           t.sidebar.opDirectEditCompletedDesc.replace('{time}', String(totalTimeMs)).replace('{speed}', String(tokensPerSec))
         );
 
@@ -1413,6 +1457,8 @@ export class EmilySidebarView extends ItemView {
           createdTimestamp: response.created,
           items: [],
           effectiveSrc: detectedLang.name,
+          providerUsed: response.providerUsed,
+          failedOver: response.failedOver,
           t
         });
       }
@@ -1616,6 +1662,8 @@ export class EmilySidebarView extends ItemView {
     finishReason?: string;
     systemFingerprint?: string;
     createdTimestamp?: number;
+    providerUsed?: 'primary' | 'secondary' | 'distributed';
+    failedOver?: boolean;
     items: ProofreadDiffItem[];
     originalMarkdown?: string;
     translatedMarkdown?: string;
@@ -1636,6 +1684,8 @@ export class EmilySidebarView extends ItemView {
       finishReason,
       systemFingerprint,
       createdTimestamp,
+      providerUsed,
+      failedOver,
       items,
       originalMarkdown,
       translatedMarkdown,
@@ -1670,6 +1720,8 @@ export class EmilySidebarView extends ItemView {
       finishReason,
       systemFingerprint,
       createdTimestamp,
+      providerUsed,
+      failedOver,
       itemsCount: items.length,
       items,
       originalMarkdown,
@@ -1924,6 +1976,20 @@ export class EmilySidebarView extends ItemView {
       statusBadge.createSpan({ text: badgeText });
     }
 
+    if (session.providerUsed) {
+      let pClass = 'is-primary';
+      let pText = t.sidebar.providerBadgePrimary;
+      if (session.providerUsed === 'secondary') {
+        pClass = 'is-secondary';
+        pText = t.sidebar.providerBadgeSecondary;
+      } else if (session.providerUsed === 'distributed') {
+        pClass = 'is-distributed';
+        pText = t.sidebar.providerBadgeDistributed;
+      }
+      const pBadge = statusBadge.createSpan({ cls: `emily-provider-badge ${pClass}` });
+      pBadge.setText(pText);
+    }
+
     const headerRight = header.createDiv({ cls: 'emily-session-header-right' });
     headerRight.createSpan({ text: session.timestamp, cls: 'emily-session-time' });
     const headerChevron = headerRight.createSpan({ cls: 'emily-session-header-chevron' });
@@ -1931,6 +1997,11 @@ export class EmilySidebarView extends ItemView {
 
     // Body container for collapsible contents
     const body = card.createDiv({ cls: 'emily-session-card-body' });
+
+    if (session.failedOver) {
+      const failoverBanner = body.createDiv({ cls: 'emily-failover-callout' });
+      failoverBanner.setText(t.sidebar.providerFailoverNotice);
+    }
 
     // Allow clicking header to toggle individual card collapsed state
     header.addEventListener('click', (e) => {
@@ -2184,6 +2255,14 @@ export class EmilySidebarView extends ItemView {
     createMetaItem(grid1, t.sidebar.elapsedLabel, `${latencySec}s (${session.totalTimeMs}ms)`);
     createMetaItem(grid1, t.sidebar.speedLabel, `${session.tokensPerSec || 0} tokens/sec`);
     createMetaItem(grid1, t.sidebar.finishReasonLabel, session.finishReason || 'stop');
+
+    if (session.providerUsed) {
+      let pLabel = t.sidebar.providerBadgePrimary;
+      if (session.providerUsed === 'secondary') pLabel = t.sidebar.providerBadgeSecondary;
+      else if (session.providerUsed === 'distributed') pLabel = t.sidebar.providerBadgeDistributed;
+      if (session.failedOver) pLabel += ' (Failover)';
+      createMetaItem(grid1, t.sidebar.providerLabel, pLabel);
+    }
 
     if (session.responseId) {
       const displayId = session.responseId.length > 20 ? session.responseId.slice(0, 18) + '…' : session.responseId;
