@@ -11,6 +11,8 @@ import { TranslationScope, PreservationStrategy, TranslationTone, TranslationSty
  */
 export class EmilySettingTab extends PluginSettingTab {
   plugin: EmilyPlugin;
+  private selectedProviderTab: 'primary' | 'secondary' = 'primary';
+  private tab2ConfiguredDot: HTMLElement | null = null;
 
   constructor(app: App, plugin: EmilyPlugin) {
     super(app, plugin);
@@ -60,264 +62,11 @@ export class EmilySettingTab extends PluginSettingTab {
           });
       });
 
-    // Section 1: AI 서비스 프로바이더 1 (기본)
-    new Setting(containerEl).setName(t.settings.provider1Heading).setDesc(t.settings.provider1Desc).setHeading();
-
-    new Setting(containerEl)
-      .setName(t.settings.apiBaseUrlTitle)
-      .setDesc(t.settings.apiBaseUrlDesc)
-      .addText((text) =>
-        text
-          .setPlaceholder('https://api.openai.com/v1')
-          .setValue(this.plugin.settings.apiBaseUrl)
-          .onChange(async (value) => {
-            this.plugin.settings.apiBaseUrl = value.trim();
-            await this.plugin.saveSettings();
-          })
-      )
-      .addExtraButton((btn) => {
-        btn.setIcon('reset')
-          .setTooltip(t.common.reset)
-          .onClick(async () => {
-            this.plugin.settings.apiBaseUrl = 'https://api.openai.com/v1';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.apiKeyTitle)
-      .setDesc(t.settings.apiKeyDesc)
-      .addText((text) => {
-        text.inputEl.type = 'password';
-        text
-          .setPlaceholder(t.settings.apiKeyPlaceholder)
-          .setValue(this.plugin.settings.apiKey)
-          .onChange(async (value) => {
-            this.plugin.settings.apiKey = value.trim();
-            await this.plugin.saveSettings();
-          });
-
-        // Visibility Toggle Button
-        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
-          cls: 'emily-icon-btn',
-          attr: { title: 'Password' }
-        });
-        if (toggleBtn) {
-          setIcon(toggleBtn, 'eye');
-          toggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (text.inputEl.type === 'password') {
-              text.inputEl.type = 'text';
-              setIcon(toggleBtn, 'eye-off');
-            } else {
-              text.inputEl.type = 'password';
-              setIcon(toggleBtn, 'eye');
-            }
-          });
-        }
-      })
-      .addExtraButton((btn) => {
-        btn.setIcon('trash')
-          .setTooltip(t.common.delete)
-          .onClick(async () => {
-            this.plugin.settings.apiKey = '';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.modelTitle)
-      .setDesc(t.settings.modelDesc)
-      .addText((text) =>
-        text
-          .setPlaceholder(t.settings.modelPlaceholder)
-          .setValue(this.plugin.settings.modelName || 'auto')
-          .onChange(async (val) => {
-            this.plugin.settings.modelName = val.trim() || 'auto';
-            await this.plugin.saveSettings();
-          })
-      )
-      .addExtraButton((btn) => {
-        btn.setIcon('reset')
-          .setTooltip(t.settings.modelResetTooltip)
-          .onClick(async () => {
-            this.plugin.settings.modelName = 'auto';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    const p1ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
-
-    new Setting(containerEl)
-      .setName(t.settings.sayHelloTitle)
-      .setDesc(t.settings.sayHelloDesc)
-      .addButton((btn) => {
-        btn
-          .setButtonText(t.settings.sayHelloBtn)
-          .setCta()
-          .onClick(async () => {
-            btn.setDisabled(true);
-            btn.setButtonText(t.settings.sayHelloTesting);
-            p1ResultDiv.empty();
-
-            try {
-              const sysContext = getSystemContext();
-              const client = this.plugin.getLLMClient();
-              const res = await client.testProvider('primary', sysContext.languageName, sysContext.timePeriod);
-              this.renderTestResult(p1ResultDiv, res, t);
-              if (res.success) {
-                new Notice(t.settings.sayHelloNoticeSuccess);
-              } else {
-                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
-              }
-            } catch (err: unknown) {
-              const errMsg = err instanceof Error ? err.message : String(err);
-              this.renderTestResult(p1ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
-              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
-            } finally {
-              btn.setDisabled(false);
-              btn.setButtonText(t.settings.sayHelloBtn);
-            }
-          });
-      });
-
-    containerEl.appendChild(p1ResultDiv);
+    // AI 서비스 프로바이더 설정 (Tab 네비게이션)
+    this.renderProviderTabs(containerEl, t);
 
     // =========================================================================
-    // Section 2: AI 서비스 프로바이더 2 (보조 / 선택 사항)
-    // =========================================================================
-    new Setting(containerEl).setName(t.settings.provider2Heading).setDesc(t.settings.provider2Desc).setHeading();
-
-    new Setting(containerEl)
-      .setName(t.settings.secondaryApiBaseUrlTitle)
-      .setDesc(t.settings.secondaryApiBaseUrlDesc)
-      .addText((text) =>
-        text
-          .setPlaceholder('https://api.groq.com/openai/v1')
-          .setValue(this.plugin.settings.secondaryApiBaseUrl || '')
-          .onChange(async (value) => {
-            this.plugin.settings.secondaryApiBaseUrl = value.trim();
-            await this.plugin.saveSettings();
-          })
-      )
-      .addExtraButton((btn) => {
-        btn.setIcon('reset')
-          .setTooltip(t.common.reset)
-          .onClick(async () => {
-            this.plugin.settings.secondaryApiBaseUrl = '';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.secondaryApiKeyTitle)
-      .setDesc(t.settings.secondaryApiKeyDesc)
-      .addText((text) => {
-        text.inputEl.type = 'password';
-        text
-          .setPlaceholder(t.settings.apiKeyPlaceholder)
-          .setValue(this.plugin.settings.secondaryApiKey || '')
-          .onChange(async (value) => {
-            this.plugin.settings.secondaryApiKey = value.trim();
-            await this.plugin.saveSettings();
-          });
-
-        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
-          cls: 'emily-icon-btn',
-          attr: { title: 'Password' }
-        });
-        if (toggleBtn) {
-          setIcon(toggleBtn, 'eye');
-          toggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (text.inputEl.type === 'password') {
-              text.inputEl.type = 'text';
-              setIcon(toggleBtn, 'eye-off');
-            } else {
-              text.inputEl.type = 'password';
-              setIcon(toggleBtn, 'eye');
-            }
-          });
-        }
-      })
-      .addExtraButton((btn) => {
-        btn.setIcon('trash')
-          .setTooltip(t.common.delete)
-          .onClick(async () => {
-            this.plugin.settings.secondaryApiKey = '';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.secondaryModelTitle)
-      .setDesc(t.settings.secondaryModelDesc)
-      .addText((text) =>
-        text
-          .setPlaceholder(t.settings.modelPlaceholder)
-          .setValue(this.plugin.settings.secondaryModelName || 'auto')
-          .onChange(async (val) => {
-            this.plugin.settings.secondaryModelName = val.trim() || 'auto';
-            await this.plugin.saveSettings();
-          })
-      )
-      .addExtraButton((btn) => {
-        btn.setIcon('reset')
-          .setTooltip(t.settings.modelResetTooltip)
-          .onClick(async () => {
-            this.plugin.settings.secondaryModelName = 'auto';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-          });
-      });
-
-    const p2ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
-
-    new Setting(containerEl)
-      .setName(t.settings.sayHelloTitle)
-      .setDesc(t.settings.sayHelloDesc)
-      .addButton((btn) => {
-        btn
-          .setButtonText(t.settings.sayHelloBtn)
-          .onClick(async () => {
-            if (!this.plugin.settings.secondaryApiBaseUrl) {
-              new Notice('Provider 2 API Base URL is not configured.');
-              return;
-            }
-            btn.setDisabled(true);
-            btn.setButtonText(t.settings.sayHelloTesting);
-            p2ResultDiv.empty();
-
-            try {
-              const sysContext = getSystemContext();
-              const client = this.plugin.getLLMClient();
-              const res = await client.testProvider('secondary', sysContext.languageName, sysContext.timePeriod);
-              this.renderTestResult(p2ResultDiv, res, t);
-              if (res.success) {
-                new Notice(t.settings.sayHelloNoticeSuccess);
-              } else {
-                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
-              }
-            } catch (err: unknown) {
-              const errMsg = err instanceof Error ? err.message : String(err);
-              this.renderTestResult(p2ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
-              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
-            } finally {
-              btn.setDisabled(false);
-              btn.setButtonText(t.settings.sayHelloBtn);
-            }
-          });
-      });
-
-    containerEl.appendChild(p2ResultDiv);
-
-    // =========================================================================
-    // Section 3: 다중 프로바이더 운영 정책 (Multi-Provider Policies)
+    // Section 2: 다중 프로바이더 운영 정책 (Multi-Provider Policies)
     // =========================================================================
     new Setting(containerEl).setName(t.settings.multiProviderPolicyHeading).setDesc(t.settings.multiProviderPolicyDesc).setHeading();
 
@@ -664,6 +413,354 @@ export class EmilySettingTab extends PluginSettingTab {
       errBox.setText(result.error || 'Connection failed');
     }
   }
+
+  private renderProviderTabs(containerEl: HTMLElement, t: TranslationStrings): void {
+    const navEl = containerEl.createDiv({
+      cls: 'emily-settings-tab-nav',
+      attr: { role: 'tablist', 'aria-label': 'AI Service Providers' }
+    });
+
+    const tabContentEl = containerEl.createDiv({ cls: 'emily-provider-tab-panel' });
+
+    const btn1 = navEl.createEl('button', {
+      cls: `emily-settings-tab-btn ${this.selectedProviderTab === 'primary' ? 'is-active' : ''}`,
+      attr: {
+        role: 'tab',
+        'aria-selected': this.selectedProviderTab === 'primary' ? 'true' : 'false',
+        tabindex: this.selectedProviderTab === 'primary' ? '0' : '-1'
+      }
+    });
+    const icon1 = btn1.createSpan();
+    setIcon(icon1, 'sparkles');
+    btn1.createSpan({ text: t.settings.providerTab1 });
+
+    const btn2 = navEl.createEl('button', {
+      cls: `emily-settings-tab-btn ${this.selectedProviderTab === 'secondary' ? 'is-active' : ''}`,
+      attr: {
+        role: 'tab',
+        'aria-selected': this.selectedProviderTab === 'secondary' ? 'true' : 'false',
+        tabindex: this.selectedProviderTab === 'secondary' ? '0' : '-1'
+      }
+    });
+    const icon2 = btn2.createSpan();
+    setIcon(icon2, 'server');
+    btn2.createSpan({ text: t.settings.providerTab2 });
+
+    this.tab2ConfiguredDot = btn2.createSpan({
+      cls: `emily-tab-configured-dot ${this.plugin.settings.secondaryApiBaseUrl?.trim() ? '' : 'is-hidden'}`
+    });
+    this.tab2ConfiguredDot.setAttribute('title', t.settings.providerConfiguredBadge);
+
+    const switchTab = (tab: 'primary' | 'secondary') => {
+      if (this.selectedProviderTab === tab) return;
+      this.selectedProviderTab = tab;
+
+      btn1.classList.toggle('is-active', tab === 'primary');
+      btn1.setAttribute('aria-selected', tab === 'primary' ? 'true' : 'false');
+      btn1.setAttribute('tabindex', tab === 'primary' ? '0' : '-1');
+
+      btn2.classList.toggle('is-active', tab === 'secondary');
+      btn2.setAttribute('aria-selected', tab === 'secondary' ? 'true' : 'false');
+      btn2.setAttribute('tabindex', tab === 'secondary' ? '0' : '-1');
+
+      this.renderActiveTabContent(tabContentEl, t);
+    };
+
+    btn1.addEventListener('click', () => switchTab('primary'));
+    btn2.addEventListener('click', () => switchTab('secondary'));
+
+    navEl.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        switchTab('secondary');
+        btn2.focus();
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        switchTab('primary');
+        btn1.focus();
+      }
+    });
+
+    this.renderActiveTabContent(tabContentEl, t);
+  }
+
+  private updateTabConfiguredBadge(): void {
+    if (!this.tab2ConfiguredDot) return;
+    const isConfigured = Boolean(this.plugin.settings.secondaryApiBaseUrl?.trim());
+    if (isConfigured) {
+      this.tab2ConfiguredDot.removeClass('is-hidden');
+    } else {
+      this.tab2ConfiguredDot.addClass('is-hidden');
+    }
+  }
+
+  private renderActiveTabContent(tabContentEl: HTMLElement, t: TranslationStrings): void {
+    if (this.selectedProviderTab === 'secondary') {
+      this.renderProvider2Content(tabContentEl, t);
+    } else {
+      this.renderProvider1Content(tabContentEl, t);
+    }
+  }
+
+  private renderProvider1Content(containerEl: HTMLElement, t: TranslationStrings): void {
+    containerEl.empty();
+    new Setting(containerEl).setName(t.settings.provider1Heading).setDesc(t.settings.provider1Desc).setHeading();
+
+    new Setting(containerEl)
+      .setName(t.settings.apiBaseUrlTitle)
+      .setDesc(t.settings.apiBaseUrlDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder('https://api.openai.com/v1')
+          .setValue(this.plugin.settings.apiBaseUrl)
+          .onChange(async (value) => {
+            this.plugin.settings.apiBaseUrl = value.trim();
+            await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.common.reset)
+          .onClick(async () => {
+            this.plugin.settings.apiBaseUrl = 'https://api.openai.com/v1';
+            await this.plugin.saveSettings();
+            this.renderProvider1Content(containerEl, t);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.apiKeyTitle)
+      .setDesc(t.settings.apiKeyDesc)
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text
+          .setPlaceholder(t.settings.apiKeyPlaceholder)
+          .setValue(this.plugin.settings.apiKey)
+          .onChange(async (value) => {
+            this.plugin.settings.apiKey = value.trim();
+            await this.plugin.saveSettings();
+          });
+
+        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
+          cls: 'emily-icon-btn',
+          attr: { title: 'Password' }
+        });
+        if (toggleBtn) {
+          setIcon(toggleBtn, 'eye');
+          toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (text.inputEl.type === 'password') {
+              text.inputEl.type = 'text';
+              setIcon(toggleBtn, 'eye-off');
+            } else {
+              text.inputEl.type = 'password';
+              setIcon(toggleBtn, 'eye');
+            }
+          });
+        }
+      })
+      .addExtraButton((btn) => {
+        btn.setIcon('trash')
+          .setTooltip(t.common.delete)
+          .onClick(async () => {
+            this.plugin.settings.apiKey = '';
+            await this.plugin.saveSettings();
+            this.renderProvider1Content(containerEl, t);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.modelTitle)
+      .setDesc(t.settings.modelDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder(t.settings.modelPlaceholder)
+          .setValue(this.plugin.settings.modelName || 'auto')
+          .onChange(async (val) => {
+            this.plugin.settings.modelName = val.trim() || 'auto';
+            await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.settings.modelResetTooltip)
+          .onClick(async () => {
+            this.plugin.settings.modelName = 'auto';
+            await this.plugin.saveSettings();
+            this.renderProvider1Content(containerEl, t);
+          });
+      });
+
+    const p1ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
+
+    new Setting(containerEl)
+      .setName(t.settings.sayHelloTitle)
+      .setDesc(t.settings.sayHelloDesc)
+      .addButton((btn) => {
+        btn
+          .setButtonText(t.settings.sayHelloBtn)
+          .setCta()
+          .onClick(async () => {
+            btn.setDisabled(true);
+            btn.setButtonText(t.settings.sayHelloTesting);
+            p1ResultDiv.empty();
+
+            try {
+              const sysContext = getSystemContext();
+              const client = this.plugin.getLLMClient();
+              const res = await client.testProvider('primary', sysContext.languageName, sysContext.timePeriod);
+              this.renderTestResult(p1ResultDiv, res, t);
+              if (res.success) {
+                new Notice(t.settings.sayHelloNoticeSuccess);
+              } else {
+                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              this.renderTestResult(p1ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
+              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
+            } finally {
+              btn.setDisabled(false);
+              btn.setButtonText(t.settings.sayHelloBtn);
+            }
+          });
+      });
+
+    containerEl.appendChild(p1ResultDiv);
+  }
+
+  private renderProvider2Content(containerEl: HTMLElement, t: TranslationStrings): void {
+    containerEl.empty();
+    new Setting(containerEl).setName(t.settings.provider2Heading).setDesc(t.settings.provider2Desc).setHeading();
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryApiBaseUrlTitle)
+      .setDesc(t.settings.secondaryApiBaseUrlDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder('https://api.groq.com/openai/v1')
+          .setValue(this.plugin.settings.secondaryApiBaseUrl || '')
+          .onChange(async (value) => {
+            this.plugin.settings.secondaryApiBaseUrl = value.trim();
+            await this.plugin.saveSettings();
+            this.updateTabConfiguredBadge();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.common.reset)
+          .onClick(async () => {
+            this.plugin.settings.secondaryApiBaseUrl = '';
+            await this.plugin.saveSettings();
+            this.renderProvider2Content(containerEl, t);
+            this.updateTabConfiguredBadge();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryApiKeyTitle)
+      .setDesc(t.settings.secondaryApiKeyDesc)
+      .addText((text) => {
+        text.inputEl.type = 'password';
+        text
+          .setPlaceholder(t.settings.apiKeyPlaceholder)
+          .setValue(this.plugin.settings.secondaryApiKey || '')
+          .onChange(async (value) => {
+            this.plugin.settings.secondaryApiKey = value.trim();
+            await this.plugin.saveSettings();
+          });
+
+        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
+          cls: 'emily-icon-btn',
+          attr: { title: 'Password' }
+        });
+        if (toggleBtn) {
+          setIcon(toggleBtn, 'eye');
+          toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (text.inputEl.type === 'password') {
+              text.inputEl.type = 'text';
+              setIcon(toggleBtn, 'eye-off');
+            } else {
+              text.inputEl.type = 'password';
+              setIcon(toggleBtn, 'eye');
+            }
+          });
+        }
+      })
+      .addExtraButton((btn) => {
+        btn.setIcon('trash')
+          .setTooltip(t.common.delete)
+          .onClick(async () => {
+            this.plugin.settings.secondaryApiKey = '';
+            await this.plugin.saveSettings();
+            this.renderProvider2Content(containerEl, t);
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t.settings.secondaryModelTitle)
+      .setDesc(t.settings.secondaryModelDesc)
+      .addText((text) =>
+        text
+          .setPlaceholder(t.settings.modelPlaceholder)
+          .setValue(this.plugin.settings.secondaryModelName || 'auto')
+          .onChange(async (val) => {
+            this.plugin.settings.secondaryModelName = val.trim() || 'auto';
+            await this.plugin.saveSettings();
+          })
+      )
+      .addExtraButton((btn) => {
+        btn.setIcon('reset')
+          .setTooltip(t.settings.modelResetTooltip)
+          .onClick(async () => {
+            this.plugin.settings.secondaryModelName = 'auto';
+            await this.plugin.saveSettings();
+            this.renderProvider2Content(containerEl, t);
+          });
+      });
+
+    const p2ResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
+
+    new Setting(containerEl)
+      .setName(t.settings.sayHelloTitle)
+      .setDesc(t.settings.sayHelloDesc)
+      .addButton((btn) => {
+        btn
+          .setButtonText(t.settings.sayHelloBtn)
+          .onClick(async () => {
+            if (!this.plugin.settings.secondaryApiBaseUrl) {
+              new Notice('Provider 2 API Base URL is not configured.');
+              return;
+            }
+            btn.setDisabled(true);
+            btn.setButtonText(t.settings.sayHelloTesting);
+            p2ResultDiv.empty();
+
+            try {
+              const sysContext = getSystemContext();
+              const client = this.plugin.getLLMClient();
+              const res = await client.testProvider('secondary', sysContext.languageName, sysContext.timePeriod);
+              this.renderTestResult(p2ResultDiv, res, t);
+              if (res.success) {
+                new Notice(t.settings.sayHelloNoticeSuccess);
+              } else {
+                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              this.renderTestResult(p2ResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
+              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
+            } finally {
+              btn.setDisabled(false);
+              btn.setButtonText(t.settings.sayHelloBtn);
+            }
+          });
+      });
+
+    containerEl.appendChild(p2ResultDiv);
+  }
 }
+
 
 

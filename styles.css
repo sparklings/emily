@@ -2521,3 +2521,86 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   font-size: 12px;
 }
 
+/* SettingsTab Provider Tab Navigation Styles */
+.emily-settings-tab-nav {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  margin: 14px 0 16px 0;
+}
+
+.emily-settings-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: var(--radius-s, 4px);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.emily-settings-tab-btn:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-settings-tab-btn:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 1px;
+}
+
+.emily-settings-tab-btn.is-active {
+  color: var(--text-normal);
+  font-weight: 600;
+  background-color: var(--background-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+
+.emily-settings-tab-btn.is-active svg {
+  color: var(--interactive-accent);
+}
+
+.emily-tab-configured-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--color-green, #48a56a);
+  box-shadow: 0 0 0 2px rgba(72, 165, 106, 0.25);
+  flex-shrink: 0;
+}
+
+.emily-tab-configured-dot.is-hidden {
+  display: none;
+}
+
+.emily-provider-tab-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  animation: emily-tab-fade-in 0.15s ease-out;
+}
+
+@keyframes emily-tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
