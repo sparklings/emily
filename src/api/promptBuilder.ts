@@ -248,4 +248,112 @@ ${codeCommentInstruction}
 
     return { system, user };
   }
+
+  /**
+   * 설정 화면의 연결 테스트(Say Hello)를 위한 최적화된 시스템 및 사용자 프롬프트를 생성합니다.
+   * - 오픈소스 모델이나 추론 모델이 영문 추론(Chain-of-thought)으로 빠지지 않도록 로케일에 맞춰 직결 프롬프트 구성
+   * - 엄격한 단일 인사말 출력 가드레일 강제
+   * @param locale 사용자 언어 (예: 'Korean', 'English', 'ko', 'en' 등)
+   * @param timePeriod 시간대 ('morning' | 'afternoon' | 'evening' | 'night')
+   * @returns 시스템 프롬프트(system) 및 사용자 프롬프트(user) 객체
+   */
+  static buildGreetingPrompt(
+    locale: string,
+    timePeriod: string
+  ): { system: string; user: string } {
+    const isKorean = locale.toLowerCase().includes('ko') || locale.includes('한국어') || locale.toLowerCase().includes('korean');
+
+    if (isKorean) {
+      let periodKorean = '오늘';
+      if (timePeriod === 'morning') periodKorean = '상쾌한 아침';
+      else if (timePeriod === 'afternoon') periodKorean = '활기찬 오후';
+      else if (timePeriod === 'evening') periodKorean = '편안한 저녁';
+      else if (timePeriod === 'night') periodKorean = '차분한 밤';
+
+      const system = `당신은 Obsidian 지식 노트를 위한 지능형 마크다운 교열 및 전문 번역 어시스턴트 "Assistant Emily"입니다.
+사용자가 Obsidian 설정 화면에서 LLM 연결 테스트를 요청했습니다.
+현재 시간대(${periodKorean})에 맞추어 편집자에게 건넬 친절하고 자연스러운 1~2문장의 한국어 인사말을 작성하십시오.
+
+[엄격한 출력 가드레일 (Strict Guardrails)]
+1. 반드시 당신의 이름인 'Assistant Emily'와 현재 시간대(${periodKorean})를 자연스럽게 언급하십시오.
+2. 절대로 내부 생각(Chain-of-thought), 추론 과정, 분석, 영문 해설, 따옴표("...")는 출력하지 마십시오.
+3. 오직 편집자에게 건넬 최종 인사말 1~2문장만을 순수 텍스트로 즉시 출력하십시오.`;
+
+      const user = `현재 시간대는 ${periodKorean}입니다. 편집자에게 건넬 Assistant Emily의 한국어 인사말을 1~2문장으로 작성해 주세요.`;
+
+      return { system, user };
+    } else {
+      let periodEnglish = 'day';
+      if (timePeriod === 'morning') periodEnglish = 'morning';
+      else if (timePeriod === 'afternoon') periodEnglish = 'afternoon';
+      else if (timePeriod === 'evening') periodEnglish = 'evening';
+      else if (timePeriod === 'night') periodEnglish = 'night';
+
+      const system = `You are "Assistant Emily", an intelligent Markdown editorial and translation assistant for Obsidian.
+The user is testing the LLM connection from Obsidian settings.
+Write a warm, friendly, natural 1-2 sentence greeting suitable for the current time of day (${periodEnglish}).
+
+[Strict Output Guardrails]
+1. Introduce yourself as Assistant Emily and warmly mention the ${periodEnglish}.
+2. Do NOT output any internal thinking, chain-of-thought, reasoning, planning, meta-commentary, or quotes.
+3. Output ONLY the final greeting sentence as plain text.`;
+
+      const user = `The current time period is ${periodEnglish}. Please write Assistant Emily's warm 1-2 sentence greeting.`;
+
+      return { system, user };
+    }
+  }
+
+  /**
+   * LLM 응답에서 <think> 태그, 영문 추론 독백(Chain-of-thought), 코드블록, 외곽 따옴표 등을 안전하게 정제합니다.
+   * @param rawContent LLM 원시 응답 문자열
+   * @returns 정제된 순수 인사말 문자열
+   */
+  static cleanGreetingMessage(rawContent: string): string {
+    if (!rawContent) return '';
+    let text = rawContent.trim();
+
+    // 1. <think>...</think> 태그 제거 (DeepSeek-R1 등 추론 모델 대응)
+    text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+
+    // 2. ```thought ... ``` 또는 ```reasoning ... ``` 코드블록 제거
+    text = text.replace(/```(?:thought|reasoning)?[\s\S]*?```/gi, '').trim();
+
+    // 3. 영문 추론 독백(Chain-of-thought) 감지 및 실제 인사말 추출
+    const hasMonologue = /we need to|the instruction|should be 1-2|let's produce|probably one sentence/i.test(text);
+    if (hasMonologue) {
+      // 본문 내 따옴표로 감싸인 완성된 문장 탐색
+      const quotes = Array.from(text.matchAll(/"([^"]{10,})"/g)).map(m => m[1].trim());
+      // 한글이 포함된 따옴표 우선 선택
+      const koreanQuote = quotes.reverse().find(q => /[가-힣]/.test(q) && !/we need to|instruction/i.test(q));
+      if (koreanQuote) {
+        text = koreanQuote;
+      } else if (quotes.length > 0) {
+        const candidate = quotes.find(q => !/we need to|instruction/i.test(q));
+        if (candidate) text = candidate;
+      } else {
+        // 따옴표가 없는 경우 마지막 한국어 문장 구간 추출
+        const koreanMatch = text.match(/([가-힣\s!?,.~]{10,})/g);
+        if (koreanMatch && koreanMatch.length > 0) {
+          text = koreanMatch[koreanMatch.length - 1].trim();
+        }
+      }
+    }
+
+    // 4. 전체 문자열이 외곽 따옴표로 감싸진 경우 제거
+    if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
+      text = text.slice(1, -1).trim();
+    }
+
+    // 5. 공백 정리
+    text = text.replace(/\s+/g, ' ').trim();
+
+    // 6. 완전히 비어버린 경우 안전한 기본 인사말로 폴백
+    if (!text) {
+      text = '안녕하세요! Obsidian 마크다운 교열 및 번역을 돕는 Assistant Emily입니다.';
+    }
+
+    return text;
+  }
 }
+

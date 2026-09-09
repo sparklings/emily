@@ -1,5 +1,6 @@
 import { requestUrl, RequestUrlResponse } from 'obsidian';
 import { EmilySettings } from '../types/settings';
+import { PromptBuilder } from './promptBuilder';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -320,20 +321,19 @@ export class LLMProxyClient {
     }
 
     const startTime = Date.now();
-    const prompt = `You are Assistant Emily. The user is connecting to your LLM proxy from Obsidian.
-User Locale: ${locale}
-Current Time Period: ${timePeriod}
-Respond strictly with a single natural, friendly, 1-2 sentence greeting in the user's primary language (${locale}) that mentions the time of day and introduces yourself as Assistant Emily.`;
+    const { system, user } = PromptBuilder.buildGreetingPrompt(locale, timePeriod);
 
     try {
       const response = await this.executeSingleProviderRequest(providerId, [
-        { role: 'system', content: 'You are Assistant Emily, an intelligent Markdown editorial assistant for Obsidian.' },
-        { role: 'user', content: prompt }
-      ], { temperature: 0.7, max_tokens: 150 });
+        { role: 'system', content: system },
+        { role: 'user', content: user }
+      ], { temperature: 0.3, max_tokens: 200 });
+
+      const cleanedGreeting = PromptBuilder.cleanGreetingMessage(response.content);
 
       return {
         success: true,
-        message: response.content.trim(),
+        message: cleanedGreeting,
         latencyMs: Date.now() - startTime,
         model: response.model
       };
