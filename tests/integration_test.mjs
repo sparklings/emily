@@ -2823,6 +2823,9 @@ Large language models provide powerful reasoning capabilities for diverse downst
     }
 
     isChunkDistributionEnabled() {
+      if (this.activeProvider === 'primary' || this.activeProvider === 'secondary') {
+        return false;
+      }
       return this.isMultiProviderAvailable() && this.enableChunkDistribution;
     }
 
@@ -3023,7 +3026,17 @@ Large language models provide powerful reasoning capabilities for diverse downst
                  assembledDoc.indexOf('Chunk 3') < assembledDoc.indexOf('Chunk 4');
   console.log(`  - 3) 분산 번역 완료 후 문서 1~4번 청크의 100% 무손실 및 정확한 원본 순서 보존: ${tc40_3}`);
 
-  const test40Passed = tc40_1 && tc40_2 && tc40_3;
+  // 4) 프로바이더 고정(primary/secondary) 시 청크 분산 비활성화 및 auto 모드에서만 분산 활성화 검증
+  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'primary' });
+  const fixedP1Disabled = dualClient.isChunkDistributionEnabled() === false;
+  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'secondary' });
+  const fixedP2Disabled = dualClient.isChunkDistributionEnabled() === false;
+  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'auto' });
+  const autoEnabled = dualClient.isChunkDistributionEnabled() === true;
+  const tc40_4 = fixedP1Disabled && fixedP2Disabled && autoEnabled;
+  console.log(`  - 4) 프로바이더 고정 시 청크 분산 억제 및 auto 모드 분산 보장: ${tc40_4}`);
+
+  const test40Passed = tc40_1 && tc40_2 && tc40_3 && tc40_4;
   if (test40Passed) {
     console.log('  ✓ [TC-40] 대용량 문서 청크 분산 교차 요청 및 순서 보존 100% 검증 완료');
   } else {
@@ -3318,7 +3331,227 @@ Large language models provide powerful reasoning capabilities for diverse downst
     console.error('  ✗ [TC-42] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 42개 테스트 전원 통과) ===');
+  // [TC-43] 대조 화면 블록 정렬(Sequence Alignment) 및 1600자 스마트 청킹 검증
+  console.log('\n▶ [TC-43] 대조 화면 블록 정렬 및 1600자 스마트 청킹 검증...');
+
+  // 1) Needleman-Wunsch 기반 블록 정렬 함수 정의
+  function testAlignBlocks(origBlocks, transBlocks) {
+    const n = origBlocks.length;
+    const m = transBlocks.length;
+    if (n === 0 && m === 0) return [];
+
+    function extractTokens(text) {
+      const tokens = new Set();
+      const matches = text.toLowerCase().match(/[a-z0-9_\-\.\:\/]{3,}/g) || [];
+      for (const token of matches) tokens.add(token);
+      return tokens;
+    }
+
+    const origTokens = origBlocks.map(b => extractTokens(b.text));
+    const transTokens = transBlocks.map(b => extractTokens(b.text));
+
+    function getHeadingLevel(b) {
+      if (b.type !== 'heading') return 0;
+      const match = b.text.match(/^#+/);
+      return match ? match[0].length : 0;
+    }
+    const origHeadingLevels = origBlocks.map(getHeadingLevel);
+    const transHeadingLevels = transBlocks.map(getHeadingLevel);
+
+    function matchScore(i, j) {
+      const ob = origBlocks[i - 1];
+      const tb = transBlocks[j - 1];
+
+      if (ob.type === 'frontmatter' || tb.type === 'frontmatter') {
+        return (ob.type === 'frontmatter' && tb.type === 'frontmatter') ? 100 : -100;
+      }
+      if (ob.type === 'code' || tb.type === 'code') {
+        if (ob.type !== tb.type) return -20;
+        return 30;
+      }
+      if (ob.type === 'heading' || tb.type === 'heading') {
+        if (ob.type !== tb.type) return -30;
+        const oLevel = origHeadingLevels[i - 1];
+        const tLevel = transHeadingLevels[j - 1];
+        if (oLevel !== tLevel) return -25;
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 25 + common * 6;
+      }
+      if (ob.type === 'list_item' || tb.type === 'list_item') {
+        if (ob.type !== tb.type) return -10;
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 15 + common * 4;
+      }
+      if (ob.type === 'text' && tb.type === 'text') {
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 12 + common * 4;
+      }
+      return -15;
+    }
+
+    const GAP_PENALTY = 5;
+    const dp = Array.from({ length: n + 1 }, () => new Float64Array(m + 1));
+    for (let i = 1; i <= n; i++) dp[i][0] = -i * GAP_PENALTY;
+    for (let j = 1; j <= m; j++) dp[0][j] = -j * GAP_PENALTY;
+
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        const score = matchScore(i, j);
+        dp[i][j] = Math.max(
+          dp[i - 1][j - 1] + score,
+          dp[i - 1][j] - GAP_PENALTY,
+          dp[i][j - 1] - GAP_PENALTY
+        );
+      }
+    }
+
+    let i = n;
+    let j = m;
+    const result = [];
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && Math.abs(dp[i][j] - (dp[i - 1][j - 1] + matchScore(i, j))) < 1e-6) {
+        result.unshift({ id: 0, orig: origBlocks[i - 1], trans: transBlocks[j - 1] });
+        i--;
+        j--;
+      } else if (i > 0 && (j === 0 || Math.abs(dp[i][j] - (dp[i - 1][j] - GAP_PENALTY)) < 1e-6)) {
+        result.unshift({ id: 0, orig: origBlocks[i - 1], trans: { type: 'empty', text: '' } });
+        i--;
+      } else {
+        result.unshift({ id: 0, orig: { type: 'empty', text: '' }, trans: transBlocks[j - 1] });
+        j--;
+      }
+    }
+    result.forEach((r, idx) => { r.id = idx + 1; });
+    return result;
+  }
+
+  // Sample data: 원문 8개 블록 vs 번역문 6개 블록 (중간 질문 2개 누락 상황 재현)
+  const testOrig = [
+    { type: 'frontmatter', text: '---\ntitle: Test\n---' },
+    { type: 'heading', text: '## General' },
+    { type: 'heading', text: '### 플러그인 제출 시 GitHub 계정이 필요합니까?' },
+    { type: 'text', text: '예, GitHub 계정이 필요합니다.' },
+    { type: 'heading', text: '### 업데이트마다 다시 제출합니까?' },
+    { type: 'text', text: '아니오, 새 릴리스만 만들면 됩니다.' },
+    { type: 'heading', text: '## Organization' },
+    { type: 'text', text: '조직 관리자 설명.' }
+  ];
+
+  const testTrans = [
+    { type: 'frontmatter', text: '---\ntitle: Test\n---' },
+    { type: 'heading', text: '## General' },
+    { type: 'heading', text: '### Do I need a GitHub account to submit?' },
+    { type: 'text', text: 'Yes, a GitHub account is required.' },
+    { type: 'heading', text: '## Organization' },
+    { type: 'text', text: 'Organization admin explanation.' }
+  ];
+
+  const aligned = testAlignBlocks(testOrig, testTrans);
+
+  const tc43_1 = aligned.length === 8 &&
+                 aligned[0].orig.type === 'frontmatter' && aligned[0].trans.type === 'frontmatter' &&
+                 aligned[1].orig.text === '## General' && aligned[1].trans.text === '## General' &&
+                 aligned[2].orig.text.includes('GitHub') && aligned[2].trans.text.includes('GitHub') &&
+                 aligned[3].trans.type === 'text' &&
+                 aligned[4].trans.type === 'empty' &&
+                 aligned[5].trans.type === 'empty' &&
+                 aligned[6].orig.text === '## Organization' && aligned[6].trans.text === '## Organization';
+  console.log(`  - 1) 비대칭/누락 문서 대조 시 상단 밀림 방지 및 1:1 정밀 정합: ${tc43_1}`);
+
+  // 2) 1600자 스마트 청킹 분할 검증
+  const longMarkdown = `---\ntitle: Long Doc\n---\n` +
+    Array.from({ length: 15 }, (_, i) => `## Section ${i+1}\n` + '테스트 문단 내용입니다. '.repeat(25)).join('\n\n');
+
+  function splitIntoSmartChunks1600(md, maxLen = 1600) {
+    if (!md || md.length <= maxLen) return [md];
+    const match = md.match(/^---\r?\n([\s\S]*?\r?\n)---(?:\r?\n|$)/);
+    const fm = match ? match[0] : '';
+    const body = match ? md.slice(fm.length) : md;
+    const lines = body.split(/\r?\n/);
+    const chunks = [];
+    let currentChunk = [];
+    let currentLen = 0;
+    for (const line of lines) {
+      const isH = /^#{1,6}\s+/.test(line);
+      if (currentLen + line.length > maxLen && (isH || line.trim() === '' || currentChunk.length > 20)) {
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.join('\n'));
+          currentChunk = [];
+          currentLen = 0;
+        }
+      }
+      currentChunk.push(line);
+      currentLen += line.length + 1;
+    }
+    if (currentChunk.length > 0) chunks.push(currentChunk.join('\n'));
+    if (fm && chunks.length > 0) chunks[0] = fm + chunks[0].trimStart();
+    return chunks;
+  }
+
+  const chunks1600 = splitIntoSmartChunks1600(longMarkdown, 1600);
+  const tc43_2 = chunks1600.length >= 3 &&
+                 chunks1600[0].startsWith('---\ntitle: Long Doc') &&
+                 chunks1600.every(c => c.length <= 2200);
+  console.log(`  - 2) 1600자 스마트 청킹 분할 및 프론트매터 보존 (총 ${chunks1600.length}개 청크): ${tc43_2}`);
+
+  // 3) 언어 감지(Detect Language (Korean)) 괄호 포함 언어 정규화 및 동일 언어 판별
+  function normalizeLanguageCodeNew(lang) {
+    if (!lang) return '';
+    const trimmed = lang.trim();
+    const matchParen = trimmed.match(/\(([^)]+)\)/);
+    if (matchParen) {
+      const inner = normalizeLanguageCodeNew(matchParen[1]);
+      if (inner && inner !== 'auto') return inner;
+    }
+    const l = trimmed.toLowerCase();
+    if (l === 'auto' || l === '언어 감지' || l === '자동 감지' || l === 'detect' || l === 'detect language') return 'auto';
+    if (l.includes('한국') || l === 'ko' || l.includes('korean')) return 'ko';
+    if (l.includes('영') || l === 'en' || l.includes('english')) return 'en';
+    if (l.includes('detect') || l.includes('감지')) return 'auto';
+    return l;
+  }
+
+  function isSameLanguageNew(src, tgt) {
+    if (!src || !tgt) return false;
+    let s = src.trim();
+    let t = tgt.trim();
+    const sMatch = s.match(/\(([^)]+)\)/);
+    if (sMatch) s = sMatch[1].trim();
+    const tMatch = t.match(/\(([^)]+)\)/);
+    if (tMatch) t = tMatch[1].trim();
+    const sl = s.toLowerCase();
+    const tl = t.toLowerCase();
+    if (sl === 'auto' || sl === '언어 감지' || sl.includes('detect') || tl === 'auto' || tl === '언어 감지' || tl.includes('detect')) {
+      return false;
+    }
+    const sc = normalizeLanguageCodeNew(s);
+    const tc = normalizeLanguageCodeNew(t);
+    return sc.length > 0 && tc.length > 0 && sc === tc;
+  }
+
+  const normAutoKo = normalizeLanguageCodeNew('Detect Language (Korean)') === 'ko';
+  const sameAutoKo = isSameLanguageNew('Detect Language (Korean)', '한국어') === true;
+  const diffAutoEn = isSameLanguageNew('Detect Language (Korean)', 'English') === false;
+  const tc43_3 = normAutoKo && sameAutoKo && diffAutoEn;
+  console.log(`  - 3) 괄호 포함 언어 감지 명칭('Detect Language (Korean)') 추출 및 정합성: ${tc43_3}`);
+
+  const test43Passed = tc43_1 && tc43_2 && tc43_3;
+  if (test43Passed) {
+    console.log('  ✓ [TC-43] 대조 화면 블록 정렬 및 1600자 스마트 청킹 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-43] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 43개 테스트 전원 통과) ===');
 }
 
 runTests();

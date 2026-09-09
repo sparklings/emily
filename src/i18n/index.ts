@@ -99,8 +99,16 @@ export function getSupportedLanguages(t: TranslationStrings): LanguageOption[] {
  */
 export function normalizeLanguageCode(lang: string): string {
   if (!lang) return '';
-  const l = lang.trim().toLowerCase();
-  if (l === 'auto' || l === '언어 감지' || l === '자동 감지' || l.includes('detect')) return 'auto';
+  const trimmed = lang.trim();
+  // Check if string contains parenthesis with detected language, e.g. "언어 감지 (한국어)" or "Detect Language (Korean)"
+  const matchParen = trimmed.match(/\(([^)]+)\)/);
+  if (matchParen) {
+    const innerCode = normalizeLanguageCode(matchParen[1]);
+    if (innerCode && innerCode !== 'auto') return innerCode;
+  }
+
+  const l = trimmed.toLowerCase();
+  if (l === 'auto' || l === '언어 감지' || l === '자동 감지' || l === 'detect' || l === 'detect language') return 'auto';
   if (l.includes('한국') || l === 'ko' || l.includes('korean')) return 'ko';
   if (l.includes('영') || l === 'en' || l.includes('english')) return 'en';
   if (l.includes('일본') || l === 'ja' || l.includes('japanese')) return 'ja';
@@ -110,6 +118,7 @@ export function normalizeLanguageCode(lang: string): string {
   if (l.includes('프랑스') || l === 'fr' || l.includes('french')) return 'fr';
   if (l.includes('스페인') || l === 'es' || l.includes('spanish')) return 'es';
   if (l.includes('러시아') || l === 'ru' || l.includes('russian')) return 'ru';
+  if (l.includes('detect') || l.includes('감지')) return 'auto';
   return l;
 }
 
@@ -120,6 +129,16 @@ export function normalizeLanguageCode(lang: string): string {
 export function getLocalizedLanguageName(lang: string | undefined, t: TranslationStrings): string {
   if (!lang) return '';
   const trimmed = lang.trim();
+  // Check if lang has "(...)" with detected language, e.g. "언어 감지 (한국어)" or "Detect Language (Korean)"
+  const parenMatch = trimmed.match(/^([^()]+)\s*\(([^)]+)\)$/);
+  if (parenMatch) {
+    const prefix = parenMatch[1].trim().toLowerCase();
+    if (prefix === 'auto' || prefix.includes('detect') || prefix.includes('감지')) {
+      const innerName = getLocalizedLanguageName(parenMatch[2], t);
+      return `${t.languages.auto} (${innerName})`;
+    }
+  }
+
   const code = normalizeLanguageCode(trimmed);
   if (code === 'auto') {
     return t.languages.auto;

@@ -94,14 +94,20 @@ export function normalizeLanguageCode(lang: string): string {
  */
 export function isSameLanguage(sourceLang?: string, targetLang?: string): boolean {
   if (!sourceLang || !targetLang) return false;
-  // If either is 'auto' or '언어 감지', we cannot decide same-language without resolution
-  const sLower = sourceLang.trim().toLowerCase();
-  const tLower = targetLang.trim().toLowerCase();
+  let s = sourceLang.trim();
+  let t = targetLang.trim();
+  const sMatch = s.match(/\(([^)]+)\)/);
+  if (sMatch) s = sMatch[1].trim();
+  const tMatch = t.match(/\(([^)]+)\)/);
+  if (tMatch) t = tMatch[1].trim();
+
+  const sLower = s.toLowerCase();
+  const tLower = t.toLowerCase();
   if (sLower === 'auto' || sLower === '언어 감지' || sLower.includes('detect') || tLower === 'auto' || tLower === '언어 감지' || tLower.includes('detect')) {
     return false;
   }
-  const src = normalizeLanguageCode(sourceLang);
-  const tgt = normalizeLanguageCode(targetLang);
+  const src = normalizeLanguageCode(s);
+  const tgt = normalizeLanguageCode(t);
   return src.length > 0 && tgt.length > 0 && src === tgt;
 }
 

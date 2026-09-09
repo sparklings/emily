@@ -113,11 +113,11 @@ export class TranslationDiffModal extends Modal {
     // View Mode Toggle Switch (Aligned Rows vs Full Document View)
     const toggleGroup = titleRow.createDiv({ cls: 'emily-translation-view-toggle-group' });
     const alignedBtn = toggleGroup.createEl('button', {
-      text: `📑 ${t.transDiffModal.viewModeAligned}`,
+      text: t.transDiffModal.viewModeAligned,
       cls: `emily-translation-view-toggle-btn ${this.viewMode === 'aligned' ? 'is-active' : ''}`
     });
     const fullBtn = toggleGroup.createEl('button', {
-      text: `📝 ${t.transDiffModal.viewModeFull}`,
+      text: t.transDiffModal.viewModeFull,
       cls: `emily-translation-view-toggle-btn ${this.viewMode === 'full' ? 'is-active' : ''}`
     });
 
@@ -478,7 +478,7 @@ export class TranslationDiffModal extends Modal {
       for (let k = 0; k < n; k++) {
         if (origBlocks[k].type === transBlocks[k].type) matchCount++;
       }
-      if (matchCount / n >= 0.7) {
+      if (matchCount / n >= 0.8) {
         return origBlocks.map((ob, idx) => ({
           id: idx + 1,
           orig: ob,
@@ -487,35 +487,89 @@ export class TranslationDiffModal extends Modal {
       }
     }
 
-    function scoreMatch(a?: MarkdownBlock, b?: MarkdownBlock, i?: number, j?: number): number {
-      if (!a || !b) return 0;
-      if (a.type !== b.type) return 0;
-
-      let base = 2;
-      if (a.type === 'frontmatter') base = 10;
-      if (a.type === 'heading') {
-        const aLevel = (a.text.match(/^#+/) || [''])[0];
-        const bLevel = (b.text.match(/^#+/) || [''])[0];
-        base = aLevel === bLevel ? 8 : 4;
-      }
-      if (a.type === 'code') base = 6;
-      if (a.type === 'list_item') base = 3;
-
-      const posDiff = Math.abs(((i || 0) / (n || 1)) - ((j || 0) / (m || 1)));
-      const proximity = Math.max(0, 2 * (1 - posDiff));
-      return base + proximity;
+    // Token extractor for matching shared proper nouns, code identifiers, URLs, etc.
+    function extractTokens(text: string): Set<string> {
+      const tokens = new Set<string>();
+      const matches = text.toLowerCase().match(/[a-z0-9_\-\.\:\/]{3,}/g) || [];
+      for (const token of matches) tokens.add(token);
+      return tokens;
     }
 
+    const origTokens = origBlocks.map(b => extractTokens(b.text));
+    const transTokens = transBlocks.map(b => extractTokens(b.text));
+
+    function getHeadingLevel(b: MarkdownBlock): number {
+      if (b.type !== 'heading') return 0;
+      const match = b.text.match(/^#+/);
+      return match ? match[0].length : 0;
+    }
+    const origHeadingLevels = origBlocks.map(getHeadingLevel);
+    const transHeadingLevels = transBlocks.map(getHeadingLevel);
+
+    function matchScore(i: number, j: number): number {
+      const ob = origBlocks[i - 1];
+      const tb = transBlocks[j - 1];
+
+      // 1. Frontmatter always pairs strictly at document top
+      if (ob.type === 'frontmatter' || tb.type === 'frontmatter') {
+        return (ob.type === 'frontmatter' && tb.type === 'frontmatter') ? 100 : -100;
+      }
+
+      // 2. Code blocks pair with code blocks
+      if (ob.type === 'code' || tb.type === 'code') {
+        if (ob.type !== tb.type) return -20;
+        return 30;
+      }
+
+      // 3. Headings require identical heading levels (## with ##, ### with ###)
+      if (ob.type === 'heading' || tb.type === 'heading') {
+        if (ob.type !== tb.type) return -30;
+        const oLevel = origHeadingLevels[i - 1];
+        const tLevel = transHeadingLevels[j - 1];
+        if (oLevel !== tLevel) return -25;
+
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 25 + common * 6;
+      }
+
+      // 4. List items
+      if (ob.type === 'list_item' || tb.type === 'list_item') {
+        if (ob.type !== tb.type) return -10;
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 15 + common * 4;
+      }
+
+      // 5. Regular text paragraphs
+      if (ob.type === 'text' && tb.type === 'text') {
+        let common = 0;
+        for (const t of origTokens[i - 1]) {
+          if (transTokens[j - 1].has(t)) common++;
+        }
+        return 12 + common * 4;
+      }
+
+      return -15;
+    }
+
+    const GAP_PENALTY = 5;
     const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0));
+    for (let i = 1; i <= n; i++) dp[i][0] = -i * GAP_PENALTY;
+    for (let j = 1; j <= m; j++) dp[0][j] = -j * GAP_PENALTY;
 
     for (let i = 1; i <= n; i++) {
       for (let j = 1; j <= m; j++) {
-        const s = scoreMatch(origBlocks[i - 1], transBlocks[j - 1], i, j);
-        if (s > 0) {
-          dp[i][j] = dp[i - 1][j - 1] + s;
-        } else {
-          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
-        }
+        const score = matchScore(i, j);
+        dp[i][j] = Math.max(
+          dp[i - 1][j - 1] + score,
+          dp[i - 1][j] - GAP_PENALTY,
+          dp[i][j - 1] - GAP_PENALTY
+        );
       }
     }
 
@@ -524,7 +578,7 @@ export class TranslationDiffModal extends Modal {
     const result: AlignedRow[] = [];
 
     while (i > 0 || j > 0) {
-      if (i > 0 && j > 0 && scoreMatch(origBlocks[i - 1], transBlocks[j - 1], i, j) > 0 && dp[i][j] === dp[i - 1][j - 1] + scoreMatch(origBlocks[i - 1], transBlocks[j - 1], i, j)) {
+      if (i > 0 && j > 0 && Math.abs(dp[i][j] - (dp[i - 1][j - 1] + matchScore(i, j))) < 1e-6) {
         result.unshift({
           id: 0,
           orig: origBlocks[i - 1],
@@ -532,20 +586,20 @@ export class TranslationDiffModal extends Modal {
         });
         i--;
         j--;
-      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
-        result.unshift({
-          id: 0,
-          orig: { type: 'empty', text: '' },
-          trans: transBlocks[j - 1]
-        });
-        j--;
-      } else {
+      } else if (i > 0 && (j === 0 || Math.abs(dp[i][j] - (dp[i - 1][j] - GAP_PENALTY)) < 1e-6)) {
         result.unshift({
           id: 0,
           orig: origBlocks[i - 1],
           trans: { type: 'empty', text: '' }
         });
         i--;
+      } else {
+        result.unshift({
+          id: 0,
+          orig: { type: 'empty', text: '' },
+          trans: transBlocks[j - 1]
+        });
+        j--;
       }
     }
 

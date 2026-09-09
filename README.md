@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.11-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.12-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-시스템-아키텍처-및-구조-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -23,23 +23,24 @@
 ## 📖 목차
 
 1. [개요 (Overview)](#-개요-overview)
-2. [시스템 아키텍처 및 구조 (System Architecture)](#-시스템-아키텍처-및-구조-system-architecture)
-3. [상세 기능 (Detailed Features)](#-상세-기능-detailed-features)
+2. [상세 기능 (Detailed Features)](#-상세-기능-detailed-features)
    - [1. 무손실 지능형 마크다운 교열 (Lossless Proofreading)](#1-무손실-지능형-마크다운-교열-lossless-proofreading)
    - [2. 맥락 인식 전문 번역 (Context-Aware Translation)](#2-맥락-인식-전문-번역-context-aware-translation)
    - [3. 마크다운 타이포그래피 및 서식 정규화 (Typography Normalizer)](#3-마크다운-타이포그래피-및-서식-정규화-typography-normalizer)
    - [4. 사용자 맞춤 자유 지시 (Custom Natural Instructions)](#4-사용자-맞춤-자유-지시-custom-natural-instructions)
    - [5. 대화형 Diff 검토 (Interactive Diff Review)](#5-대화형-diff-검토-interactive-diff-review)
-4. [설치 및 환경 설정 (Installation & Setup)](#-설치-및-환경-설정-installation--setup)
+   - [6. 듀얼 AI 서비스 프로바이더 및 고가용성 운영 (Multi-Provider High Availability)](#6-듀얼-ai-서비스-프로바이더-및-고가용성-운영-multi-provider-high-availability)
+   - [7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)](#7-실시간-작업-제어-및-스마트-데스크톱-ux-real-time-control--smart-ux)
+3. [설치 및 환경 설정 (Installation & Setup)](#-설치-및-환경-설정-installation--setup)
    - [플러그인 설치 방법](#플러그인-설치-방법)
    - [AI 백엔드 엔드포인트 연결 가이드](#ai-백엔드-엔드포인트-연결-가이드)
-5. [보안, 프라이버시 및 규정 준수 고지 (Security, Privacy & Disclosures)](#-보안-프라이버시-및-규정-준수-고지-security-privacy--disclosures)
+4. [보안, 프라이버시 및 규정 준수 고지 (Security, Privacy & Disclosures)](#-보안-프라이버시-및-규정-준수-고지-security-privacy--disclosures)
    - [외부 네트워크 통신 고지 (Network Usage)](#외부-네트워크-통신-고지-network-usage)
    - [볼트 파일 접근 및 권한 (Vault File Access)](#볼트-파일-접근-및-권한-vault-file-access)
    - [계정 및 요금 정책 (Account & Monetization)](#계정-및-요금-정책-account--monetization)
    - [원격 분석 및 광고 배제 (Telemetry & Advertisements)](#원격-분석-및-광고-배제-telemetry--advertisements)
-6. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
-7. [라이선스 (License)](#-라이선스-license)
+5. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
+6. [라이선스 (License)](#-라이선스-license)
 
 ---
 
@@ -53,101 +54,6 @@
 * **100% 무손실 보존(Lossless Preservation)** : 원본 문서의 고유한 메타데이터와 옵시디언 고유 문법을 보호합니다.
 * **학술 및 전문 문서에 최적화** : 대용량 문서에 대한 지능형 스마트 청킹(Smart Chunking), 1:1 문단 대조 번역(Bilingual Alignment), 코드 블록 내부 주석 선택 번역을 지원합니다.
 * **로컬 AI 및 프라이버시 존중** : OpenAI 공식 API뿐만 아니라 `FreeLLMAPI`, 로컬 Ollama, LM Studio, vLLM, OpenRouter 등 OpenAI 호환 엔드포인트를 폭넓게 지원합니다.
-
----
-
-## 🏗️ 시스템 아키텍처 및 구조
-
-Assistant Emily는 단일 파일 스크립트 형태를 탈피하여, 모듈형 아키텍처로 구현되었습니다.
-
-```mermaid
-flowchart TB
-    subgraph Platform ["Obsidian App Platform"]
-        WS["Obsidian Workspace & MarkdownView"]
-    end
-
-    subgraph UILayer ["Presentation / UI Layer"]
-        direction TB
-        SB["EmilySidebarView: 반응형 사이드바 패널 & 타임라인"]
-        PM["ProofreadDiffModal: 이슈 단위 대화형 Diff 검토 및 적용 모달"]
-        TM["TranslationDiffModal: 좌우 동기화 스크롤 Split 비교 및 치환 모달"]
-        ST["EmilySettingTab: 다국어 지원 & 엔드포인트 설정 및 진단"]
-    end
-
-    subgraph CoreEngine ["Core Processing Engine"]
-        direction TB
-        MM["MarkdownMasker: 링크·태그·LaTeX·코드블록 무손실 UUID 마스킹"]
-        PE["ProofreadingEngine: 문맥 맞춤법·문법 분석 및 JSON 패치 생성"]
-        TE["TranslationEngine: H1~H3 스마트 청킹 & 1:1 대조 정렬 파이프라인"]
-        MF["MarkdownFormatter: 동아시아 볼드 조사 공백 교정 & 타임스탬프 제거"]
-        CE["ConsistencyEngine: 볼트 내 용어 및 서술 스타일 일관성 검증"]
-        LD["LanguageDetector: 문서 주 언어 자동 감지"]
-    end
-
-    subgraph TransportLayer ["API & Transport Layer"]
-        direction TB
-        PB["PromptBuilder: 작업별 Few-shot & 학술·경어·친근 문체 제어"]
-        PC["LLMProxyClient: Obsidian native requestUrl 기반 통신 (No CORS)"]
-    end
-
-    subgraph Endpoints ["LLM Backend Endpoints"]
-        direction LR
-        EP1["FreeLLMAPI"]
-        EP2["OpenAI"]
-        EP3["Ollama (Local)"]
-        EP4["LM Studio"]
-        EP5["OpenRouter"]
-    end
-
-    %% Flow Connections
-    WS <--> |"문서 동기화 & 핫키"| UILayer
-    UILayer --> |"마크다운 텍스트 전달"| MM
-    MM --> PE
-    MM --> TE
-    PE --> PB
-    TE --> PB
-    LD -.-> |"언어 힌트 제공"| PB
-    PB --> PC
-    PC <--> |"Chat Completions API"| Endpoints
-    PC --> MF
-    MF --> CE
-    CE --> UILayer
-    UILayer --> |"최종 결과 에디터 적용"| WS
-```
-
-### 소스 디렉터리 구조
-
-```
-src/
-├── api/
-│   ├── llmClient.ts           # Obsidian requestUrl 기반의 OpenAI 호환 통신 클라이언트
-│   └── promptBuilder.ts       # 교열/번역/자유지시 모드별 시스템 프롬프트 및 Few-shot 템플릿
-├── core/
-│   ├── consistencyEngine.ts   # 문서 간 어휘 및 스타일 일관성 검증 엔진
-│   ├── languageDetector.ts    # 문서 언어 자동 감지 유틸리티
-│   ├── markdownFormatter.ts   # 동아시아 언어 볼드체 공백 보정 및 타임스탬프 클리너
-│   ├── markdownMasker.ts      # UUID 토큰 기반 마크다운 특수 문법 무손실 마스킹 엔진
-│   ├── proofreadingEngine.ts  # 지능형 교열 및 Diff 항목 파싱 엔진
-│   └── translationEngine.ts   # 스마트 청킹 및 문단별 1:1 대조 번역 엔진
-├── i18n/
-│   ├── index.ts               # 다국어 리소스 로더 및 번역 헬퍼
-│   ├── types.ts               # 엄격한 다국어 번역 키 타입 정의
-│   └── locales/               # ko, en, de, es, fr, ja, ru, zh 로케일 리소스
-├── types/
-│   ├── proofread.ts           # 교열 이슈 및 Diff 데이터 모델
-│   ├── settings.ts            # 플러그인 환경 설정 인터페이스 및 기본값
-│   └── translation.ts         # 번역 옵션 및 청크 데이터 모델
-├── utils/
-│   ├── domUtils.ts            # DOM 조작 및 UI 헬퍼
-│   └── systemInfo.ts          # 시간대 및 시스템 상태 유틸리티
-├── views/
-│   ├── proofreadDiffModal.ts  # 교열 차이점 대화형 검토 모달
-│   ├── settingsTab.ts         # 옵시디언 환경 설정 탭
-│   ├── sidebarView.ts         # 반응형 메인 사이드바 패널
-│   └── translationDiffModal.ts# 번역 좌우 분할 비교(Split Diff) 검토 모달
-├── constants.ts               # 플러그인 전역 상수 및 뷰 ID
-└── main.ts                    # 플러그인 라이프사이클 관리 및 커맨드/이벤트 등록
-```
 
 ---
 
@@ -171,8 +77,8 @@ src/
   * 스타일: `직역(Literal)`, `균형(Balanced)`, `자연스러운 의역(Free Natural)`
 * **코드 블록 주석 전용 번역 스위치**
   * 프로그래밍 코드 블록(`python`, `typescript`, `cpp` 등) 내부의 코드 로직, 변수명, 함수명은 100% 보존하면서 오직 주석(`//`, `#`, `/* ... */`)만 자연스럽게 번역할 수 있습니다.
-* **스마트 청킹(Smart Chunking)**
-  * LLM의 단일 응답 토큰 한계를 초과하는 대용량 문서는 H1~H3 헤더 및 문단 경계를 분석하여 무결성을 유지하며 분할 번역한 뒤 하나로 완벽하게 재조립합니다.
+* **안전 스마트 청킹(Smart Chunking - 1,600자 최적화)**
+  * LLM의 단일 응답 토큰 한계를 초과하는 대용량 문서는 H1~H3 헤더 및 문단 경계를 분석하여 무결성을 유지하며 1,600자 단위로 안전하게 분할 번역한 뒤 하나로 완벽하게 재조립합니다. (조기 단절 및 누락 0% 보장)
 
 ### 3. 마크다운 타이포그래피 및 서식 정규화 (Typography Normalizer)
 * **동아시아 언어 볼드 공백 자동 보정(East Asian Bold Spacing Normalizer)**
@@ -184,9 +90,40 @@ src/
 * 사용자가 원하는 임의의 자연어 지시(예: *"핵심 개념을 옵시디언 콜아웃 블록으로 감싸줘"*, *"글 전체의 결론을 3줄 요약 불릿으로 하단에 추가해줘"*)를 입력창에 적어 손쉽게 적용할 수 있습니다.
 
 ### 5. 대화형 Diff 검토 (Interactive Diff Review)
+* **정밀 시퀀스 정렬 엔진 (Needleman-Wunsch Sequence Alignment)**: 원문과 번역문 간 단락 수 불일치 또는 일부 생략이 발생하더라도 상단 번역 블록이 아래로 왜곡·밀리는 현상을 원천 방지하고 1:1 완벽 정합을 유지합니다.
+* **구조 앵커 매칭**: 프론트매터 1:1 고정, 헤딩 레벨(`##`, `###`) 엄격 일치, 공통 고유명사/코드/URL 토큰 유사도 기반 정확한 블록 대조.
+* **깔끔한 텍스트 UI**: 대조 검토 모달창 내 모든 이모지/아이콘을 전면 제거하여 가독성과 전문성을 극대화한 순수 텍스트 레이블 UI.
 * 사이드바 하단의 세션 이력 카드에서 과거 실행 결과를 언제든지 다시 열람할 수 있습니다.
 * 과거 세션 결과를 다시 열 때는 **추가 LLM API 호출이나 토큰 소모가 전혀 발생하지 않으며(Zero-Token)**, 좌우 분할 스크롤(Synchronized Split View) 화면에서 원본과 수정본을 안전하게 비교 검토한 뒤 원하는 방식으로 문서에 적용할 수 있습니다.
 * **데스크톱 편의성**: `Ctrl+Enter` / `Cmd+Enter` 글로벌 단축키 실행, 한글 IME 조합 중복 방지, 실수로 인한 모달 닫힘 방지(Shake 효과)가 적용되어 있습니다.
+
+### 6. 듀얼 AI 서비스 프로바이더 및 고가용성 운영 (Multi-Provider High Availability)
+* **탭 네비게이션 설정 UI (Tab Navigation UI)**
+  * 기본 프로바이더(Provider 1)와 보조 프로바이더(Provider 2)를 직관적인 상단 탭으로 독립 관리합니다.
+  * WAI-ARIA 접근성 표준(`role="tablist"`, `role="tab"`, `aria-selected`)을 준수하며, 키보드 좌우 방향키(`ArrowLeft`/`ArrowRight`)를 통한 즉각적인 탭 전환을 지원합니다.
+  * 프로바이더 1과 2의 메뉴명을 100% 일원화(`API 기본 URL`, `API 키`, `모델 이름`, `연결 테스트`)하여 설정 혼선을 완전히 제거하였습니다.
+* **동시 헬스체크 및 동적 기본값 선출 (Concurrent Health Check)**
+  * **`모든 프로바이더 헬스체크 및 기본값 설정`** 버튼 클릭 한 번으로 등록된 양측 프로바이더의 연결 상태와 응답 지연 시간(Latency ms)을 동시 측정합니다.
+  * 정상 응답을 반환하는 프로바이더를 감지하여 최적의 기본 요청 프로바이더로 자동 선출합니다.
+* **무중단 자동 장애 복구 (Auto Failover)**
+  * 주 프로바이더 통신 중 네트워크 타임아웃, 502/503 게이트웨이 오류, 서비스 다운 등 장애가 감지되면, 작업 실패를 방지하기 위해 등록된 보조 프로바이더로 **무중단 자동 우회 재시도(Silent Retry)**를 수행합니다.
+* **대용량 문서 청크 분산 처리 (Distributed Chunk Processing)**
+  * 1,600자를 초과하는 긴 문서는 헤딩(`##`, `###`) 및 문단 사이 빈 줄을 기준으로 스마트 청킹을 수행합니다.
+  * 분할된 청크를 프로바이더 1과 프로바이더 2에 짝수/홀수 교차 분산(`[P1][1/4]`, `[P2][2/4]`, `[P1][3/4]`, `[P2][4/4]`) 요청하여 단일 프로바이더의 요청 빈도 제한(Rate Limit)을 우회하고 전체 번역 처리량을 대폭 향상합니다.
+  * 사용자가 `기본 활성 프로바이더`를 특정 프로바이더(`프로바이더 1 고정` 또는 `프로바이더 2 고정`)로 명시 지정한 경우, 사용자 의도를 엄격히 존중하여 타 프로바이더로 분산하지 않고 단일 프로바이더를 고수합니다.
+* **연결 테스트 프롬프트 가드레일 및 추론 독백(`<think>`) 정제**
+  * 현재 시간대(아침/오후/저녁/밤) 및 로케일 언어에 맞춘 자연스러운 인사말을 생성합니다.
+  * DeepSeek R1, Qwen 2.5 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`) 태그 블록 및 영문 독백을 정교한 정규식으로 완벽 제거하고 순수 한국어 인사말만 정제하여 표시합니다.
+
+### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
+* **실시간 즉시 작업 취소 (Immediate Task Cancel with AbortController)**
+  * 긴 문서 번역이나 교열 작업 중 사용자가 언제든지 중단할 수 있도록 스트림 헤더에 **`[❌ 작업 취소]`** 버튼을 제공합니다.
+  * 취소 클릭 시 `AbortController`를 통해 진행 중이던 비동기 HTTP 통신을 즉시 중단하고, 생성 중이던 미완성 임시 파일을 옵시디언 휴지통(`trashFile`)으로 자동 정리하여 볼트 오염을 원천 방지합니다.
+* **방해 없는 클린 대상 문서 표시줄**
+  * 사이드바 대상 문서 바에서 시각적 노이즈를 배제하여 활성 노트의 전체 제목을 온전하고 또렷하게 표시합니다.
+* **실시간 타임라인 및 세션 프로바이더 텔레메트리**
+  * 다단계 파이프라인 진행 중 실시간 타임라인에 `[P1] [1/4]`, `[P2] [2/4]` 형태로 청크별 진행 상황을 상세히 안내합니다.
+  * 완료된 세션 히스토리 카드에 실제 사용된 공급자 정보(`P1`, `P2`, `P1+P2 분산`, `(Failover)`) 및 처리 시간, 토큰 속도(tokens/sec)를 투명하게 기록합니다.
 
 ---
 
@@ -214,17 +151,26 @@ src/
 
 ---
 
-### AI 백엔드 엔드포인트 연결 가이드
+### AI 서비스 프로바이더 및 운영 정책 설정 가이드
 
-옵시디언 **설정 > Assistant Emily** 탭에서 사용 중인 LLM 백엔드 정보에 맞추어 설정하십시오:
+옵시디언 **설정 > Assistant Emily** 탭에서 주(Primary) 및 보조(Secondary) 프로바이더 정보를 설정하십시오:
 
-| 서비스 유형 | API Base URL 권장값 | API Key | 권장 모델명 |
+#### 1. 프로바이더 등록 (Tab Navigation)
+
+| 프로바이더 구분 | 역할 및 용도 | API 기본 URL 예시 | 모델 이름 예시 |
 | :--- | :--- | :--- | :--- |
-| **FreeLLMAPI / 무료 프록시** | `https://your-freellmapi-endpoint/v1` | 발급된 키 또는 임의값 | `auto` 또는 엔드포인트 제공 모델 |
-| **OpenAI 공식** | `https://api.openai.com/v1` | OpenAI 발급 키 (`sk-...`) | `gpt-4o`, `gpt-4o-mini` |
+| **프로바이더 1 (Primary)** | 기본 작업 및 일반 질의 수행 | `https://api.openai.com/v1`<br>`https://your-freellmapi/v1`<br>`http://localhost:11434/v1` (Ollama) | `gpt-4o`<br>`auto`<br>`llama3` |
+| **프로바이더 2 (Secondary)** | 고가용성 보조, 장애 자동 복구(Failover) 및 대용량 청크 분산 처리 | `https://api.groq.com/openai/v1`<br>`http://localhost:1234/v1` (LM Studio)<br>`https://openrouter.ai/api/v1` | `llama-3.3-70b-versatile`<br>`auto`<br>`anthropic/claude-3.5-sonnet` |
 
-> [!TIP]
-> 설정 탭의 **`Test Connection & Say Hello`** 버튼을 클릭하면, 현재 설정된 엔드포인트와 모델의 실제 응답 지연 시간(ms)과 정상 통신 여부를 즉시 검증할 수 있습니다.
+#### 2. 다중 프로바이더 운영 정책
+
+* **기본 활성 프로바이더 (Active Provider)**
+  * `자동 선택 (Auto)`: 헬스체크 결과를 바탕으로 정상 연결된 프로바이더를 스마트하게 선출하여 활용합니다.
+  * `프로바이더 1 고정`: 모든 일반 요청을 프로바이더 1로 고정하며 대용량 분산 청크도 타 프로바이더로 분산하지 않습니다.
+  * `프로바이더 2 고정`: 모든 일반 요청을 프로바이더 2로 고정하며 대용량 분산 청크도 타 프로바이더로 분산하지 않습니다.
+* **자동 장애 복구 (Auto Failover)**: 토글 활성화 시 주 프로바이더 오류 발생 시 보조 프로바이더로 자동 우회 재시도합니다.
+* **대용량 문서 청크 분산 처리 (Distributed Chunk Processing)**: 대용량 번역 시 짝수/홀수 청크를 프로바이더 1과 2에 교차 분산 요청합니다.
+* **모든 프로바이더 헬스체크 및 기본값 설정**: 원클릭으로 등록된 양측 프로바이더의 연결 상태와 응답 시간을 동시 진단하고 권장 프로바이더를 즉시 확인합니다.
 
 ---
 
@@ -297,7 +243,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.11-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.12-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -314,23 +260,24 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 ## 📖 Table of Contents
 
 1. [Overview](#-overview)
-2. [System Architecture](#-system-architecture)
-3. [Detailed Features](#-detailed-features)
+2. [Detailed Features](#-detailed-features)
    - [1. Lossless Intelligent Markdown Proofreading](#1-lossless-intelligent-markdown-proofreading)
    - [2. Context-Aware Professional Translation](#2-context-aware-professional-translation)
    - [3. Markdown Typography & Formatting Normalization](#3-markdown-typography--formatting-normalization)
    - [4. Custom Natural Instructions](#4-custom-natural-instructions)
    - [5. Interactive Diff Review](#5-interactive-diff-review)
-4. [Installation & Setup](#-installation--setup)
+   - [6. Dual AI Service Providers & High Availability](#6-dual-ai-service-providers--high-availability)
+   - [7. Real-Time Task Cancellation & Desktop UX](#7-real-time-task-cancellation--desktop-ux)
+3. [Installation & Setup](#-installation--setup)
    - [Plugin Installation Methods](#plugin-installation-methods)
-   - [AI Backend Endpoint Connection Guide](#ai-backend-endpoint-connection-guide)
-5. [Security, Privacy & Disclosures](#-security-privacy--disclosures)
+   - [AI Service Providers & Operating Policies Guide](#ai-service-providers--operating-policies-guide)
+4. [Security, Privacy & Disclosures](#-security-privacy--disclosures)
    - [External Network Communication Notice (Network Usage)](#external-network-communication-notice)
    - [Vault File Access & Permissions (Vault File Access)](#vault-file-access--permissions)
    - [Account & Monetization Policy (Account & Monetization)](#account--monetization-policy)
    - [Zero Telemetry & Ad-Free Policy (Telemetry & Advertisements)](#zero-telemetry--ad-free-policy)
-6. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
-7. [License](#-license)
+5. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
+6. [License](#-license)
 
 ---
 
@@ -344,101 +291,6 @@ Conventional AI tools often corrupt or strip critical Markdown elements—such a
 * **100% Lossless Preservation**: Safely shields the document's original metadata and unique Obsidian syntax from corruption.
 * **Optimized for Academic & Technical Writing**: Features smart chunking for large documents, 1:1 paragraph bilingual alignment, and selective translation for code block comments.
 * **Local AI & Privacy First**: Universally supports OpenAI-compatible endpoints—ranging from official OpenAI API and `FreeLLMAPI` to local Ollama, LM Studio, vLLM, and OpenRouter.
-
----
-
-## 🏗️ System Architecture
-
-Assistant Emily moves beyond monolithic single-file scripts with a modular and robust software architecture.
-
-```mermaid
-flowchart TB
-    subgraph Platform ["Obsidian App Platform"]
-        WS["Obsidian Workspace & MarkdownView"]
-    end
-
-    subgraph UILayer ["Presentation / UI Layer"]
-        direction TB
-        SB["EmilySidebarView: Responsive Sidebar Panel & Timeline"]
-        PM["ProofreadDiffModal: Issue-by-issue Interactive Diff Review & Apply Modal"]
-        TM["TranslationDiffModal: Synchronized Split-Scroll Diff & Replace Modal"]
-        ST["EmilySettingTab: Multi-language Support & Endpoint Config/Diagnostics"]
-    end
-
-    subgraph CoreEngine ["Core Processing Engine"]
-        direction TB
-        MM["MarkdownMasker: Lossless UUID Masking for Links, Tags, LaTeX, & Codeblocks"]
-        PE["ProofreadingEngine: Contextual Spelling/Grammar Analysis & JSON Patch Generator"]
-        TE["TranslationEngine: H1~H3 Smart Chunking & 1:1 Alignment Pipeline"]
-        MF["MarkdownFormatter: East Asian Bold-Particle Spacing Fix & Timestamp Stripper"]
-        CE["ConsistencyEngine: Vault-wide Terminology & Tone Consistency Verification"]
-        LD["LanguageDetector: Primary Document Language Auto-Detection"]
-    end
-
-    subgraph TransportLayer ["API & Transport Layer"]
-        direction TB
-        PB["PromptBuilder: Task-specific Few-shot & Academic/Polite/Friendly Tone Control"]
-        PC["LLMProxyClient: Obsidian Native requestUrl-based Transport (No CORS)"]
-    end
-
-    subgraph Endpoints ["LLM Backend Endpoints"]
-        direction LR
-        EP1["FreeLLMAPI"]
-        EP2["OpenAI"]
-        EP3["Ollama (Local)"]
-        EP4["LM Studio"]
-        EP5["OpenRouter"]
-    end
-
-    %% Flow Connections
-    WS <--> |"Document Sync & Hotkeys"| UILayer
-    UILayer --> |"Pass Markdown Text"| MM
-    MM --> PE
-    MM --> TE
-    PE --> PB
-    TE --> PB
-    LD -.-> |"Provide Language Hint"| PB
-    PB --> PC
-    PC <--> |"Chat Completions API"| Endpoints
-    PC --> MF
-    MF --> CE
-    CE --> UILayer
-    UILayer --> |"Apply Final Result to Editor"| WS
-```
-
-### Source Directory Structure
-
-```
-src/
-├── api/
-│   ├── llmClient.ts           # OpenAI-compatible communication client powered by Obsidian requestUrl
-│   └── promptBuilder.ts       # System prompts and few-shot templates for proofreading, translation, and custom instruction modes
-├── core/
-│   ├── consistencyEngine.ts   # Vault-wide terminology and writing style consistency engine
-│   ├── languageDetector.ts    # Document primary language auto-detection utility
-│   ├── markdownFormatter.ts   # East Asian bold spacing normalizer and timestamp stripper
-│   ├── markdownMasker.ts      # Lossless UUID masking engine for Markdown and Obsidian syntax
-│   ├── proofreadingEngine.ts  # Intelligent proofreading and diff-item parsing engine
-│   └── translationEngine.ts   # Smart chunking and paragraph 1:1 bilingual translation engine
-├── i18n/
-│   ├── index.ts               # Multi-language resource loader and translation helper
-│   ├── types.ts               # Type-safe i18n translation key definitions
-│   └── locales/               # ko, en, de, es, fr, ja, ru, zh locale resources
-├── types/
-│   ├── proofread.ts           # Proofreading issue and diff data models
-│   ├── settings.ts            # Plugin settings interface and default values
-│   └── translation.ts         # Translation options and chunk data models
-├── utils/
-│   ├── domUtils.ts            # DOM manipulation and UI helpers
-│   └── systemInfo.ts          # Timezone and system status utilities
-├── views/
-│   ├── proofreadDiffModal.ts  # Interactive proofreading diff review modal
-│   ├── settingsTab.ts         # Obsidian settings tab
-│   ├── sidebarView.ts         # Responsive main sidebar panel
-│   └── translationDiffModal.ts# Split diff comparison review modal for translation
-├── constants.ts               # Plugin-wide constants and view identifiers
-└── main.ts                    # Plugin lifecycle management, commands, and event registration
-```
 
 ---
 
@@ -462,8 +314,8 @@ src/
   * Style: `Literal`, `Balanced`, `Free Natural`
 * **Code Block Comments Only Translation Switch**:
   * Safely translates comments (`//`, `#`, `/* ... */`) while maintaining 100% integrity of code syntax, variable names, and function identifiers across programming languages (`python`, `typescript`, `cpp`, etc.).
-* **Smart Chunking**:
-  * For long documents exceeding single-turn LLM response token limits, the engine intelligently splits text along H1–H3 headers and paragraph boundaries, translating sequentially and reconstructing the document seamlessly.
+* **Safe Smart Chunking (1,600 Characters Optimized)**:
+  * For long documents exceeding single-turn LLM response token limits, the engine intelligently splits text along H1–H3 headers and paragraph boundaries at a safe 1,600-character threshold, translating sequentially and reconstructing the document seamlessly without token clipping or omissions.
 
 ### 3. Markdown Typography & Formatting Normalization
 * **East Asian Bold Spacing Normalizer**:
@@ -475,9 +327,39 @@ src/
 * Execute arbitrary natural language commands directly in the prompt input field (e.g., *"Wrap key concepts in Obsidian callout blocks"*, *"Add a 3-bullet summary conclusion at the bottom"*).
 
 ### 5. Interactive Diff Review
+* **Needleman-Wunsch Sequence Alignment Engine**: Prevents vertical block distortion and stretching when source and translated paragraph counts differ or when partial omissions occur, preserving 1:1 row alignment between matching sections.
+* **Structural Anchor & Token Matching**: Strict heading level matching (`##` with `##`, `###` with `###`), YAML frontmatter anchor lock, and token overlap scoring for code/URLs/proper nouns (`GitHub`, `Discord`, `General`, `Obsidian`).
+* **Clean Text-Only UI**: Replaced all emoji icons in the comparison modal with clean, professional text labels across headers, mode toggle buttons, and saving action buttons.
 * Re-inspect previous execution outputs at any time via the session history cards located at the bottom of the sidebar.
 * **Zero-Token Re-review**: Reopening prior results consumes **zero additional LLM API calls or tokens**, letting you safely compare original and modified documents in a synchronized split-scroll view before applying changes.
 * **Desktop Productivity**: Features `Ctrl+Enter` / `Cmd+Enter` global shortcuts, IME composition protection for Korean/CJK input, and modal shake effects to prevent accidental dismissal.
+
+### 6. Dual AI Service Providers & High Availability
+* **Tab Navigation Configuration UI**
+  * Manage Provider 1 (Primary) and Provider 2 (Secondary) independently using modern tab navigation.
+  * Complies with WAI-ARIA accessibility standards (`role="tablist"`, `role="tab"`, `aria-selected`) with keyboard arrow (`ArrowLeft`/`ArrowRight`) navigation support.
+  * 100% unified field labeling (`API Base URL`, `API Key`, `Model Name`, `Test Connection`) for seamless user experience.
+* **Concurrent Health Check & Dynamic Recommendation**
+  * Click **`Test All Providers & Set Default`** to simultaneously probe latency (ms) and operational health for both registered providers.
+  * Dynamically nominates the healthy, lower-latency provider as the default for upcoming tasks.
+* **Seamless Auto Failover**
+  * If the primary provider encounters network timeouts, HTTP 502/503 errors, or service downtime, Assistant Emily automatically and silently fails over to the secondary provider without aborting the task.
+* **Distributed Chunk Processing**
+  * For long documents exceeding 1,600 characters, the engine splits content along Markdown headings and paragraph boundaries.
+  * Odd and even chunks are distributed alternately across Provider 1 and Provider 2 (`[P1][1/4]`, `[P2][2/4]`, `[P1][3/4]`, `[P2][4/4]`), bypassing single-provider rate limits and boosting overall translation throughput.
+  * Respects explicit provider pinning (`Primary Only` or `Secondary Only`) by disabling chunk distribution and honoring the user's pinned provider.
+* **Reasoning Monologue (`<think>`) Sanitization**
+  * Automatically strips internal thinking tokens (`<think>...</think>`) and internal English monologue generated by modern reasoning LLMs (such as DeepSeek R1 and Qwen 2.5), presenting only clean, formatted greetings.
+
+### 7. Real-Time Task Cancellation & Desktop UX
+* **Instant Task Cancellation (`AbortController`)**
+  * An intuitive **`[❌ Cancel Task]`** button is displayed in the active streaming header during long-running tasks.
+  * Clicking Cancel immediately aborts asynchronous HTTP requests and moves any partially written temporary files to Obsidian's trash (`trashFile`), keeping your vault pristine.
+* **Clutter-Free Target Document Bar**
+  * Displays the full, unobscured file name in the active note bar without visual noise or badge truncation.
+* **Live Timeline & Provider Telemetry**
+  * The multi-step execution timeline displays real-time chunk indicators (e.g., `[P1] [1/4]`, `[P2] [2/4]`).
+  * Completed session cards record exact provider telemetry (`P1`, `P2`, `P1+P2 Distributed`, `(Failover)`), total execution time, and throughput speeds (tokens/sec).
 
 ---
 
@@ -505,20 +387,26 @@ src/
 
 ---
 
-### AI Backend Endpoint Connection Guide
+### AI Service Providers & Operating Policies Guide
 
-Navigate to Obsidian **Settings > Assistant Emily** and configure your preferred LLM backend:
+Navigate to Obsidian **Settings > Assistant Emily** to configure primary and secondary providers:
 
-| Service Type | Recommended API Base URL | API Key | Recommended Model |
+#### 1. Provider Registration (Tab Navigation)
+
+| Provider | Role & Primary Purpose | Example API Base URL | Example Model |
 | :--- | :--- | :--- | :--- |
-| **FreeLLMAPI / Free Proxy** | `https://your-freellmapi-endpoint/v1` | Issued Key or Arbitrary Value | `auto` or Endpoint-provided model |
-| **OpenAI Official** | `https://api.openai.com/v1` | OpenAI API Key (`sk-...`) | `gpt-4o`, `gpt-4o-mini` |
-| **Ollama (Local Free AI)** | `http://localhost:11434/v1` | **Leave blank** | `llama3`, `qwen2.5`, `mistral` |
-| **LM Studio (Local GUI)** | `http://localhost:1234/v1` | **Leave blank or arbitrary string** | `auto` |
-| **OpenRouter** | `https://openrouter.ai/api/v1` | OpenRouter Key (`sk-or-...`) | `anthropic/claude-3.5-sonnet` |
+| **Provider 1 (Primary)** | Default endpoint for everyday proofreading and translation | `https://api.openai.com/v1`<br>`https://your-freellmapi/v1`<br>`http://localhost:11434/v1` (Ollama) | `gpt-4o`<br>`auto`<br>`llama3` |
+| **Provider 2 (Secondary)** | High-availability fallback, auto failover, and chunk distribution | `https://api.groq.com/openai/v1`<br>`http://localhost:1234/v1` (LM Studio)<br>`https://openrouter.ai/api/v1` | `llama-3.3-70b-versatile`<br>`auto`<br>`anthropic/claude-3.5-sonnet` |
 
-> [!TIP]
-> Click the **`Test Connection & Say Hello`** button in the settings tab to instantly verify network connectivity and measure real-time response latency (ms) for the configured endpoint and model.
+#### 2. Multi-Provider Operational Policies
+
+* **Active Provider for LLM Requests**
+  * `Auto (Healthcheck based)`: Intelligently routes to the healthy provider and enables cooperative dual-provider operations.
+  * `Provider 1 Only`: Pins all requests strictly to Provider 1 (suppresses chunk distribution).
+  * `Provider 2 Only`: Pins all requests strictly to Provider 2 (suppresses chunk distribution).
+* **Automatic Failover**: Automatically retries with the secondary provider if the active provider fails or times out.
+* **Distributed Chunk Processing**: Alternates split translation chunks between Provider 1 & 2 for large documents.
+* **Test All Providers & Set Default**: One-click concurrent health check measuring live latency (ms) and recommending the optimal default provider.
 
 ---
 

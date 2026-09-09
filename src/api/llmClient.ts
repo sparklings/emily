@@ -169,8 +169,12 @@ export class LLMProxyClient {
 
   /**
    * 청크 분산 처리가 활성화되어 있고 다중 프로바이더가 준비되었는지 확인합니다.
+   * - 프로바이더 1 또는 2로 고정(primary/secondary)된 경우 분산하지 않고 해당 프로바이더를 고수합니다.
    */
   isChunkDistributionEnabled(): boolean {
+    if (this.activeProvider === 'primary' || this.activeProvider === 'secondary') {
+      return false;
+    }
     return this.isMultiProviderAvailable() && this.enableChunkDistribution;
   }
 

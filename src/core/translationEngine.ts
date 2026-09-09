@@ -17,7 +17,7 @@ export class TranslationEngine {
   private client: LLMProxyClient;
   private app: App;
   private displayLanguage?: string;
-  private readonly CHUNK_SIZE_THRESHOLD = 3500;
+  private readonly CHUNK_SIZE_THRESHOLD = 1600;
 
   constructor(client: LLMProxyClient, app: App, displayLanguage?: string) {
     this.client = client;
@@ -116,10 +116,15 @@ export class TranslationEngine {
         ],
         {
           temperature: 0.3,
+          max_tokens: 4096,
           signal,
           providerId: chunkProvider
         }
       );
+
+      if (response.finish_reason === 'length') {
+        console.warn(`Assistant Emily: Translation chunk ${i + 1}/${totalChunks} was truncated by LLM output limit.`);
+      }
 
       if (response.providerUsed) {
         providersUsed.add(response.providerUsed);
@@ -215,7 +220,7 @@ export class TranslationEngine {
   /**
    * 대용량 마크다운 문서를 헤딩(##, ###) 및 문단 단위로 스마트 청킹합니다.
    */
-  splitIntoSmartChunks(markdown: string, maxChunkLength: number = 3500): string[] {
+  splitIntoSmartChunks(markdown: string, maxChunkLength: number = 1600): string[] {
     if (!markdown || markdown.length <= maxChunkLength) {
       return [markdown];
     }
@@ -230,8 +235,8 @@ export class TranslationEngine {
       const line = lines[i];
       const isHeader = /^#{1,6}\s+/.test(line);
 
-      // 청크 임계 크기 초과 & 헤딩 또는 빈 줄 경계에서 분할
-      if (currentLength + line.length > maxChunkLength && (isHeader || currentChunkLines.length > 30)) {
+      // 청크 임계 크기 초과 & 헤딩 또는 빈 줄(문단) 경계에서 분할
+      if (currentLength + line.length > maxChunkLength && (isHeader || line.trim() === '' || currentChunkLines.length > 30)) {
         if (currentChunkLines.length > 0) {
           chunks.push(currentChunkLines.join('\n'));
           currentChunkLines = [];

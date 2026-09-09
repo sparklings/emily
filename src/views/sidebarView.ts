@@ -286,7 +286,6 @@ export class EmilySidebarView extends ItemView {
         t.sidebar.targetLockedTooltip.replace('{path}', this.lockedTargetFile.path)
       );
       this.promptTargetFileEl.addClass('is-locked');
-      this.renderProviderBadgeInTargetDocBar(t);
       return;
     }
 
@@ -306,26 +305,6 @@ export class EmilySidebarView extends ItemView {
       const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name is-empty' });
       nameSpan.setText(t.sidebar.noActiveDoc);
       this.promptTargetFileEl.setAttribute('title', t.sidebar.noActiveDoc);
-    }
-    this.renderProviderBadgeInTargetDocBar(t);
-  }
-
-  private renderProviderBadgeInTargetDocBar(t: TranslationKeys) {
-    if (!this.promptTargetFileEl) return;
-    const client = this.plugin.getLLMClient();
-    if (client.isMultiProviderAvailable()) {
-      const active = this.plugin.settings.activeProvider || 'auto';
-      let pText = t.sidebar.providerBadgePrimary;
-      let pClass = 'is-primary';
-      if (active === 'secondary') {
-        pText = t.sidebar.providerBadgeSecondary;
-        pClass = 'is-secondary';
-      } else if (this.plugin.settings.enableChunkDistribution) {
-        pText = t.sidebar.providerBadgeDistributed;
-        pClass = 'is-distributed';
-      }
-      const pBadge = this.promptTargetFileEl.createSpan({ cls: `emily-provider-badge ${pClass}` });
-      pBadge.setText(pText);
     }
   }
 
@@ -1133,13 +1112,12 @@ export class EmilySidebarView extends ItemView {
           contentToTranslate,
           transOptionsWithDetected,
           promptText,
-          (current, total, provider) => {
+          (current, total) => {
             if (total > 1) {
-              const pBadge = provider ? (provider === 'secondary' ? '[P2] ' : '[P1] ') : '';
               this.updateTimelineStep(
                 step2,
                 'active',
-                `LLM ${opLabel} (${langLabel}) ${pBadge}[${current}/${total}]`,
+                `LLM ${opLabel} (${langLabel}) [${current}/${total}]`,
                 t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total))
               );
             }
@@ -1156,7 +1134,7 @@ export class EmilySidebarView extends ItemView {
           : '';
 
         const failoverTimelineText = transResult.failedOver
-          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', transResult.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          ? ` (${t.sidebar.providerFailoverTimeline})`
           : '';
 
         this.updateTimelineStep(
@@ -1255,7 +1233,7 @@ export class EmilySidebarView extends ItemView {
         );
 
         const proofFailoverText = proofResult.failedOver
-          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', proofResult.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          ? ` (${t.sidebar.providerFailoverTimeline})`
           : '';
 
         this.updateTimelineStep(
@@ -1414,7 +1392,7 @@ export class EmilySidebarView extends ItemView {
         const tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));
 
         const editFailoverText = response.failedOver
-          ? ` (${t.sidebar.providerFailoverTimeline.replace('{to}', response.providerUsed === 'secondary' ? 'P2' : 'P1')})`
+          ? ` (${t.sidebar.providerFailoverTimeline})`
           : '';
 
         this.updateTimelineStep(
@@ -1976,20 +1954,6 @@ export class EmilySidebarView extends ItemView {
       statusBadge.createSpan({ text: badgeText });
     }
 
-    if (session.providerUsed) {
-      let pClass = 'is-primary';
-      let pText = t.sidebar.providerBadgePrimary;
-      if (session.providerUsed === 'secondary') {
-        pClass = 'is-secondary';
-        pText = t.sidebar.providerBadgeSecondary;
-      } else if (session.providerUsed === 'distributed') {
-        pClass = 'is-distributed';
-        pText = t.sidebar.providerBadgeDistributed;
-      }
-      const pBadge = statusBadge.createSpan({ cls: `emily-provider-badge ${pClass}` });
-      pBadge.setText(pText);
-    }
-
     const headerRight = header.createDiv({ cls: 'emily-session-header-right' });
     headerRight.createSpan({ text: session.timestamp, cls: 'emily-session-time' });
     const headerChevron = headerRight.createSpan({ cls: 'emily-session-header-chevron' });
@@ -2255,14 +2219,6 @@ export class EmilySidebarView extends ItemView {
     createMetaItem(grid1, t.sidebar.elapsedLabel, `${latencySec}s (${session.totalTimeMs}ms)`);
     createMetaItem(grid1, t.sidebar.speedLabel, `${session.tokensPerSec || 0} tokens/sec`);
     createMetaItem(grid1, t.sidebar.finishReasonLabel, session.finishReason || 'stop');
-
-    if (session.providerUsed) {
-      let pLabel = t.sidebar.providerBadgePrimary;
-      if (session.providerUsed === 'secondary') pLabel = t.sidebar.providerBadgeSecondary;
-      else if (session.providerUsed === 'distributed') pLabel = t.sidebar.providerBadgeDistributed;
-      if (session.failedOver) pLabel += ' (Failover)';
-      createMetaItem(grid1, t.sidebar.providerLabel, pLabel);
-    }
 
     if (session.responseId) {
       const displayId = session.responseId.length > 20 ? session.responseId.slice(0, 18) + '…' : session.responseId;
