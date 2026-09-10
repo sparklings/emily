@@ -145,12 +145,21 @@ export class TranslationDiffModal extends Modal {
     const badgeRow = headerEl.createDiv({ cls: 'emily-translation-modal-badges' });
     const srcDisplay = getLocalizedLanguageName(this.options.sourceLanguage, t) || t.languages.auto;
     const tgtDisplay = getLocalizedLanguageName(this.options.targetLanguage, t);
-    badgeRow.createSpan({
-      text: isSameLangEdit
-        ? `${srcDisplay} (${t.sidebar.sameLangEditSuffix})`
-        : `${srcDisplay} ➔ ${tgtDisplay}`,
-      cls: 'emily-badge is-active'
-    });
+    if (isSameLangEdit) {
+      badgeRow.createSpan({
+        text: srcDisplay,
+        cls: 'emily-badge is-active'
+      });
+      badgeRow.createSpan({
+        text: t.sidebar.sameLangEditBadge,
+        cls: 'emily-badge is-active'
+      });
+    } else {
+      badgeRow.createSpan({
+        text: `${srcDisplay} ➔ ${tgtDisplay}`,
+        cls: 'emily-badge is-active'
+      });
+    }
     if (!isSameLangEdit) {
       if (this.options.tone) {
         const toneLabel = this.options.tone === 'academic' ? t.tones.academic : this.options.tone === 'polite' ? t.tones.polite : t.tones.casual;

@@ -1240,10 +1240,49 @@ select.emily-select-input {
 }
 
 .emily-timeline-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 12px;
   font-weight: 500;
   color: var(--text-faint);
   transition: color 0.2s ease;
+}
+
+.emily-timeline-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1.5px 7px;
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  background-color: var(--background-modifier-form-field, rgba(255, 255, 255, 0.05));
+  color: var(--text-muted);
+  border: 1px solid var(--divider-color);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.emily-timeline-step.is-active .emily-timeline-badge {
+  background: linear-gradient(135deg, rgba(123, 108, 217, 0.2), rgba(123, 108, 217, 0.08));
+  color: var(--interactive-accent, #7b6cd9);
+  border-color: var(--interactive-accent, #7b6cd9);
+  box-shadow: 0 0 6px rgba(123, 108, 217, 0.3);
+}
+
+.emily-timeline-step.is-done .emily-timeline-badge {
+  background-color: rgba(72, 165, 106, 0.15);
+  color: var(--color-green, #48a56a);
+  border-color: rgba(72, 165, 106, 0.4);
+}
+
+.emily-timeline-suffix {
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  opacity: 0.9;
 }
 
 .emily-timeline-desc {

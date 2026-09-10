@@ -1086,15 +1086,17 @@ export class EmilySidebarView extends ItemView {
         // 출발어 = 도착어 판별: 동일 언어이면 "편집", 다른 언어이면 "번역"
         const isSameLangEdit = isSameLanguage(transEffectiveSrc, this.translationOptions.targetLanguage);
         const opLabel = isSameLangEdit ? t.sidebar.opLabelEdit : t.sidebar.opLabelTrans;
-        const langLabel = isSameLangEdit
-          ? `${transEffectiveSrc} (${t.sidebar.sameLangEditSuffix})`
-          : `${transEffectiveSrc} ➔ ${this.translationOptions.targetLanguage}`;
+        const langTitle = isSameLangEdit
+          ? `LLM ${opLabel} (${transEffectiveSrc})`
+          : `LLM ${opLabel} (${transEffectiveSrc} ➔ ${this.translationOptions.targetLanguage})`;
+        const sameLangBadge = isSameLangEdit ? t.sidebar.sameLangEditBadge : undefined;
 
         this.updateTimelineStep(
           step2,
           'active',
-          `LLM ${opLabel} (${langLabel})`,
-          t.sidebar.opRunningDesc.replace('{op}', opLabel)
+          langTitle,
+          t.sidebar.opRunningDesc.replace('{op}', opLabel),
+          sameLangBadge
         );
 
         const transEngine = this.plugin.getTranslationEngine();
@@ -1117,8 +1119,10 @@ export class EmilySidebarView extends ItemView {
               this.updateTimelineStep(
                 step2,
                 'active',
-                `LLM ${opLabel} (${langLabel}) [${current}/${total}]`,
-                t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total))
+                langTitle,
+                t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total)),
+                sameLangBadge,
+                `[${current}/${total}]`
               );
             }
           },
@@ -1137,11 +1141,15 @@ export class EmilySidebarView extends ItemView {
           ? ` (${t.sidebar.providerFailoverTimeline})`
           : '';
 
+        const doneSuffix = `${chunkInfo}${failoverTimelineText}`.trim();
+
         this.updateTimelineStep(
           step2,
           'done',
-          `LLM ${opLabel} (${langLabel})${chunkInfo}${failoverTimelineText}`,
-          t.sidebar.opCompletedDesc.replace('{op}', opLabel).replace('{time}', String(transResult.totalTimeMs)).replace('{speed}', String(transResult.tokensPerSec || 0))
+          langTitle,
+          t.sidebar.opCompletedDesc.replace('{op}', opLabel).replace('{time}', String(transResult.totalTimeMs)).replace('{speed}', String(transResult.tokensPerSec || 0)),
+          sameLangBadge,
+          doneSuffix || undefined
         );
 
         let syncDesc = isSameLangEdit ? t.sidebar.syncDirectEditDone : t.sidebar.syncDirectTransDone;
@@ -1611,14 +1619,30 @@ export class EmilySidebarView extends ItemView {
   private updateTimelineStep(
     stepEl: HTMLElement | null,
     status: 'pending' | 'active' | 'done' | 'warning' | 'error',
-    title?: string,
-    desc?: string
+    title?: string | HTMLElement,
+    desc?: string,
+    badgeText?: string,
+    suffix?: string
   ) {
     if (!stepEl) return;
     stepEl.className = `emily-timeline-step is-${status}`;
     if (title) {
-      const titleEl = stepEl.querySelector('.emily-timeline-title');
-      if (titleEl) titleEl.textContent = title;
+      const titleEl = stepEl.querySelector('.emily-timeline-title') as HTMLElement;
+      if (titleEl) {
+        if (title instanceof HTMLElement) {
+          titleEl.empty();
+          titleEl.appendChild(title);
+        } else if (badgeText) {
+          titleEl.empty();
+          titleEl.createSpan({ text: title });
+          titleEl.createSpan({ text: badgeText, cls: 'emily-badge emily-timeline-badge' });
+          if (suffix) {
+            titleEl.createSpan({ text: suffix, cls: 'emily-timeline-suffix' });
+          }
+        } else {
+          titleEl.textContent = suffix ? `${title} ${suffix}` : title;
+        }
+      }
     }
     if (desc) {
       const descEl = stepEl.querySelector('.emily-timeline-desc');
@@ -2042,13 +2066,19 @@ export class EmilySidebarView extends ItemView {
             : (session.isSameLangEdit ? t.sidebar.syncDirectEditDone : t.sidebar.preserveOverwrite));
       const srcDisplay = getLocalizedLanguageName(session.translationOptions.sourceLanguage, t) || t.languages.auto;
       const tgtDisplay = getLocalizedLanguageName(session.translationOptions.targetLanguage, t);
-      const langDisplay = session.isSameLangEdit
-        ? `${srcDisplay} (${t.sidebar.sameLangEditSuffix})`
-        : `${srcDisplay} ➔ ${tgtDisplay}`;
-      transRow.createSpan({
-        text: `${langDisplay} (${transScopeText}, ${transModeText})`,
-        cls: 'emily-option-tags'
-      });
+      if (session.isSameLangEdit) {
+        transRow.createSpan({ text: srcDisplay, cls: 'emily-option-tags' });
+        transRow.createSpan({ text: t.sidebar.sameLangEditBadge, cls: 'emily-badge emily-timeline-badge' });
+        transRow.createSpan({
+          text: `(${transScopeText}, ${transModeText})`,
+          cls: 'emily-option-tags'
+        });
+      } else {
+        transRow.createSpan({
+          text: `${srcDisplay} ➔ ${tgtDisplay} (${transScopeText}, ${transModeText})`,
+          cls: 'emily-option-tags'
+        });
+      }
     }
 
     // 4. Custom Prompt if any
