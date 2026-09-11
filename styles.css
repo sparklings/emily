@@ -8,6 +8,10 @@
   --emily-warning: var(--color-orange, #cb7634);
   --emily-error: var(--color-red, #e05252);
   --emily-border-radius: var(--radius-m, 6px);
+  --emily-font-title: var(--font-ui-medium, 14px);
+  --emily-font-body: var(--font-ui-small, 13px);
+  --emily-font-desc: var(--font-ui-smaller, 12px);
+  --emily-font-badge: var(--font-ui-smaller, 11px);
 }
 
 /* ==========================================================================
@@ -175,12 +179,13 @@
 }
 
 .emily-badge {
-  font-size: 10px;
-  padding: 2px 6px;
+  font-size: var(--emily-font-badge, 11px);
+  padding: 2px 7px;
   border-radius: 9999px;
   background-color: var(--background-secondary-alt);
   color: var(--text-muted);
   font-family: var(--font-monospace);
+  line-height: 1.3;
 }
 
 .emily-badge.is-active {
@@ -2651,13 +2656,13 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   border-radius: var(--radius-m, 6px);
   background-color: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: var(--emily-font-desc, 12px);
+  line-height: 1.45;
   color: var(--text-muted);
 }
 
 .emily-tab-info-banner .emily-tab-info-icon {
-  font-size: 14px;
+  font-size: var(--emily-font-title, 14px);
   line-height: 1.2;
   flex-shrink: 0;
 }
@@ -2665,6 +2670,240 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
 .emily-tab-info-banner .emily-tab-info-text {
   flex: 1;
 }
+
+/* Compact Device Status Banner for Provider 1 & 2 Tabs */
+.emily-compact-status-banner {
+  margin: -6px 0 14px 0;
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-left: 3px solid var(--interactive-accent);
+  border-radius: var(--radius-s, 4px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--emily-font-desc, 12px);
+  line-height: 1.4;
+}
+
+.emily-compact-status-banner.is-matched {
+  background: linear-gradient(135deg, rgba(123, 108, 217, 0.08), var(--background-secondary));
+  border-color: var(--interactive-accent);
+  border-left-width: 4px;
+}
+
+.emily-status-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emily-status-link-btn {
+  background: transparent;
+  border: none;
+  color: var(--interactive-accent);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: var(--emily-font-desc, 12px);
+  font-weight: 500;
+  border-radius: var(--radius-s, 4px);
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emily-status-link-btn:hover {
+  background-color: var(--background-modifier-hover);
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   Multi-Device Profiles Tab (Unified P1 & P2 Management)
+   ========================================================================== */
+.emily-device-profiles-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.emily-device-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+}
+
+.emily-device-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--emily-font-title, 14px);
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+.emily-device-card-desc {
+  font-size: var(--emily-font-desc, 12px);
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.emily-device-badge {
+  font-family: var(--font-monospace);
+  font-size: var(--emily-font-badge, 11px);
+}
+
+.emily-endpoint-badge {
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: var(--emily-font-badge, 11px);
+}
+
+.emily-profiles-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  margin-bottom: 6px;
+  font-size: var(--emily-font-title, 14px);
+  font-weight: 600;
+}
+
+.emily-profiles-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.emily-profile-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 6px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  gap: 12px;
+}
+
+.emily-profile-item.is-current-device {
+  border-color: var(--interactive-accent, #7b6cd9);
+  background: linear-gradient(135deg, rgba(123, 108, 217, 0.08), var(--background-secondary));
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.emily-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.emily-profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.emily-profile-name-row strong {
+  font-size: var(--emily-font-body, 13px);
+  color: var(--text-normal);
+}
+
+.emily-profile-grid-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin-top: 2px;
+  font-size: var(--emily-font-desc, 12px);
+  font-family: var(--font-monospace);
+}
+
+.emily-profile-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+}
+
+.emily-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Unified Form Card for Add / Edit */
+.emily-profile-form-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--background-secondary);
+  border: 1px solid var(--interactive-accent);
+  border-radius: var(--radius-m, 6px);
+  margin-top: 8px;
+}
+
+.emily-profile-form-card .form-section-title {
+  font-size: var(--emily-font-title, 14px);
+  font-weight: 600;
+  color: var(--text-normal);
+  margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emily-profile-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+}
+
+@media (max-width: 600px) {
+  .emily-profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.emily-profile-add-btn-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* Probe Action Box */
+.emily-probe-action-box {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--background-secondary-alt);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--emily-font-desc, 12px);
+}
+
+
+
 
 
 

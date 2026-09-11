@@ -1,6 +1,12 @@
 import { requestUrl, RequestUrlResponse } from 'obsidian';
 import { EmilySettings } from '../types/settings';
 import { PromptBuilder } from './promptBuilder';
+import {
+  resolveEffectiveApiKey,
+  resolveEffectiveEndpoint,
+  applyPortOrUrl,
+  isLocalEndpoint
+} from '../utils/deviceKeyManager';
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -49,6 +55,10 @@ export interface ProviderConfig {
   baseUrl: string;
   apiKey: string;
   model: string;
+  keySource?: 'local' | 'profile' | 'global';
+  urlSource?: 'local' | 'profile' | 'global';
+  profileName?: string;
+  port?: string;
 }
 
 export type ProviderId = 'primary' | 'secondary';
@@ -60,6 +70,12 @@ export interface ProviderTestResult {
   latencyMs: number;
   model: string;
   error?: string;
+  keySource?: 'local' | 'profile' | 'global';
+  urlSource?: 'local' | 'profile' | 'global';
+  profileName?: string;
+  testedKey?: string;
+  testedUrl?: string;
+  isLocalhost?: boolean;
 }
 
 export interface MultiProviderTestSummary {
@@ -139,17 +155,29 @@ export class LLMProxyClient {
    * 전체 플러그인 설정을 반영하여 듀얼 프로바이더 구성을 일괄 갱신합니다.
    */
   updateMultiConfig(settings: EmilySettings) {
+    const p1KeyEffective = resolveEffectiveApiKey(settings, 'primary');
+    const p1UrlEffective = resolveEffectiveEndpoint(settings, 'primary');
     this.primaryConfig = {
-      baseUrl: (settings.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, ''),
-      apiKey: settings.apiKey || '',
-      model: settings.modelName || 'auto'
+      baseUrl: p1UrlEffective.url,
+      apiKey: p1KeyEffective.key,
+      model: settings.modelName || 'auto',
+      keySource: p1KeyEffective.source,
+      urlSource: p1UrlEffective.source,
+      profileName: p1KeyEffective.profileName || p1UrlEffective.profileName,
+      port: p1UrlEffective.port
     };
 
     if (settings.secondaryApiBaseUrl && settings.secondaryApiBaseUrl.trim().length > 0) {
+      const p2KeyEffective = resolveEffectiveApiKey(settings, 'secondary');
+      const p2UrlEffective = resolveEffectiveEndpoint(settings, 'secondary');
       this.secondaryConfig = {
-        baseUrl: settings.secondaryApiBaseUrl.trim().replace(/\/+$/, ''),
-        apiKey: settings.secondaryApiKey || '',
-        model: settings.secondaryModelName || 'auto'
+        baseUrl: p2UrlEffective.url,
+        apiKey: p2KeyEffective.key,
+        model: settings.secondaryModelName || 'auto',
+        keySource: p2KeyEffective.source,
+        urlSource: p2UrlEffective.source,
+        profileName: p2KeyEffective.profileName || p2UrlEffective.profileName,
+        port: p2UrlEffective.port
       };
     } else {
       this.secondaryConfig = null;
@@ -311,8 +339,16 @@ export class LLMProxyClient {
 
   /**
    * 지정된 프로바이더에 대해 개별 연결 테스트를 수행합니다.
+   * @param overrideKey 특정 API 키(예: 기기 전용 로컬 키, 후보 키)로 임시 테스트 시 지정
+   * @param overrideUrl 특정 Base URL 또는 포트로 임시 테스트 시 지정
    */
-  async testProvider(providerId: ProviderId, locale: string, timePeriod: string): Promise<ProviderTestResult> {
+  async testProvider(
+    providerId: ProviderId,
+    locale: string,
+    timePeriod: string,
+    overrideKey?: string,
+    overrideUrl?: string
+  ): Promise<ProviderTestResult> {
     const config = (providerId === 'secondary') ? this.secondaryConfig : this.primaryConfig;
     if (!config || !config.baseUrl) {
       return {
@@ -324,8 +360,21 @@ export class LLMProxyClient {
       };
     }
 
+    const effectiveKey = overrideKey !== undefined ? overrideKey : config.apiKey;
+    const effectiveUrl = overrideUrl !== undefined ? overrideUrl.replace(/\/+$/, '') : config.baseUrl;
+    const effectiveKeySource = overrideKey !== undefined ? 'local' : config.keySource;
+    const effectiveUrlSource = overrideUrl !== undefined ? 'local' : config.urlSource;
+    const effectiveProfile = (overrideKey !== undefined || overrideUrl !== undefined) ? undefined : config.profileName;
+    const isLocal = isLocalEndpoint(effectiveUrl);
+
     const startTime = Date.now();
     const { system, user } = PromptBuilder.buildGreetingPrompt(locale, timePeriod);
+
+    // 임시 키/URL 테스트인 경우 요청 동안 치환
+    const prevKey = config.apiKey;
+    const prevUrl = config.baseUrl;
+    if (overrideKey !== undefined) config.apiKey = overrideKey;
+    if (overrideUrl !== undefined) config.baseUrl = effectiveUrl;
 
     try {
       const response = await this.executeSingleProviderRequest(providerId, [
@@ -339,7 +388,13 @@ export class LLMProxyClient {
         success: true,
         message: cleanedGreeting,
         latencyMs: Date.now() - startTime,
-        model: response.model
+        model: response.model,
+        keySource: effectiveKeySource,
+        urlSource: effectiveUrlSource,
+        profileName: effectiveProfile,
+        testedKey: effectiveKey,
+        testedUrl: effectiveUrl,
+        isLocalhost: isLocal
       };
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -348,9 +403,68 @@ export class LLMProxyClient {
         message: '',
         latencyMs: Date.now() - startTime,
         model: config.model || 'unknown',
-        error: errorMsg
+        error: errorMsg,
+        keySource: effectiveKeySource,
+        urlSource: effectiveUrlSource,
+        profileName: effectiveProfile,
+        testedKey: effectiveKey,
+        testedUrl: effectiveUrl,
+        isLocalhost: isLocal
       };
+    } finally {
+      if (overrideKey !== undefined) config.apiKey = prevKey;
+      if (overrideUrl !== undefined) config.baseUrl = prevUrl;
     }
+  }
+
+  /**
+   * 401 인증 실패 시 등록된 후보 키들을 순차 테스트하여 유효한 키를 자동 탐색합니다.
+   */
+  async probeWorkingKey(
+    providerId: ProviderId,
+    locale: string,
+    timePeriod: string,
+    candidateKeys: string[]
+  ): Promise<{ workingKey: string; result: ProviderTestResult } | null> {
+    for (const key of candidateKeys) {
+      if (!key || !key.trim()) continue;
+      try {
+        const res = await this.testProvider(providerId, locale, timePeriod, key.trim());
+        if (res.success) {
+          return { workingKey: key.trim(), result: res };
+        }
+      } catch {
+        // 다음 키 계속 탐색
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 로컬 엔드포인트 연결 실패 시 후보 포트들을 순회하여 응답하는 포트를 자동 탐색합니다.
+   */
+  async probeWorkingPort(
+    providerId: ProviderId,
+    locale: string,
+    timePeriod: string,
+    candidatePorts: number[]
+  ): Promise<{ workingPort: number; workingUrl: string; result: ProviderTestResult } | null> {
+    const config = (providerId === 'secondary') ? this.secondaryConfig : this.primaryConfig;
+    if (!config || !config.baseUrl) return null;
+
+    for (const port of candidatePorts) {
+      const testUrl = applyPortOrUrl(config.baseUrl, String(port));
+      try {
+        const res = await this.testProvider(providerId, locale, timePeriod, undefined, testUrl);
+        // 통신 성공이거나, 최소한 401(인증 실패)이라도 떴다면 포트가 열려있고 살아있는 서버임
+        if (res.success || (res.error && res.error.includes('401'))) {
+          return { workingPort: port, workingUrl: testUrl, result: res };
+        }
+      } catch {
+        // 다음 포트 계속 탐색
+      }
+    }
+    return null;
   }
 
   /**

@@ -1,6 +1,26 @@
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from './translation';
 
 /**
+ * 다중 기기(집/회사 노트북) 로컬 LLM Proxy API Key 프로필
+ */
+export interface DeviceKeyProfile {
+  /** 고유 식별자 */
+  id: string;
+  /** 기기 사용자 친화적 명칭 (예: '집 노트북', '회사 노트북 1') */
+  name: string;
+  /** OS 호스트명 매칭값 (예: 'G2300227', 'HOME-PC') */
+  hostname?: string;
+  /** 프로바이더 1 전용 API 키 */
+  provider1Key?: string;
+  /** 프로바이더 2 전용 API 키 */
+  provider2Key?: string;
+  /** 프로바이더 1 전용 Base URL 또는 포트 번호 (예: 'http://127.0.0.1:11434/v1' 또는 '11434') */
+  provider1Url?: string;
+  /** 프로바이더 2 전용 Base URL 또는 포트 번호 */
+  provider2Url?: string;
+}
+
+/**
  * Assistant Emily 플러그인 전역 설정 인터페이스
  * - 옵시디언 데이터 저장소(data.json)에 영구 보존되는 사용자 구성 값
  */
@@ -27,6 +47,14 @@ export interface EmilySettings {
   enableFallback: boolean;
   /** 대용량 마크다운 청킹 번역 시 두 프로바이더에 청크를 교차 분산할지 여부 */
   enableChunkDistribution: boolean;
+
+  // 다중 기기 환경설정 (Multi-Device Localhost Proxy Support)
+  /** 기기별 API Key 매핑 프로필 목록 (클라우드 동기화됨) */
+  deviceProfiles?: DeviceKeyProfile[];
+  /** 기기별 키 분기 기능 활성화 여부 */
+  useDeviceKeyOverride?: boolean;
+  /** 401 인증 실패 시 등록된 후보 키 자동 진단(Auto-Probe) 여부 */
+  autoProbeCandidateKeys?: boolean;
 
   /** 플러그인 UI 표시 언어 (auto: 옵시디언 언어 추종, ko: 한국어, en: 영어) */
   language: 'auto' | 'ko' | 'en';
@@ -80,6 +108,11 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   activeProvider: 'auto',
   enableFallback: true,
   enableChunkDistribution: true,
+
+  // 다중 기기 환경 기본값
+  deviceProfiles: [],
+  useDeviceKeyOverride: true,
+  autoProbeCandidateKeys: true,
 
   language: 'auto',
   autoProofreadKoreanBold: true,
