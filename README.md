@@ -6,6 +6,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/sparklings/emily/wiki"><img src="https://img.shields.io/badge/docs-GitHub%20Wiki-brightgreen.svg?style=flat-square" alt="Documentation Wiki"></a>
   <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.13-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
@@ -15,15 +16,19 @@
 </p>
 
 <p align="center">
-  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a>
+  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://github.com/sparklings/emily/wiki"><b>📚 Official Wiki</b></a>
 </p>
+
+> [!TIP]
+> 📚 **공식 GitHub Wiki 오픈**: 설치 방법, 상세 기능 시나리오, 로컬 AI(Ollama, LM Studio 등) 연동 레시피, 다중 기기 프로필 관리 및 문제 해결 팁은 **[Assistant Emily 공식 Wiki](https://github.com/sparklings/emily/wiki)**에서 확인하실 수 있습니다!
 
 ---
 
 ## 📖 목차
 
 1. [개요 (Overview)](#-개요-overview)
-2. [상세 기능 (Detailed Features)](#-상세-기능-detailed-features)
+2. [공식 위키 문서 가이드 (Official Wiki Guide)](#-공식-위키-문서-가이드-official-wiki-guide)
+3. [상세 기능 (Detailed Features)](#-상세-기능-detailed-features)
    - [1. 무손실 지능형 마크다운 교열 (Lossless Proofreading)](#1-무손실-지능형-마크다운-교열-lossless-proofreading)
    - [2. 맥락 인식 전문 번역 (Context-Aware Translation)](#2-맥락-인식-전문-번역-context-aware-translation)
    - [3. 마크다운 타이포그래피 및 서식 정규화 (Typography Normalizer)](#3-마크다운-타이포그래피-및-서식-정규화-typography-normalizer)
@@ -31,16 +36,16 @@
    - [5. 대화형 Diff 검토 (Interactive Diff Review)](#5-대화형-diff-검토-interactive-diff-review)
    - [6. 듀얼 AI 서비스 프로바이더 및 고가용성 운영 (Multi-Provider High Availability)](#6-듀얼-ai-서비스-프로바이더-및-고가용성-운영-multi-provider-high-availability)
    - [7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)](#7-실시간-작업-제어-및-스마트-데스크톱-ux-real-time-control--smart-ux)
-3. [설치 및 환경 설정 (Installation & Setup)](#-설치-및-환경-설정-installation--setup)
+4. [설치 및 환경 설정 (Installation & Setup)](#-설치-및-환경-설정-installation--setup)
    - [플러그인 설치 방법](#플러그인-설치-방법)
    - [AI 백엔드 엔드포인트 연결 가이드](#ai-백엔드-엔드포인트-연결-가이드)
-4. [보안, 프라이버시 및 규정 준수 고지 (Security, Privacy & Disclosures)](#-보안-프라이버시-및-규정-준수-고지-security-privacy--disclosures)
+5. [보안, 프라이버시 및 규정 준수 고지 (Security, Privacy & Disclosures)](#-보안-프라이버시-및-규정-준수-고지-security-privacy--disclosures)
    - [외부 네트워크 통신 고지 (Network Usage)](#외부-네트워크-통신-고지-network-usage)
    - [볼트 파일 접근 및 권한 (Vault File Access)](#볼트-파일-접근-및-권한-vault-file-access)
    - [계정 및 요금 정책 (Account & Monetization)](#계정-및-요금-정책-account--monetization)
    - [원격 분석 및 광고 배제 (Telemetry & Advertisements)](#원격-분석-및-광고-배제-telemetry--advertisements)
-5. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
-6. [라이선스 (License)](#-라이선스-license)
+6. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
+7. [라이선스 (License)](#-라이선스-license)
 
 ---
 
@@ -54,6 +59,22 @@
 * **100% 무손실 보존(Lossless Preservation)** : 원본 문서의 고유한 메타데이터와 옵시디언 고유 문법을 보호합니다.
 * **학술 및 전문 문서에 최적화** : 대용량 문서에 대한 지능형 스마트 청킹(Smart Chunking), 1:1 문단 대조 번역(Bilingual Alignment), 코드 블록 내부 주석 선택 번역을 지원합니다.
 * **로컬 AI 및 프라이버시 존중** : OpenAI 공식 API뿐만 아니라 `FreeLLMAPI`, 로컬 Ollama, LM Studio, vLLM, OpenRouter 등 OpenAI 호환 엔드포인트를 폭넓게 지원합니다.
+
+---
+
+## 📚 공식 위키 문서 가이드 (Official Wiki Guide)
+
+Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 팁은 **[GitHub 공식 Wiki](https://github.com/sparklings/emily/wiki)**에 체계적으로 정리되어 있습니다. 원하시는 항목을 클릭하여 바로 이동하십시오.
+
+| 위키 가이드 문서 | 주요 안내 내용 | 바로가기 |
+| :--- | :--- | :---: |
+| 🏠 **[위키 홈 (Home)](https://github.com/sparklings/emily/wiki)** | 플러그인 철학, 핵심 가치, 작동 아키텍처 파이프라인 개요 | [열기 →](https://github.com/sparklings/emily/wiki) |
+| 🚀 **[상세 기능 (Detailed Features)](https://github.com/sparklings/emily/wiki/Detailed-Features)** | 무손실 문법 마스킹 교열, 3대 번역 모드(선택/전체/1:1 대조), 코드 주석 전용 번역, Needleman-Wunsch 대화형 Diff 검토 | [열기 →](https://github.com/sparklings/emily/wiki/Detailed-Features) |
+| ⚙️ **[설치 및 초기 설정 (Installation & Setup)](https://github.com/sparklings/emily/wiki/Installation-and-Setup)** | GitHub 릴리즈 수동 설치, BRAT 간편 설치, 데스크톱 요구사항 및 단축키 안내 | [열기 →](https://github.com/sparklings/emily/wiki/Installation-and-Setup) |
+| 🤖 **[AI 프로바이더 및 기기 프로필 가이드 (AI Providers Guide)](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)** | 3-Tab 서브탭 구조, 듀얼 프로바이더 동시 헬스체크, 무중단 자동 Failover, 짝/홀수 청크 분산 처리, 집/회사 다중 기기 프로필(`os.hostname()`) 관리, 포트/키 자동 탐색(Auto-Probe) | [열기 →](https://github.com/sparklings/emily/wiki/AI-Providers-Guide) |
+| 💡 **[FAQ 및 문제 해결 (Troubleshooting & FAQ)](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ)** | 연결 테스트 오류 점검, Ollama CORS 및 로컬 프록시 설정법, 대용량 번역 최적화 팁 | [열기 →](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ) |
+| 🔒 **[보안 및 프라이버시 (Security & Privacy)](https://github.com/sparklings/emily/wiki/Security-and-Privacy)** | 중계 서버 배제 100% 직접 통신, 볼트 파일 권한 원칙, 사용자 추적/광고 배제 정책 | [열기 →](https://github.com/sparklings/emily/wiki/Security-and-Privacy) |
+| 💖 **[크레딧 및 라이선스 (Credits & License)](https://github.com/sparklings/emily/wiki/Credits-and-License)** | Obsidian API, FreeLLMAPI, Pi Agent 등 오픈소스 커뮤니티 감사의 글 및 MIT 라이선스 | [열기 →](https://github.com/sparklings/emily/wiki/Credits-and-License) |
 
 ---
 
@@ -171,6 +192,8 @@
 * **자동 장애 복구 (Auto Failover)**: 토글 활성화 시 주 프로바이더 오류 발생 시 보조 프로바이더로 자동 우회 재시도합니다.
 * **대용량 문서 청크 분산 처리 (Distributed Chunk Processing)**: 대용량 번역 시 짝수/홀수 청크를 프로바이더 1과 2에 교차 분산 요청합니다.
 * **모든 프로바이더 헬스체크 및 기본값 설정**: 원클릭으로 등록된 양측 프로바이더의 연결 상태와 응답 시간을 동시 진단하고 권장 프로바이더를 즉시 확인합니다.
+* **기기별 프로필 관리 (Device Profiles) 및 자동 탐색 (Auto-Probe)**: 집/회사 노트북 등 다중 기기 환경에서 동일한 localhost 주소를 사용하지만 기기별 API Key나 포트 번호가 다를 때 `os.hostname()` 기반 기기 프로필을 1순위로 자동 매칭합니다. 포트 연결 거부나 401 인증 오류 발생 시 작동하는 포트/키를 자동으로 진단하여 현재 기기 프로필에 즉시 저장합니다.
+* 📖 더 자세한 백엔드별 연동 레시피(Ollama, LM Studio, Groq, OpenRouter) 및 기기별 설정법은 **[AI 프로바이더 및 기기 프로필 가이드 Wiki](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)**를 참고하십시오.
 
 ---
 
@@ -243,6 +266,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
+  <a href="https://github.com/sparklings/emily/wiki"><img src="https://img.shields.io/badge/docs-GitHub%20Wiki-brightgreen.svg?style=flat-square" alt="Documentation Wiki"></a>
   <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.13-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
@@ -252,15 +276,19 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
-  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a>
+  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://github.com/sparklings/emily/wiki"><b>📚 Official Wiki</b></a>
 </p>
+
+> [!TIP]
+> 📚 **Official GitHub Wiki Now Available**: Comprehensive guides, setup walkthroughs, local AI (Ollama/LM Studio) recipes, multi-device profile management, and troubleshooting tips are available on the **[Assistant Emily Official Wiki](https://github.com/sparklings/emily/wiki)**!
 
 ---
 
 ## 📖 Table of Contents
 
 1. [Overview](#-overview)
-2. [Detailed Features](#-detailed-features)
+2. [Official Documentation & Wiki Guide](#-official-documentation--wiki-guide)
+3. [Detailed Features](#-detailed-features)
    - [1. Lossless Intelligent Markdown Proofreading](#1-lossless-intelligent-markdown-proofreading)
    - [2. Context-Aware Professional Translation](#2-context-aware-professional-translation)
    - [3. Markdown Typography & Formatting Normalization](#3-markdown-typography--formatting-normalization)
@@ -268,16 +296,16 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
    - [5. Interactive Diff Review](#5-interactive-diff-review)
    - [6. Dual AI Service Providers & High Availability](#6-dual-ai-service-providers--high-availability)
    - [7. Real-Time Task Cancellation & Desktop UX](#7-real-time-task-cancellation--desktop-ux)
-3. [Installation & Setup](#-installation--setup)
+4. [Installation & Setup](#-installation--setup)
    - [Plugin Installation Methods](#plugin-installation-methods)
    - [AI Service Providers & Operating Policies Guide](#ai-service-providers--operating-policies-guide)
-4. [Security, Privacy & Disclosures](#-security-privacy--disclosures)
+5. [Security, Privacy & Disclosures](#-security-privacy--disclosures)
    - [External Network Communication Notice (Network Usage)](#external-network-communication-notice)
    - [Vault File Access & Permissions (Vault File Access)](#vault-file-access--permissions)
    - [Account & Monetization Policy (Account & Monetization)](#account--monetization-policy)
    - [Zero Telemetry & Ad-Free Policy (Telemetry & Advertisements)](#zero-telemetry--ad-free-policy)
-5. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
-6. [License](#-license)
+6. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
+7. [License](#-license)
 
 ---
 
@@ -291,6 +319,22 @@ Conventional AI tools often corrupt or strip critical Markdown elements—such a
 * **100% Lossless Preservation**: Safely shields the document's original metadata and unique Obsidian syntax from corruption.
 * **Optimized for Academic & Technical Writing**: Features smart chunking for large documents, 1:1 paragraph bilingual alignment, and selective translation for code block comments.
 * **Local AI & Privacy First**: Universally supports OpenAI-compatible endpoints—ranging from official OpenAI API and `FreeLLMAPI` to local Ollama, LM Studio, vLLM, and OpenRouter.
+
+---
+
+## 📚 Official Documentation & Wiki Guide
+
+Comprehensive user guides, architecture overviews, recipe integrations, and FAQs are maintained on the **[Official GitHub Wiki](https://github.com/sparklings/emily/wiki)**. Click any link below to explore:
+
+| Wiki Document | Covered Topics | Quick Link |
+| :--- | :--- | :---: |
+| 🏠 **[Wiki Home](https://github.com/sparklings/emily/wiki)** | Plugin philosophy, core values, and processing pipeline architecture | [Open →](https://github.com/sparklings/emily/wiki) |
+| 🚀 **[Detailed Features](https://github.com/sparklings/emily/wiki/Detailed-Features)** | Lossless syntax masking proofreading, 3 translation scopes, code comments translation, Needleman-Wunsch interactive diff modal | [Open →](https://github.com/sparklings/emily/wiki/Detailed-Features) |
+| ⚙️ **[Installation & Setup](https://github.com/sparklings/emily/wiki/Installation-and-Setup)** | GitHub Releases manual install, BRAT quick setup, desktop requirements, and keyboard shortcuts | [Open →](https://github.com/sparklings/emily/wiki/Installation-and-Setup) |
+| 🤖 **[AI Providers Guide](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)** | 3-Tab navigation settings, dual provider concurrent health checks, auto failover, distributed chunk processing, multi-device profile management (`os.hostname()`), and Auto-Probe | [Open →](https://github.com/sparklings/emily/wiki/AI-Providers-Guide) |
+| 💡 **[Troubleshooting & FAQ](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ)** | Connection testing diagnostics, Ollama CORS & local proxy setups, large document chunk optimization tips | [Open →](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ) |
+| 🔒 **[Security & Privacy](https://github.com/sparklings/emily/wiki/Security-and-Privacy)** | Zero telemetry, direct client-to-endpoint network communication, and scoped vault file permissions | [Open →](https://github.com/sparklings/emily/wiki/Security-and-Privacy) |
+| 💖 **[Credits & License](https://github.com/sparklings/emily/wiki/Credits-and-License)** | Acknowledgements to Obsidian API, FreeLLMAPI, Pi Agent, and the MIT License | [Open →](https://github.com/sparklings/emily/wiki/Credits-and-License) |
 
 ---
 
@@ -407,6 +451,8 @@ Navigate to Obsidian **Settings > Assistant Emily** to configure primary and sec
 * **Automatic Failover**: Automatically retries with the secondary provider if the active provider fails or times out.
 * **Distributed Chunk Processing**: Alternates split translation chunks between Provider 1 & 2 for large documents.
 * **Test All Providers & Set Default**: One-click concurrent health check measuring live latency (ms) and recommending the optimal default provider.
+* **Multi-Device Profile Management & Auto-Probe**: When using identical localhost proxy addresses across multiple machines (home/work laptops) with distinct API keys or ports, Emily prioritizes device profiles matching `os.hostname()`. Automatically probes responsive ports and working keys upon connection failures or 401 errors and saves them directly to the active profile.
+* 📖 For step-by-step backend recipes (Ollama, LM Studio, Groq, OpenRouter) and multi-device setups, refer to the **[AI Providers Guide Wiki](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)**.
 
 ---
 
