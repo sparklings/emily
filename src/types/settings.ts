@@ -1,4 +1,5 @@
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from './translation';
+import { ProofreadTargetTone } from './proofread';
 
 /**
  * 다중 기기(집/회사 노트북) 로컬 LLM Proxy API Key 프로필
@@ -68,6 +69,10 @@ export interface EmilySettings {
   defaultProofreadSpelling: boolean;
   /** 사이드바 실행 시 문법 검사 기본 선택 여부 */
   defaultProofreadGrammar: boolean;
+  /** 사이드바 실행 시 종결어미 및 문체 일관성 검사 기본 선택 여부 */
+  defaultProofreadTone: boolean;
+  /** 문체 일관성 검사 시 기본 타깃 문체 (auto: 문서 주 문체 감지, honorific: 하십시오체, plain: 해라체, polite: 해요체) */
+  defaultProofreadTargetTone: ProofreadTargetTone;
   /** 사이드바 실행 시 비디오 타임스탬프 삭제 기본 선택 여부 */
   defaultProofreadTimestamp: boolean;
 
@@ -121,6 +126,8 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   // 교열 기본값
   defaultProofreadSpelling: false,
   defaultProofreadGrammar: false,
+  defaultProofreadTone: false,
+  defaultProofreadTargetTone: 'auto',
   defaultProofreadTimestamp: false,
 
   // 번역 기본값

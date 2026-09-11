@@ -98,7 +98,7 @@ export class ProofreadDiffModal extends Modal {
         item.approved = (e.target as HTMLInputElement).checked;
       });
 
-      const catName = item.category === 'spelling' ? t.sidebar.spelling : (item.category === 'grammar' ? t.sidebar.grammar : (item.category === 'timestamp' ? t.sidebar.timestamp : (item.category === 'bold_format' ? t.sidebar.boldFormatCategory : item.category)));
+      const catName = item.category === 'spelling' ? t.sidebar.spelling : (item.category === 'grammar' ? t.sidebar.grammar : (item.category === 'tone' ? t.diffModal.toneCategory : (item.category === 'timestamp' ? t.sidebar.timestamp : (item.category === 'bold_format' ? t.sidebar.boldFormatCategory : item.category))));
       leftHead.createSpan({ text: `#${index + 1} [${catName}]`, cls: 'emily-badge' });
 
       const content = card.createDiv({ cls: 'emily-diff-content' });

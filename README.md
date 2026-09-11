@@ -82,9 +82,13 @@ Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 �
 
 ### 1. 무손실 지능형 마크다운 교열 (Lossless Proofreading)
 * **문맥 기반 오탈자 및 문법 교정** : 단순 규칙 기반 검사를 넘어, LLM의 문맥 이해력을 활용하여 맞춤법, 띄어쓰기, 어색한 조사, 주술 호응 관계를 지능적으로 바로잡습니다.
+* **종결어미 및 문체 일관성 검사기 (Tone Consistency Checker)**:
+  * 긴 문서를 작성하거나 여러 자료를 취합하다 보면 무의식적으로 섞이는 종결어미(`~합니다/하십시오체`, `~한다/해라체`, `~해요/해요체`)를 정밀하게 검출하고 표준화합니다.
+  * **4가지 타깃 문체 기준 제공**: `주 문체 자동 감지(Auto-detect)`, `하십시오체(경어체)`, `해라체(평어·학술체)`, `해요체(친근체)` 중 원하는 기준을 선택하여 일괄 교정 후보를 생성합니다.
+  * **예외 구역 완벽 보존 가드레일**: 인용문(`> ...`, `"..."`), 코드 블록(\`\`\`...\`\`\`), 인라인 코드(\`...\`), 수식(`$...$`), YAML 프론트매터 및 헤딩 제목(#)은 화자의 원래 발언이나 문법 형식을 유지해야 하므로 종결어미 교정 대상에서 엄격히 제외되어 원형 그대로 안전하게 보존됩니다.
 * **문법 마스킹 보호** : 옵시디언 위키링크(`[[Note]]`, `[[Note|Alias]]`), 태그(`#tag`), 콜아웃 헤더(`> [!tip]`), 인라인/블록 LaTeX 수식(`$...$`, `$$...$$`), 인라인 코드 및 코드 블록 전체를 UUID 토큰으로 안전하게 보호한 뒤 교열을 수행하여 원본 서식이 절대 깨지지 않습니다.
 * **인터랙티브 Diff 모달**
-  * 발견된 모든 교정 항목을 목록화하여 표시합니다.
+  * 발견된 모든 교정 항목을 카테고리(`[맞춤법 검사]`, `[문법 검사]`, `[문체·어미]`, `[타임스탬프 삭제]`)별로 목록화하여 표시합니다.
   * 항목별로 개별 적용 여부를 체크박스로 자유롭게 켜고 끌 수 있습니다.
   * 항목을 클릭하면 에디터의 해당 위치로 즉시 스크롤되어 전후 맥락을 직관적으로 확인할 수 있습니다.
 
@@ -342,9 +346,13 @@ Comprehensive user guides, architecture overviews, recipe integrations, and FAQs
 
 ### 1. Lossless Intelligent Markdown Proofreading
 * **Context-Aware Spelling and Grammar Correction**: Transcends rigid rule-based checkers by leveraging LLM contextual comprehension to fix spelling, spacing, awkward particles, and subject-predicate agreement.
+* **Tone & Sentence-Ending Consistency Checker**:
+  * Scans for inadvertently mixed sentence-ending styles (e.g., honorific `~합니다`, plain/academic `~한다`, and polite `~해요`) frequently found in lengthy notes or synthesized literature.
+  * **4 Target Tone Standards**: Select from `Auto-detect Dominant Tone`, `Honorific (하십시오체)`, `Plain / Academic (해라체)`, or `Polite / Friendly (해요체)` to standardize phrasing.
+  * **Strict Exception Preservation Guardrails**: Quotations (`> ...`, `"..."`), code blocks (\`\`\`...\`\`\`), inline code (\`...\`), LaTeX math (`$...$`), YAML frontmatter, and heading titles are strictly excluded from tone modification, preserving original speaker intent and syntax intact.
 * **Syntax Masking Protection**: Obsidian wikilinks (`[[Note]]`, `[[Note|Alias]]`), tags (`#tag`), callout headers (`> [!tip]`), inline and block LaTeX equations (`$...$`, `$$...$$`), and code blocks are securely converted into UUID placeholder tokens before LLM processing, guaranteeing zero corruption to original formatting.
 * **Interactive Diff Modal**:
-  * Displays all detected corrections in an organized list.
+  * Displays all detected corrections categorized by type (`[Spelling Check]`, `[Grammar Check]`, `[Tone & Style]`, `[Remove Timestamps]`).
   * Allows selective toggling of individual edits via checkboxes.
   * Clicking an issue scrolls directly to its corresponding position in the editor for instant context verification.
 

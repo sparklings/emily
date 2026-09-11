@@ -73,6 +73,9 @@ export class ProofreadingEngine {
     if (options.checkGrammar) {
       allowedCategories.add('grammar');
     }
+    if (options.checkTone) {
+      allowedCategories.add('tone');
+    }
     if (options.removeTimestamps) {
       allowedCategories.add('timestamp');
     }
@@ -110,7 +113,7 @@ export class ProofreadingEngine {
       }
     }
 
-    const hasAnyOption = options.checkSpelling || options.checkGrammar || options.improveExpression || options.checkConsistency || options.searchCitation;
+    const hasAnyOption = options.checkSpelling || options.checkGrammar || options.checkTone || options.improveExpression || options.checkConsistency || options.searchCitation;
     if (hasAnyOption) {
       const boldFixed = MarkdownFormatter.fixKoreanBoldFormatting(markdownContent);
       if (boldFixed !== markdownContent) {

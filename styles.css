@@ -353,6 +353,28 @@
   box-sizing: border-box;
 }
 
+/* 4-Button (2x2) Segmented Grid for Proofreading Options */
+.emily-proofread-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Tone Consistency Sub-Option Container & Controls */
+.emily-tone-suboption-container {
+  background-color: var(--background-secondary-alt);
+  border: 1px solid var(--divider-color);
+  border-radius: var(--radius-s, 4px);
+  padding: 8px 10px;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+}
+
+.emily-tone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .emily-segmented-btn {
   display: flex;
   flex-direction: column;

@@ -2,7 +2,7 @@ import { ItemView, WorkspaceLeaf, setIcon, Notice, MarkdownView, TFile } from 'o
 import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
-import { ProofreadOptions, ProofreadDiffItem } from '../types/proofread';
+import { ProofreadOptions, ProofreadDiffItem, ProofreadTargetTone } from '../types/proofread';
 import { TranslationOptions, TranslationTone, TranslationStyle } from '../types/translation';
 import { ProofreadDiffModal } from './proofreadDiffModal';
 import { TranslationDiffModal } from './translationDiffModal';
@@ -71,6 +71,8 @@ export class EmilySidebarView extends ItemView {
   private proofreadOptions: ProofreadOptions = {
     checkSpelling: false,
     checkGrammar: false,
+    checkTone: false,
+    targetTone: 'auto',
     removeTimestamps: false,
     improveExpression: false,
     checkConsistency: false,
@@ -114,6 +116,8 @@ export class EmilySidebarView extends ItemView {
     this.proofreadOptions = {
       checkSpelling: this.plugin.settings.defaultProofreadSpelling ?? false,
       checkGrammar: this.plugin.settings.defaultProofreadGrammar ?? false,
+      checkTone: this.plugin.settings.defaultProofreadTone ?? false,
+      targetTone: this.plugin.settings.defaultProofreadTargetTone || 'auto',
       removeTimestamps: this.plugin.settings.defaultProofreadTimestamp ?? false,
       improveExpression: false,
       checkConsistency: false,
@@ -337,6 +341,7 @@ export class EmilySidebarView extends ItemView {
       let count = 0;
       if (this.proofreadOptions.checkSpelling) count++;
       if (this.proofreadOptions.checkGrammar) count++;
+      if (this.proofreadOptions.checkTone) count++;
       if (this.proofreadOptions.removeTimestamps) count++;
       if (this.proofreadOptions.improveExpression) count++;
       if (this.proofreadOptions.checkConsistency) count++;
@@ -392,7 +397,7 @@ export class EmilySidebarView extends ItemView {
       cls: 'emily-field-label font-semibold'
     });
 
-    const grid = groupWrap.createDiv({ cls: 'emily-segmented-grid' });
+    const grid = groupWrap.createDiv({ cls: 'emily-segmented-grid emily-proofread-grid' });
 
     // 1. 맞춤법 검사 (Spell Check)
     this.createToggleSegmentedButton(
@@ -420,7 +425,28 @@ export class EmilySidebarView extends ItemView {
       }
     );
 
-    // 3. 타임스탬프 삭제 (Timestamp Clean & Concatenation)
+    // 3. 종결어미 및 문체 일관성 (Tone & Sentence Endings Consistency)
+    const toneSubOptionContainer = groupWrap.createDiv({
+      cls: 'emily-tone-suboption-container',
+      attr: { style: this.proofreadOptions.checkTone ? 'display: block;' : 'display: none;' }
+    });
+
+    this.createToggleSegmentedButton(
+      grid,
+      'type',
+      t.sidebar.tone,
+      t.sidebar.toneDesc,
+      Boolean(this.proofreadOptions.checkTone),
+      (checked) => {
+        this.proofreadOptions.checkTone = checked;
+        updateProofCountBadge();
+        if (toneSubOptionContainer) {
+          toneSubOptionContainer.style.display = checked ? 'block' : 'none';
+        }
+      }
+    );
+
+    // 4. 타임스탬프 삭제 (Timestamp Clean & Concatenation)
     this.createToggleSegmentedButton(
       grid,
       'clock',
@@ -432,6 +458,26 @@ export class EmilySidebarView extends ItemView {
         updateProofCountBadge();
       }
     );
+
+    // Tone Target Selector (shown when tone check is active)
+    const toneRow = toneSubOptionContainer.createDiv({ cls: 'emily-tone-row flex items-center justify-between gap-2' });
+    toneRow.createSpan({ text: t.sidebar.targetToneLabel, cls: 'emily-field-sublabel font-semibold' });
+    const toneSelect = toneRow.createEl('select', { cls: 'emily-select flex-1' });
+    const toneChoices: { value: ProofreadTargetTone; label: string }[] = [
+      { value: 'auto', label: t.sidebar.targetToneAuto },
+      { value: 'honorific', label: t.sidebar.targetToneHonorific },
+      { value: 'plain', label: t.sidebar.targetTonePlain },
+      { value: 'polite', label: t.sidebar.targetTonePolite }
+    ];
+    for (const choice of toneChoices) {
+      const opt = toneSelect.createEl('option', { value: choice.value, text: choice.label });
+      if ((this.proofreadOptions.targetTone || 'auto') === choice.value) {
+        opt.selected = true;
+      }
+    }
+    toneSelect.addEventListener('change', () => {
+      this.proofreadOptions.targetTone = toneSelect.value as ProofreadTargetTone;
+    });
 
     /*
      * ============================================================================
@@ -937,6 +983,7 @@ export class EmilySidebarView extends ItemView {
     const hasProofreadOptions = Boolean(
       this.proofreadOptions.checkSpelling ||
       this.proofreadOptions.checkGrammar ||
+      this.proofreadOptions.checkTone ||
       this.proofreadOptions.removeTimestamps ||
       this.proofreadOptions.improveExpression ||
       this.proofreadOptions.checkConsistency ||
@@ -1219,6 +1266,7 @@ export class EmilySidebarView extends ItemView {
         const appliedProofOpts: string[] = [];
         if (this.proofreadOptions.checkSpelling) appliedProofOpts.push(t.sidebar.spelling);
         if (this.proofreadOptions.checkGrammar) appliedProofOpts.push(t.sidebar.grammar);
+        if (this.proofreadOptions.checkTone) appliedProofOpts.push(t.sidebar.tone);
         if (this.proofreadOptions.removeTimestamps) appliedProofOpts.push(t.sidebar.timestamp);
         if (this.proofreadOptions.improveExpression) appliedProofOpts.push(t.sidebar.expression);
         if (this.proofreadOptions.checkConsistency) appliedProofOpts.push(t.sidebar.consistency);
@@ -1945,6 +1993,10 @@ export class EmilySidebarView extends ItemView {
         return t.sidebar.spelling;
       case 'grammar':
         return t.sidebar.grammar;
+      case 'tone':
+        return t.sidebar.tone;
+      case 'timestamp':
+        return t.sidebar.timestamp;
       case 'expression':
         return t.sidebar.expression;
       case 'bold_format':

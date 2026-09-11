@@ -128,6 +128,10 @@ export interface TranslationStrings {
     proofreadSpellingDesc: string;
     proofreadGrammarTitle: string;
     proofreadGrammarDesc: string;
+    proofreadToneTitle: string;
+    proofreadToneDesc: string;
+    proofreadTargetToneTitle: string;
+    proofreadTargetToneDesc: string;
     proofreadTimestampTitle: string;
     proofreadTimestampDesc: string;
     translationSectionTitle: string;
@@ -220,6 +224,13 @@ export interface TranslationStrings {
     spellingDesc: string;
     grammar: string;
     grammarDesc: string;
+    tone: string;
+    toneDesc: string;
+    targetToneLabel: string;
+    targetToneAuto: string;
+    targetToneHonorific: string;
+    targetTonePlain: string;
+    targetTonePolite: string;
     timestamp: string;
     timestampDesc: string;
     expression: string;
@@ -386,6 +397,7 @@ export interface TranslationStrings {
     boldOriginal: string;
     boldReplacement: string;
     boldExplanation: string;
+    toneCategory: string;
   };
   transDiffModal: {
     reviewEditTitle: string;

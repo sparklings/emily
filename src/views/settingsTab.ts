@@ -4,6 +4,7 @@ import { getTranslation, getObsidianLanguage, getDefaultTargetLanguageName, getS
 import { TranslationStrings } from '../i18n/types';
 import { getSystemContext } from '../utils/systemInfo';
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
+import { ProofreadTargetTone } from '../types/proofread';
 import { DeviceKeyProfile } from '../types/settings';
 import {
   getDeviceHostname,
@@ -216,6 +217,36 @@ export class EmilySettingTab extends PluginSettingTab {
             this.plugin.syncSidebarSettings();
           })
       );
+
+    new Setting(containerEl)
+      .setName(t.settings.proofreadToneTitle)
+      .setDesc(t.settings.proofreadToneDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.defaultProofreadTone ?? false)
+          .onChange(async (val) => {
+            this.plugin.settings.defaultProofreadTone = val;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.proofreadTargetToneTitle)
+      .setDesc(t.settings.proofreadTargetToneDesc)
+      .addDropdown((dropdown) => {
+        dropdown
+          .addOption('auto', t.sidebar.targetToneAuto)
+          .addOption('honorific', t.sidebar.targetToneHonorific)
+          .addOption('plain', t.sidebar.targetTonePlain)
+          .addOption('polite', t.sidebar.targetTonePolite)
+          .setValue(this.plugin.settings.defaultProofreadTargetTone || 'auto')
+          .onChange(async (val) => {
+            this.plugin.settings.defaultProofreadTargetTone = val as ProofreadTargetTone;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          });
+      });
 
     new Setting(containerEl)
       .setName(t.settings.proofreadTimestampTitle)
