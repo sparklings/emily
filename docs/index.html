@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+  <!-- Primary SEO Meta Tags -->
+  <title>Assistant Emily - 옵시디언 지능형 마크다운 무손실 교열 & 맥락 인식 전문 번역 AI 플러그인</title>
+  <meta name="title" content="Assistant Emily - 옵시디언 지능형 마크다운 무손실 교열 & 맥락 인식 전문 번역 AI 플러그인">
+  <meta name="description" content="Assistant Emily는 옵시디언(Obsidian) 환경에서 YAML 프론트매터, [[위키링크]], LaTeX 수식을 100% 무손실 보존하며 문맥 기반 맞춤법 교열, 종결어미 일관성 교정, 1:1 대조 번역을 제공하는 데스크톱 전용 AI 플러그인입니다.">
+  <meta name="keywords" content="Obsidian, Assistant Emily, 옵시디언 플러그인, 옵시디언 AI, 마크다운 교열, 옵시디언 번역, LLM, Ollama, LM Studio, FreeLLMAPI, 마크다운 맞춤법, 종결어미 교정, Obsidian Plugin">
+  <meta name="author" content="SUNGWON PARK (sparklings)">
+  <meta name="robots" content="index, follow">
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://sparklings.github.io/emily/">
+
+  <!-- Open Graph / Facebook / Kakao -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sparklings.github.io/emily/">
+  <meta property="og:title" content="Assistant Emily - 옵시디언 지능형 마크다운 무손실 교열 & 전문 번역 AI 플러그인">
+  <meta property="og:description" content="옵시디언 마크다운 문법을 100% 완벽 보호하며 지능형 교열, 종결어미 일관성 검사, 1:1 대조 번역을 수행하는 전용 AI 페어 어시스턴트입니다.">
+  <meta property="og:site_name" content="Assistant Emily">
+  <meta property="og:locale" content="ko_KR">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://sparklings.github.io/emily/">
+  <meta name="twitter:title" content="Assistant Emily - Obsidian Intelligent Markdown Proofreading & Translation">
+  <meta name="twitter:description" content="100% lossless Obsidian markdown proofreading, tone consistency check, and bilingual translation plugin powered by local & cloud LLMs.">
+
+  <!-- Favicon / Theme -->
+  <meta name="theme-color" content="#8b5cf6">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Schema.org Structured Data (JSON-LD) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Assistant Emily",
+    "operatingSystem": "Windows, macOS, Linux (Desktop Only)",
+    "applicationCategory": "ProductivityApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "description": "Intelligent Markdown proofreading and context-aware translation specialized plugin for Obsidian with OpenAI-compatible LLM proxy support.",
+    "url": "https://sparklings.github.io/emily/",
+    "author": {
+      "@type": "Person",
+      "name": "SUNGWON PARK",
+      "url": "https://github.com/sparklings"
+    },
+    "softwareVersion": "1.0.13",
+    "downloadUrl": "https://github.com/sparklings/emily/releases"
+  }
+  </script>
+</head>
+<body>
+
+  <!-- Navigation Header -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="https://sparklings.github.io/emily/" class="brand">
+        <span class="brand-icon">✨</span>
+        <span>Assistant Emily</span>
+      </a>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#features">주요 기능</a></li>
+          <li><a href="#comparison">일반 AI 대조</a></li>
+          <li><a href="#installation">설치 안내</a></li>
+          <li><a href="https://github.com/sparklings/emily/wiki" target="_blank" rel="noopener">📚 공식 위키</a></li>
+          <li>
+            <a href="https://github.com/sparklings/emily" target="_blank" rel="noopener" class="btn-github">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+              GitHub
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <div class="badge-version">
+        <span class="dot"></span>
+        <span>최신 릴리즈 v1.0.13 배포 완료</span>
+      </div>
+      <h1 class="hero-title">옵시디언을 위한 지능형 무손실 교열 &amp; 전문 번역 AI 플러그인</h1>
+      <p class="hero-subtitle">
+        YAML 메타데이터와 위키링크([[Note]])가 깨지는 AI 번역은 이제 그만.<br>
+        Assistant Emily는 옵시디언 고유 문법을 100% 완벽 보존하며, 종결어미 일관성 교정부터 단락별 1:1 대조 번역까지 데스크톱 환경에서 매끄럽게 수행합니다.
+      </p>
+      <div class="hero-actions">
+        <a href="#installation" class="btn-primary">
+          <span>🚀 플러그인 설치하기</span>
+        </a>
+        <a href="https://github.com/sparklings/emily/wiki" target="_blank" rel="noopener" class="btn-secondary">
+          <span>📚 공식 가이드 Wiki 열기</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Interactive Mockup Showcase -->
+    <div class="mockup-container">
+      <div class="mockup-header">
+        <div class="mockup-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="mockup-title">Obsidian Vault / Assistant Emily Side-by-Side Review</div>
+        <div style="width: 40px;"></div>
+      </div>
+      <div class="mockup-body">
+        <div class="mockup-editor">
+          <pre>---
+title: "Distributed Systems Research"
+tags: [<span class="tag-highlight">#system</span>, <span class="tag-highlight">#ai</span>]
+updated: 2026-09-13
+---
+
+# 1. 아키텍처 핵심 요약
+카프카 <span class="wikilink-highlight">[[Kafka Broker]]</span> 아키텍처는 **컨슈머(Consumer)** 가 메시지를 효율적으로 소비하도록 설계되었습니다.
+
+> [!note] 무손실 문법 보호
+> 수식: $E = mc^2$, 코드 블록, 프론트매터 원형 완벽 보존!
+
+- **효율적인 소스 관리**: 매번 새 문서를 만들기보다 단락별 1:1 대조 번역을 활용하십시오.</pre>
+        </div>
+        <div class="mockup-sidebar">
+          <div class="sidebar-card-preview">
+            <div class="sidebar-title">
+              <span>✨ Assistant Emily</span>
+              <span style="font-size: 0.75rem; color: #10b981;">● Online</span>
+            </div>
+            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.6rem;">
+              📄 작업 대상: <code>Distributed Systems.md</code>
+            </div>
+
+            <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-top: 0.5rem;">
+              ✏️ 교열 검사 항목 (다중 선택)
+            </div>
+            <div class="sidebar-options-grid">
+              <div class="sidebar-btn active">✓ 맞춤법 검사</div>
+              <div class="sidebar-btn active">✓ 문법 검사</div>
+              <div class="sidebar-btn active">✓ 타임스탬프 삭제</div>
+            </div>
+
+            <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-top: 0.8rem;">
+              🌐 번역 범위 &amp; 보존
+            </div>
+            <div class="sidebar-options-grid">
+              <div class="sidebar-btn">선택 영역</div>
+              <div class="sidebar-btn active">전체 완전 번역</div>
+              <div class="sidebar-btn">1:1 대조 병기</div>
+            </div>
+
+            <div style="margin-top: 1rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.75rem; color: #a78bfa;">
+              ⌨️ Ctrl+Enter (Cmd+Enter) 즉시 실행 지원
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Features Grid -->
+  <section id="features" class="features-section">
+    <div class="section-header">
+      <span class="section-tag">Core Capabilities</span>
+      <h2 class="section-title">옵시디언 맞춤형 지능형 기능들</h2>
+    </div>
+
+    <div class="features-grid">
+      <!-- Feature 1 -->
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3 class="feature-title">100% 무손실 문법 마스킹</h3>
+        <p class="feature-desc">
+          YAML 프론트매터, 옵시디언 <code>[[위키링크]]</code>, <code>#태그</code>, LaTeX 수식(<code>$...$</code>), 콜아웃 블록(<code>&gt; [!note]</code>), 코드 블록을 고유 UUID 토큰으로 완전 격리 마스킹한 후 AI 연산을 수행하여 서식 깨짐을 원천 차단합니다.
+        </p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="feature-card">
+        <div class="feature-icon">✍️</div>
+        <h3 class="feature-title">종결어미 및 문체 일관성 검사기</h3>
+        <p class="feature-desc">
+          긴 문서를 집필할 때 혼재되기 쉬운 종결어미(하십시오체, 해라체, 해요체)를 정밀 감지하고 통일합니다. 인용구, 헤딩 제목, 코드 내부는 예외 구역으로 안전하게 보존됩니다.
+        </p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <h3 class="feature-title">맥락 인식 전문 번역 (3대 모드)</h3>
+        <p class="feature-desc">
+          선택 영역 번역, 문서 전체 번역뿐만 아니라 논문 및 외신 독해에 최적인 <strong>단락별 1:1 대조 병렬 번역(Paragraph Bilingual)</strong>을 지원합니다. 출발어와 도착어가 같을 경우 스마트 "편집" 모드로 자동 전환됩니다.
+        </p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="feature-card">
+        <div class="feature-icon">📚</div>
+        <h3 class="feature-title">사용자 정의 용어집 (Glossary)</h3>
+        <p class="feature-desc">
+          분야별 전문 용어나 회사/프로젝트 고유의 기술 단어를 등록해 두면, LLM이 문맥과 상관없이 사전에 정의된 도착어 용어로 100% 일관되게 치환·번역하도록 프롬프트에 자동 주입합니다.
+        </p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 class="feature-title">듀얼 AI 프로바이더 &amp; 자동 Failover</h3>
+        <p class="feature-desc">
+          Primary/Secondary 엔드포인트를 동시에 등록하여 실시간 헬스체크와 장애 시 무중단 자동 전환을 지원합니다. 대용량 문서의 짝/홀수 청크 병렬 분산 처리로 작업 시간을 획기적으로 단축합니다.
+        </p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <h3 class="feature-title">대화형 Diff 검토 &amp; 제로 토큰 재오픈</h3>
+        <p class="feature-desc">
+          Needleman-Wunsch 알고리즘 기반의 인터랙티브 대조 뷰어를 제공합니다. 변경점을 한눈에 확인하고 선택 적용할 수 있으며, 이전 작업 히스토리는 추가 토큰 소모 없이 언제든 다시 열어 재검토할 수 있습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section id="comparison" class="comparison-section">
+    <div class="comparison-container">
+      <div class="section-header">
+        <span class="section-tag">Why Assistant Emily?</span>
+        <h2 class="section-title">일반 AI 복사/붙여넣기와의 차이점</h2>
+      </div>
+
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>비교 항목</th>
+            <th>일반 웹 AI (ChatGPT 등)</th>
+            <th>Assistant Emily 플러그인</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>YAML 프론트매터 보존</strong></td>
+            <td><span class="badge-no">✕</span> 줄바꿈 손실 및 임의 생략</td>
+            <td><span class="badge-yes">✓</span> 100% 바이트 단위 무손실 원형 보존</td>
+          </tr>
+          <tr>
+            <td><strong>옵시디언 위키링크 [[...]]</strong></td>
+            <td><span class="badge-no">✕</span> 번역되거나 괄호 깨짐 발생</td>
+            <td><span class="badge-yes">✓</span> UUID 토큰 마스킹 완벽 보호</td>
+          </tr>
+          <tr>
+            <td><strong>LaTeX 수식 및 코드 블록</strong></td>
+            <td><span class="badge-no">✕</span> 수식 문법 훼손 및 오탈자</td>
+            <td><span class="badge-yes">✓</span> 수식 원형 보존 및 코드 주석만 선택 번역</td>
+          </tr>
+          <tr>
+            <td><strong>대조 검토 (Diff View)</strong></td>
+            <td><span class="badge-no">✕</span> 전체 텍스트 수동 비교 필요</td>
+            <td><span class="badge-yes">✓</span> 항목별 실시간 대조 및 개별 승인</td>
+          </tr>
+          <tr>
+            <td><strong>로컬 AI 및 프라이버시</strong></td>
+            <td><span class="badge-no">✕</span> 외부 클라우드 의존</td>
+            <td><span class="badge-yes">✓</span> Ollama, LM Studio 등 100% 로컬 구동 가능</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Installation Section -->
+  <section id="installation" class="install-section">
+    <div class="section-header">
+      <span class="section-tag">Quick Installation</span>
+      <h2 class="section-title">플러그인 설치 방법</h2>
+    </div>
+
+    <div class="install-tabs">
+      <div class="install-tab-header">
+        <button class="install-tab-btn active" onclick="switchTab('brat')">방법 1: BRAT 플러그인 (가장 편리)</button>
+        <button class="install-tab-btn" onclick="switchTab('manual')">방법 2: GitHub 릴리즈 수동 설치</button>
+      </div>
+      <div class="install-tab-content" id="tab-brat">
+        <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.8;">
+          <li>옵시디언 커뮤니티 플러그인에서 <strong>BRAT (Beta Reviewers Auto-update Tester)</strong>를 검색하여 설치 및 활성화합니다.</li>
+          <li>명령어 팔레트(<code>Ctrl+P</code> / <code>Cmd+P</code>)에서 <code>BRAT: Add a beta plugin for testing</code>을 실행합니다.</li>
+          <li>저장소 주소란에 아래 링크를 입력합니다:</li>
+        </ol>
+        <div class="code-box">
+          <code>https://github.com/sparklings/emily</code>
+          <button onclick="navigator.clipboard.writeText('https://github.com/sparklings/emily'); alert('저장소 URL이 복사되었습니다.');" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer;">복사</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          설치가 완료되면 <strong>설정 &gt; 커뮤니티 플러그인</strong> 목록에서 <strong>Assistant Emily</strong>를 켜주시면 됩니다.
+        </p>
+      </div>
+
+      <div class="install-tab-content" id="tab-manual" style="display: none;">
+        <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.8;">
+          <li><a href="https://github.com/sparklings/emily/releases" target="_blank" rel="noopener"><strong>GitHub Releases 페이지</strong></a>에서 최신 <code>main.js</code>, <code>manifest.json</code>, <code>styles.css</code> 파일을 다운로드합니다.</li>
+          <li>본인의 옵시디언 볼트 폴더 내 <code>.obsidian/plugins/assistant-emily/</code> 디렉토리를 생성하고 위 3개 파일을 넣습니다.</li>
+          <li>옵시디언을 재시작하거나 <strong>설정 &gt; 커뮤니티 플러그인 &gt; 새로고침</strong> 후 활성화합니다.</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Privacy Banner -->
+    <div class="privacy-banner">
+      <div class="privacy-banner-icon">🔒</div>
+      <div class="privacy-banner-text">
+        <h4>100% 로컬 직접 통신 및 프라이버시 원칙</h4>
+        <p>
+          Assistant Emily는 별도의 자체 중계 서버를 운영하지 않습니다. 사용자의 볼트 데이터는 오직 사용자가 직접 지정한 AI 백엔드(OpenAI, Ollama, LM Studio, FreeLLMAPI 등)로만 직접 암호화 통신되며, 일체의 원격 분석(Telemetry)이나 사용자 추적 코드를 포함하지 않습니다.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://github.com/sparklings/emily" target="_blank" rel="noopener">GitHub 저장소</a>
+      <a href="https://github.com/sparklings/emily/releases" target="_blank" rel="noopener">릴리즈 노트</a>
+      <a href="https://github.com/sparklings/emily/wiki" target="_blank" rel="noopener">공식 가이드 Wiki</a>
+      <a href="https://github.com/sparklings/emily/issues" target="_blank" rel="noopener">버그 제보 및 기능 제안</a>
+      <a href="https://github.com/sparklings/emily/blob/master/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </div>
+    <div class="footer-copy">
+      &copy; 2026 <strong>Assistant Emily</strong>. Created by <a href="https://github.com/sparklings" target="_blank" rel="noopener" style="color: #c4b5fd;">SUNGWON PARK</a>. Released under the MIT License.
+    </div>
+  </footer>
+
+  <!-- Tab Switching Script -->
+  <script>
+    function switchTab(tabId) {
+      const bratTab = document.getElementById('tab-brat');
+      const manualTab = document.getElementById('tab-manual');
+      const btns = document.querySelectorAll('.install-tab-btn');
+
+      if (tabId === 'brat') {
+        bratTab.style.display = 'block';
+        manualTab.style.display = 'none';
+        btns[0].classList.add('active');
+        btns[1].classList.remove('active');
+      } else {
+        bratTab.style.display = 'none';
+        manualTab.style.display = 'block';
+        btns[0].classList.remove('active');
+        btns[1].classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
