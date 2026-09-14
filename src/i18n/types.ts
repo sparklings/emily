@@ -67,12 +67,15 @@ export interface TranslationStrings {
     // 기기별 로컬 키 관리 (Device Profile Keys)
     deviceKeySectionTitle: string;
     deviceKeySectionDesc: string;
+    currentDeviceIdentifierTitle: string;
+    currentDeviceIdentifierDesc: string;
     currentDeviceBadge: string;
     profileKeyActiveBadge: string;
     globalKeyActiveBadge: string;
     manageProfilesBtn: string;
     addProfileBtn: string;
     autoDetectCurrentDevice: string;
+    autoFillHostnameNotFoundNotice: string;
     profileNameTitle: string;
     profileHostnameTitle: string;
     profileKeyTitle: string;

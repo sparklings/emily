@@ -42,6 +42,8 @@ export interface EmilySettings {
   useDeviceKeyOverride?: boolean;
   /** 401 인증 실패 시 등록된 후보 키 자동 진단(Auto-Probe) 여부 */
   autoProbeCandidateKeys?: boolean;
+  /** 사용자가 직접 입력한 현재 기기 식별자 (로컬 스토리지 보조용) */
+  currentDeviceHostname?: string;
 
   /** 플러그인 UI 표시 언어 (auto: 옵시디언 언어 추종, ko: 한국어, en: 영어) */
   language: 'auto' | 'ko' | 'en';
@@ -90,6 +92,7 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   deviceProfiles: [],
   useDeviceKeyOverride: true,
   autoProbeCandidateKeys: true,
+  currentDeviceHostname: '',
 
   language: 'auto',
   autoProofreadKoreanBold: true,

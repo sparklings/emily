@@ -1,32 +1,56 @@
 import { EmilySettings, DeviceKeyProfile } from '../types/settings';
 
+export const DEVICE_HOSTNAME_STORAGE_KEY = 'assistant-emily-device-hostname';
+
 /**
- * 현재 기기의 OS 호스트명(Hostname)을 안전하게 조회합니다.
- * - Obsidian 데스크톱 환경(Electron/Node.js) 지원
+ * 현재 기기의 사용자 지정 식별자(호스트명)를 조회합니다.
+ * - 시스템 고유 정보(os.hostname, process.env 등)를 조회하지 않고 사용자가 직접 입력한 기기 식별자를 사용합니다.
+ * - 1순위: 기기 로컬 저장소(localStorage) - 기기별 독립 저장 (클라우드 미동기화)
+ * - 2순위: 플러그인 설정(settings.currentDeviceHostname)
  */
-export function getDeviceHostname(): string {
+export function getDeviceHostname(settings?: EmilySettings): string {
   try {
-    if (typeof process !== 'undefined' && process.env) {
-      if (process.env.COMPUTERNAME) return process.env.COMPUTERNAME.trim();
-      if (process.env.HOSTNAME) return process.env.HOSTNAME.trim();
-    }
-    // Node.js os 모듈 동적 로드 시도
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const os = require('os');
-    if (os && typeof os.hostname === 'function') {
-      return os.hostname().trim();
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = window.localStorage.getItem(DEVICE_HOSTNAME_STORAGE_KEY);
+      if (stored && stored.trim().length > 0) {
+        return stored.trim();
+      }
     }
   } catch {
-    // 브라우저 샌드박스 또는 보안 제한 시 빈 문자열 반환
+    // 샌드박스 또는 보안 제한 시 무시
+  }
+  if (settings && settings.currentDeviceHostname && settings.currentDeviceHostname.trim().length > 0) {
+    return settings.currentDeviceHostname.trim();
   }
   return '';
 }
 
 /**
- * 현재 기기의 대표 식별자 이름 반환 (OS 호스트명 > 'Local Device')
+ * 현재 기기의 사용자 지정 식별자(호스트명)를 저장합니다.
  */
-export function getDeviceDisplayName(): string {
-  const host = getDeviceHostname();
+export function setDeviceHostname(hostname: string, settings?: EmilySettings): void {
+  const trimmed = hostname.trim();
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (trimmed) {
+        window.localStorage.setItem(DEVICE_HOSTNAME_STORAGE_KEY, trimmed);
+      } else {
+        window.localStorage.removeItem(DEVICE_HOSTNAME_STORAGE_KEY);
+      }
+    }
+  } catch {
+    // 무시
+  }
+  if (settings) {
+    settings.currentDeviceHostname = trimmed;
+  }
+}
+
+/**
+ * 현재 기기의 대표 식별자 이름 반환 (설정된 식별자 > 'Local Device')
+ */
+export function getDeviceDisplayName(settings?: EmilySettings): string {
+  const host = getDeviceHostname(settings);
   if (host) return host;
   return 'Local Device';
 }
@@ -122,11 +146,12 @@ export interface EffectiveApiKeyResult {
 
 /**
  * 2-Tier 분기 전략에 따라 현재 환경에서 최우선으로 유효한 API Key를 판별합니다.
- * 1순위: OS 호스트명(os.hostname())과 일치하는 기기 프로필 키 (data.json 동기화)
+ * 1순위: 기기 식별자(호스트명)와 일치하는 기기 프로필 키 (data.json 동기화)
  * 2순위: data.json에 동기화된 전역 기본 키
  */
 export function resolveEffectiveApiKey(
-  settings: EmilySettings
+  settings: EmilySettings,
+  customHost?: string
 ): EffectiveApiKeyResult {
   const globalKey = settings.apiKey || '';
 
@@ -136,7 +161,7 @@ export function resolveEffectiveApiKey(
   }
 
   // 1순위: 기기 프로필 목록에서 호스트명 매칭 확인
-  const currentHost = getDeviceHostname().toLowerCase();
+  const currentHost = (customHost || getDeviceHostname(settings)).toLowerCase().trim();
   const profiles = settings.deviceProfiles || [];
 
   if (profiles.length > 0 && currentHost) {
@@ -216,11 +241,12 @@ export interface EffectiveEndpointResult {
 
 /**
  * 2-Tier 분기 전략에 따라 현재 환경에서 최우선으로 유효한 엔드포인트 URL/포트를 판별합니다.
- * 1순위: OS 호스트명(os.hostname())과 일치하는 기기 프로필의 URL/포트 (data.json 동기화)
+ * 1순위: 기기 식별자(호스트명)와 일치하는 기기 프로필의 URL/포트 (data.json 동기화)
  * 2순위: data.json에 동기화된 전역 기본 URL
  */
 export function resolveEffectiveEndpoint(
-  settings: EmilySettings
+  settings: EmilySettings,
+  customHost?: string
 ): EffectiveEndpointResult {
   const globalUrl = settings.apiBaseUrl || 'https://api.openai.com/v1';
   const cleanGlobalUrl = globalUrl.trim().replace(/\/+$/, '');
@@ -235,7 +261,7 @@ export function resolveEffectiveEndpoint(
   }
 
   // 1순위: 기기 프로필 목록에서 호스트명 매칭 확인
-  const currentHost = getDeviceHostname().toLowerCase();
+  const currentHost = (customHost || getDeviceHostname(settings)).toLowerCase().trim();
   const profiles = settings.deviceProfiles || [];
 
   if (profiles.length > 0 && currentHost) {
