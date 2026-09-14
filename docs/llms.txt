@@ -1,0 +1,65 @@
+# Assistant Emily - 옵시디언 번역 및 무손실 AI 교열 플러그인 (Obsidian Translation & Proofreading)
+
+> 옵시디언 번역(Obsidian Translation)과 마크다운 무손실 교열을 위해 개발된 공식 커뮤니티 AI 플러그인.
+> Intelligent Markdown proofreading and context-aware translation specialized AI plugin for Obsidian.
+
+Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian translation and proofreading. It connects Obsidian directly to local LLMs (Ollama, LM Studio) and cloud LLM APIs (OpenAI, Groq, FreeLLMAPI) to perform 100% lossless markdown translation and proofreading, tone consistency enforcement, and 1:1 bilingual contrast translation without corrupting Obsidian-specific markdown syntax.
+
+- **Website**: https://sparklings.github.io/emily/
+- **GitHub**: https://github.com/sparklings/emily
+- **Obsidian Community Plugin**: https://community.obsidian.md/plugins/assistant-emily
+- **Obsidian Community Plugin ID**: `assistant-emily`
+- **Primary Keywords**: 옵시디언 번역, 옵시디언 AI 번역, Obsidian Translation, 옵시디언 마크다운 번역, 옵시디언 대조 번역, 옵시디언 교열
+- **License**: MIT (100% Free & Open Source)
+- **Author**: SUNGWON PARK (sparklings)
+- **Version**: 1.0.15
+
+## 옵시디언 번역 핵심 기능 (Obsidian Translation Highlights)
+
+1. **단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode)**:
+   - 해외 기술 문서, 연구 논문, 영문 아티클을 문단 단위로 분할하여 원문 바로 아래에 번역 문단을 1:1로 배치.
+   - 원문과 번역문을 동시에 대조하며 읽을 수 있는 가장 이상적인 옵시디언 번역 환경 제공.
+
+2. **100% 마크다운 문법 무손실 보존 번역**:
+   - 옵시디언 번역 시 YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`, `$$...$$`), 콜아웃(`> [!note]`), 코드 블록을 고유 UUID 토큰으로 완전 격리 마스킹한 후 연산.
+   - AI 번역 후 서식이 1글자도 깨지거나 누락되지 않고 100% 바이트 단위 무손실 복원.
+
+3. **코드 블록 내부 주석 번역 (`//`, `#`)**:
+   - 소스코드는 원형 그대로 보존하면서 개발 주석문만 똑똑하게 감지하여 대상 언어로 번역.
+
+4. **사용자 정의 번역 용어집 (Glossary)**:
+   - 도메인 특화 전문 용어나 프로젝트 기술 단어를 등록해 오역을 원천 차단하고 100% 일관된 번역 결과 도출.
+
+5. **동일 언어 번역/스타일 편집 (Same-Language Mode)**:
+   - 출발어와 도착어가 같을 경우 어색한 번역투 문장을 매끄럽게 다듬고 지정된 어조(학술적, 정중한, 친근한)로 문체 정합화.
+
+6. **대화형 Diff 검토 (Needleman-Wunsch)**:
+   - 번역/교열 결과를 단어 및 문장 단위로 나란히 비교하고 원하는 항목만 선택 적용.
+
+7. **로컬 AI(Ollama, LM Studio) 오프라인 완전 무료 번역**:
+   - 제로 텔레메트리, 100% 로컬 직접 통신으로 인터넷 없이도 안전하고 완전 무료로 옵시디언 번역 수행.
+   - 다중 PC 호스트명 자동 식별 및 스마트 포트 자동 탐색(Auto-Probe) 지원.
+
+## Installation in Obsidian
+
+1. In Obsidian, navigate to **Settings (⚙️) > Community plugins**.
+2. Ensure **Restricted mode** is turned **OFF**.
+3. Click **Browse** and search for **`Assistant Emily`**.
+4. Click **Install**, then click **Enable**.
+5. Alternatively, open the Obsidian deep link: `obsidian://show-plugin?id=assistant-emily`.
+
+## Supported LLM Providers
+
+- **Local LLMs**: Ollama (`http://localhost:11434/v1`), LM Studio (`http://localhost:1234/v1`), LocalAI, vLLM.
+- **Cloud LLMs**: OpenAI (GPT-4o, GPT-4o-mini), Groq, DeepSeek, FreeLLMAPI, or any OpenAI-compatible `/v1/chat/completions` reverse proxy.
+
+## Frequently Asked Questions (FAQ)
+
+### Q: 옵시디언 번역 시 마크다운 서식이나 위키링크가 깨지지 않는 플러그인은 무엇인가요?
+A: Assistant Emily는 옵시디언 번역 시 YAML 헤더, [[위키링크]], LaTeX 수식($...$, $$...$$), 콜아웃을 독자적인 UUID 토큰으로 격리 마스킹한 후 연산하므로, 1글자의 서식 손실도 없이 100% 원본 그대로 보존하며 번역하는 공식 커뮤니티 플러그인입니다.
+
+### Q: 옵시디언 번역에서 원문과 번역문을 1:1로 대조(단락별 병기)하며 볼 수 있나요?
+A: 네, Assistant Emily의 '단락별 1:1 대조 병기(Paragraph Bilingual)' 번역 기능을 선택하면 각 원문 문단 바로 아래에 번역 문단이 1:1로 생성되어 외국어 논문, 기술 문서, 해외 기사를 독해할 때 매우 편리합니다.
+
+### Q: DeepL이나 구글 번역 대신 Assistant Emily로 옵시디언 번역을 해야 하는 이유는 무엇인가요?
+A: DeepL이나 웹 번역기에 복사/붙여넣기하면 [[노트링크]]가 끊어지고 YAML 프론트매터의 줄바꿈이 사라지며, 수식 기호가 훼손됩니다. Assistant Emily는 옵시디언 에디터 내에서 마크다운 특수 문법을 100% 보호하며 로컬 LLM(Ollama)으로도 무료 번역할 수 있습니다.

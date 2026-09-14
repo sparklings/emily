@@ -188,6 +188,8 @@ export const ko: TranslationStrings = {
   },
   sidebar: {
     title: 'Assistant Emily',
+    refreshWorkState: '작업 상태 초기화 및 새로고침',
+    refreshWorkStateNotice: 'Assistant Emily의 작업 상태와 사이드바가 초기화되었습니다.',
     collapseAll: '제어 영역(옵션) 접기/펼치기 및 상단 이동',
     foldHistory: '이전 작업 결과 모두 접기/펼치기',
     historyLog: '작업 기록',

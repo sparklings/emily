@@ -144,6 +144,50 @@ export class EmilySidebarView extends ItemView {
     }
   }
 
+  /**
+   * 작업 상태를 새로고침하고 UI 요소를 최초 실행 상태로 완전 클린징합니다.
+   * 1. 진행 중인 비동기 작업(LLM 스트리밍) 즉시 중단 (Abort)
+   * 2. 세션 기록, 커스텀 프롬프트, 대상 파일 락 등 내부 상태 초기화
+   * 3. 플러그인 설정 및 코어 백엔드 엔진 재로드
+   * 4. 사이드바 UI 완전 재렌더링 및 활성 마크다운 문서 즉시 동기화
+   * 5. 사용자 알림(Notice) 피드백 제공
+   */
+  public async refreshWorkState(): Promise<void> {
+    try {
+      // 1. 진행 중인 요청 안전 중단
+      if (this.currentAbortController) {
+        this.currentAbortController.abort();
+        this.currentAbortController = null;
+      }
+      this.isExecuting = false;
+
+      // 2. 내부 뷰 상태 및 세션 초기화
+      this.lockedTargetFile = null;
+      this.lockedTargetView = null;
+      this.customPromptText = '';
+      this.selectedSourceFileName = '';
+      this.lastCreatedTempPath = null;
+      this.sessions = [];
+      this.sessionCounter = 0;
+
+      // 3. 플러그인 설정 및 코어 서비스 재초기화
+      await this.plugin.loadSettings();
+      this.plugin.initServices();
+      this.initOptionsFromSettings();
+
+      // 4. 사이드바 UI 완전 재렌더링 & 대상 문서 재연결
+      this.renderView();
+      this.updateTargetDocument();
+
+      // 5. 알림 피드백
+      const t = getTranslation(this.plugin.settings.language);
+      new Notice(t.sidebar.refreshWorkStateNotice);
+    } catch (err) {
+      console.error('[Assistant Emily] Failed to refresh work state:', err);
+      new Notice('Failed to refresh Assistant Emily work state.');
+    }
+  }
+
   getViewType(): string {
     return EMILY_VIEW_TYPE;
   }
@@ -224,6 +268,15 @@ export class EmilySidebarView extends ItemView {
     titleWrap.createSpan({ text: t.sidebar.title });
 
     const actions = header.createDiv({ cls: 'emily-header-actions' });
+    const refreshBtn = actions.createEl('button', {
+      cls: 'emily-icon-btn',
+      attr: { title: t.sidebar.refreshWorkState }
+    });
+    setIcon(refreshBtn, 'refresh-cw');
+    refreshBtn.addEventListener('click', () => {
+      void this.refreshWorkState();
+    });
+
     const collapseControlBtn = actions.createEl('button', {
       cls: 'emily-icon-btn',
       attr: { title: t.sidebar.collapseAll }

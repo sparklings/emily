@@ -173,7 +173,7 @@ export default class EmilyPlugin extends Plugin {
   /**
    * 코어 백엔드 서비스(LLM 클라이언트, 교열 엔진, 번역 엔진, 일관성 엔진)를 초기화합니다.
    */
-  private initServices() {
+  public initServices() {
     this.llmClient = new LLMProxyClient(
       this.settings.apiBaseUrl,
       this.settings.apiKey,

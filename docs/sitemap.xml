@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://sparklings.github.io/emily/</loc>
-    <lastmod>2026-09-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="ko" href="https://sparklings.github.io/emily/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://sparklings.github.io/emily/#en-overview" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://sparklings.github.io/emily/" />
+    <lastmod>2026-09-14</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://sparklings.github.io/emily/og-image.png</image:loc>
+      <image:title>옵시디언 번역 &amp; AI 무손실 교열 플러그인 - Assistant Emily</image:title>
+      <image:caption>옵시디언 번역 시 YAML 및 위키링크 100% 무손실 보존, 단락별 1:1 대조 번역을 제공하는 공식 AI 플러그인</image:caption>
+    </image:image>
   </url>
 </urlset>

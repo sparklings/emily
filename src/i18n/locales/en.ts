@@ -188,6 +188,8 @@ export const en: TranslationStrings = {
   },
   sidebar: {
     title: 'Assistant Emily',
+    refreshWorkState: 'Reset Work State & Refresh',
+    refreshWorkStateNotice: 'Assistant Emily work state and sidebar have been reset.',
     collapseAll: 'Expand/Collapse Options and Scroll to Top',
     foldHistory: 'Expand/Collapse All History Sessions',
     historyLog: 'History Log',

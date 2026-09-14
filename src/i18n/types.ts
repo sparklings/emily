@@ -186,6 +186,8 @@ export interface TranslationStrings {
   };
   sidebar: {
     title: string;
+    refreshWorkState: string;
+    refreshWorkStateNotice: string;
     collapseAll: string;
     foldHistory: string;
     historyLog: string;
