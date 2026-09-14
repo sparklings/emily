@@ -150,13 +150,7 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 5. 검색 결과에서 **Assistant Emily** 를 선택하고 **[설치(Install)]** 를 누른 후 **[활성화(Enable)]** 버튼을 클릭합니다.
 6. 사이드바 리본의 ✨ 아이콘 또는 명령어 팔레트(`Ctrl+P` / `Cmd+P`)에서 **Assistant Emily: Open Sidebar** 를 실행하여 즉시 사용할 수 있습니다.
 
-#### 2. BRAT(Beta Reviewers Auto-update Tester)을 통한 설치 (베타/프리릴리즈)
-공식 마켓플레이스 업데이트 전 최신 개발 빌드를 먼저 테스트하고 싶으신 경우:
-1. 옵시디언 커뮤니티 플러그인에서 **BRAT** 을 검색하여 설치 및 활성화합니다.
-2. 명령어 팔레트에서 `BRAT: Add a beta plugin for testing` 을 실행합니다.
-3. 저장소 주소 `sparklings/emily` 를 입력하여 추가합니다.
-
-#### 3. 깃허브 릴리즈 수동 설치 (오프라인/직접 설치)
+#### 2. 깃허브 릴리즈 수동 설치 (오프라인/직접 설치)
 1. [GitHub Releases](https://github.com/sparklings/emily/releases)에서 최신 버전의 **`main.js`**, **`manifest.json`**, **`styles.css`** 3개 파일을 다운로드합니다.
 2. 옵시디언 보관함(Vault) 폴더로 이동하여 아래 경로를 생성하고 파일을 배치합니다:
    ```
@@ -404,13 +398,7 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 5. Select **Assistant Emily**, click **Install**, and then click **Enable**.
 6. Click the ✨ ribbon icon on the left sidebar or use the command palette (`Ctrl+P` / `Cmd+P`) to run **Assistant Emily: Open Sidebar** to begin immediately.
 
-#### 2. Installation via BRAT (For Beta / Pre-release Testing)
-To test the latest development builds before official marketplace updates:
-1. In Obsidian Community Plugins, search for and install **BRAT**.
-2. Open the command palette and run `BRAT: Add a beta plugin for testing`.
-3. Enter the repository path `sparklings/emily` and add the plugin.
-
-#### 3. Manual Installation via GitHub Releases (Offline / Manual)
+#### 2. Manual Installation via GitHub Releases (Offline / Manual)
 1. Download the latest **`main.js`**, **`manifest.json`**, and **`styles.css`** files from [GitHub Releases](https://github.com/sparklings/emily/releases).
 2. Open your Obsidian Vault directory and create the following plugin folder path:
    ```

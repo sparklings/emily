@@ -291,9 +291,8 @@ updated: 2026-09-13
 
     <div class="install-tabs">
       <div class="install-tab-header">
-        <button class="install-tab-btn active" data-tab="community" onclick="switchTab('community')">방법 1: 커뮤니티 플러그인 (공식 출시 · 추천)</button>
-        <button class="install-tab-btn" data-tab="brat" onclick="switchTab('brat')">방법 2: BRAT 베타 테스트</button>
-        <button class="install-tab-btn" data-tab="manual" onclick="switchTab('manual')">방법 3: GitHub 릴리즈 수동 설치</button>
+        <button class="install-tab-btn active" data-tab="community" onclick="switchTab('community')">방법 1: 커뮤니티 플러그인 (공식 출시 · 강력 추천)</button>
+        <button class="install-tab-btn" data-tab="manual" onclick="switchTab('manual')">방법 2: GitHub 릴리즈 수동 설치</button>
       </div>
 
       <div class="install-tab-content" id="tab-community">
@@ -308,24 +307,6 @@ updated: 2026-09-13
           <li>검색 결과에서 <strong>Assistant Emily</strong>를 선택하고 <strong>[설치(Install)]</strong>를 누른 후, 설치가 완료되면 <strong>[활성화(Enable)]</strong> 버튼을 클릭합니다.</li>
           <li>좌측 리본 바(✨ 아이콘) 또는 명령어 팔레트(<code>Ctrl+P</code> / <code>Cmd+P</code>)에서 <strong>Assistant Emily: Open Sidebar</strong>를 실행하여 즉시 사용하실 수 있습니다.</li>
         </ol>
-      </div>
-
-      <div class="install-tab-content" id="tab-brat" style="display: none;">
-        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
-          공식 커뮤니티 플러그인 업데이트 전, GitHub 저장소에 배포되는 최신 개발/프리릴리즈 빌드를 가장 먼저 테스트해보고 싶으신 경우 BRAT 플러그인을 활용하실 수 있습니다.
-        </p>
-        <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.8;">
-          <li>옵시디언 커뮤니티 플러그인에서 <strong>BRAT (Beta Reviewers Auto-update Tester)</strong>를 검색하여 설치 및 활성화합니다.</li>
-          <li>명령어 팔레트(<code>Ctrl+P</code> / <code>Cmd+P</code>)에서 <code>BRAT: Add a beta plugin for testing</code>을 실행합니다.</li>
-          <li>저장소 주소란에 아래 링크를 입력합니다:</li>
-        </ol>
-        <div class="code-box">
-          <code>https://github.com/sparklings/emily</code>
-          <button onclick="navigator.clipboard.writeText('https://github.com/sparklings/emily'); alert('저장소 URL이 복사되었습니다.');" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 0.3rem 0.6rem; border-radius: 4px; cursor: pointer;">복사</button>
-        </div>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">
-          설치가 완료되면 <strong>설정 &gt; 커뮤니티 플러그인</strong> 목록에서 <strong>Assistant Emily</strong>를 켜주시면 됩니다.
-        </p>
       </div>
 
       <div class="install-tab-content" id="tab-manual" style="display: none;">
@@ -368,7 +349,7 @@ updated: 2026-09-13
   <!-- Tab Switching Script -->
   <script>
     function switchTab(tabId) {
-      const tabs = ['community', 'brat', 'manual'];
+      const tabs = ['community', 'manual'];
       tabs.forEach(function(t) {
         const el = document.getElementById('tab-' + t);
         if (el) el.style.display = (t === tabId) ? 'block' : 'none';
