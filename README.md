@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/wiki"><img src="https://img.shields.io/badge/docs-GitHub%20Wiki-brightgreen.svg?style=flat-square" alt="Documentation Wiki"></a>
+  <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
   <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.15-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
@@ -16,18 +16,15 @@
 </p>
 
 <p align="center">
-  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://github.com/sparklings/emily/wiki"><b>📚 Official Wiki</b></a>
+  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://sparklings.github.io/emily/"><b>🌐 Website</b></a>
 </p>
-
-> [!TIP]
-> 📚 **공식 GitHub Wiki 오픈**: 설치 방법, 상세 기능 시나리오, 로컬 AI(Ollama, LM Studio 등) 연동 레시피, 다중 기기 프로필 관리 및 문제 해결 팁은 **[Assistant Emily 공식 Wiki](https://github.com/sparklings/emily/wiki)**에서 확인하실 수 있습니다!
 
 ---
 
 ## 📖 목차
 
 1. [개요 (Overview)](#-개요-overview)
-2. [공식 위키 문서 가이드 (Official Wiki Guide)](#-공식-위키-문서-가이드-official-wiki-guide)
+2. [공식 웹사이트 및 문서 (Official Documentation)](#-공식-웹사이트-및-문서-official-documentation)
 3. [상세 기능 (Detailed Features)](#-상세-기능-detailed-features)
    - [1. 무손실 지능형 마크다운 교열 (Lossless Proofreading)](#1-무손실-지능형-마크다운-교열-lossless-proofreading)
    - [2. 맥락 인식 전문 번역 (Context-Aware Translation)](#2-맥락-인식-전문-번역-context-aware-translation)
@@ -62,19 +59,9 @@
 
 ---
 
-## 📚 공식 위키 문서 가이드 (Official Wiki Guide)
+## 🌐 공식 웹사이트 및 문서 (Official Documentation)
 
-Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 팁은 **[GitHub 공식 Wiki](https://github.com/sparklings/emily/wiki)**에 체계적으로 정리되어 있습니다. 원하시는 항목을 클릭하여 바로 이동하십시오.
-
-| 위키 가이드 문서 | 주요 안내 내용 | 바로가기 |
-| :--- | :--- | :---: |
-| 🏠 **[위키 홈 (Home)](https://github.com/sparklings/emily/wiki)** | 플러그인 철학, 핵심 가치, 작동 아키텍처 파이프라인 개요 | [열기 →](https://github.com/sparklings/emily/wiki) |
-| 🚀 **[상세 기능 (Detailed Features)](https://github.com/sparklings/emily/wiki/Detailed-Features)** | 무손실 문법 마스킹 교열, 3대 번역 모드(선택/전체/1:1 대조), 코드 주석 전용 번역, Needleman-Wunsch 대화형 Diff 검토 | [열기 →](https://github.com/sparklings/emily/wiki/Detailed-Features) |
-| ⚙️ **[설치 및 초기 설정 (Installation & Setup)](https://github.com/sparklings/emily/wiki/Installation-and-Setup)** | GitHub 릴리즈 수동 설치, BRAT 간편 설치, 데스크톱 요구사항 및 단축키 안내 | [열기 →](https://github.com/sparklings/emily/wiki/Installation-and-Setup) |
-| 🤖 **[AI 프로바이더 및 기기 프로필 가이드 (AI Providers Guide)](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)** | 2-Tab 설정 화면, 기기 프로필(`os.hostname()`) 기반 다중 PC 자동 식별 및 포트/키 자동 선출, 로컬 프록시 자동 탐색(Auto-Probe) | [열기 →](https://github.com/sparklings/emily/wiki/AI-Providers-Guide) |
-| 💡 **[FAQ 및 문제 해결 (Troubleshooting & FAQ)](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ)** | 연결 테스트 오류 점검, Ollama CORS 및 로컬 프록시 설정법, 대용량 번역 최적화 팁 | [열기 →](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ) |
-| 🔒 **[보안 및 프라이버시 (Security & Privacy)](https://github.com/sparklings/emily/wiki/Security-and-Privacy)** | 중계 서버 배제 100% 직접 통신, 볼트 파일 권한 원칙, 사용자 추적/광고 배제 정책 | [열기 →](https://github.com/sparklings/emily/wiki/Security-and-Privacy) |
-| 💖 **[크레딧 및 라이선스 (Credits & License)](https://github.com/sparklings/emily/wiki/Credits-and-License)** | Obsidian API, FreeLLMAPI, Pi Agent 등 오픈소스 커뮤니티 감사의 글 및 MIT 라이선스 | [열기 →](https://github.com/sparklings/emily/wiki/Credits-and-License) |
+Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 안내는 **[Assistant Emily 공식 웹사이트](https://sparklings.github.io/emily/)**에서 확인하실 수 있습니다.
 
 ---
 
@@ -198,10 +185,10 @@ Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 �
 
 #### 2. 기기 프로필 탭 (Device Profiles)
 집, 회사, 연구실 등 다중 PC 환경에서 기기별로 서로 다른 로컬 프록시 포트나 API 키를 사용할 때 기기별 프로필을 등록합니다.
-* **기기 프로필 기반 분기 사용**: 활성화 시 현재 기기의 OS 호스트명(`os.hostname()`)과 일치하는 프로필의 URL과 API 키를 최우선(1순위)으로 자동 선출합니다.
+* **기기 프로필 기반 분기 사용**: 활성화 시 설정된 현재 기기 식별자(호스트명)와 일치하는 프로필의 URL과 API 키를 최우선(1순위)으로 자동 선출합니다.
 * **기기 프로필 관리**: [기기 프로필 추가]를 눌러 기기 이름, 호스트명, 전용 URL(또는 포트 번호), 전용 API 키를 등록할 수 있습니다. [현재 기기 호스트명 자동 입력] 버튼으로 간편하게 등록 가능합니다.
 * **후보 키/포트 자동 진단 (Auto-Probe)**: 로컬 프록시 연결 오류 시 유효한 포트나 키를 자동 탐색하여 현재 기기 프로필에 즉시 저장합니다.
-* 📖 더 자세한 백엔드별 연동 레시피(Ollama, LM Studio, Groq, OpenRouter) 및 기기별 설정법은 **[AI 프로바이더 및 기기 프로필 가이드 Wiki](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)**를 참고하십시오.
+* 📖 더 자세한 백엔드별 연동 안내와 설정법은 **[공식 웹사이트](https://sparklings.github.io/emily/)**를 참고하십시오.
 
 ---
 
@@ -274,8 +261,8 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
-  <a href="https://github.com/sparklings/emily/wiki"><img src="https://img.shields.io/badge/docs-GitHub%20Wiki-brightgreen.svg?style=flat-square" alt="Documentation Wiki"></a>
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.14-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.15-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -284,18 +271,15 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 </p>
 
 <p align="center">
-  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://github.com/sparklings/emily/wiki"><b>📚 Official Wiki</b></a>
+  <a href="#assistant-emily"><b>🇺🇸 English</b></a> | <a href="#어시스턴트-에밀리"><b>🇰🇷 한국어</b></a> | <a href="https://sparklings.github.io/emily/"><b>🌐 Website</b></a>
 </p>
-
-> [!TIP]
-> 📚 **Official GitHub Wiki Now Available**: Comprehensive guides, setup walkthroughs, local AI (Ollama/LM Studio) recipes, multi-device profile management, and troubleshooting tips are available on the **[Assistant Emily Official Wiki](https://github.com/sparklings/emily/wiki)**!
 
 ---
 
 ## 📖 Table of Contents
 
 1. [Overview](#-overview)
-2. [Official Documentation & Wiki Guide](#-official-documentation--wiki-guide)
+2. [Official Documentation](#-official-documentation)
 3. [Detailed Features](#-detailed-features)
    - [1. Lossless Intelligent Markdown Proofreading](#1-lossless-intelligent-markdown-proofreading)
    - [2. Context-Aware Professional Translation](#2-context-aware-professional-translation)
@@ -330,19 +314,9 @@ Conventional AI tools often corrupt or strip critical Markdown elements—such a
 
 ---
 
-## 📚 Official Documentation & Wiki Guide
+## 🌐 Official Documentation
 
-Comprehensive user guides, architecture overviews, recipe integrations, and FAQs are maintained on the **[Official GitHub Wiki](https://github.com/sparklings/emily/wiki)**. Click any link below to explore:
-
-| Wiki Document | Covered Topics | Quick Link |
-| :--- | :--- | :---: |
-| 🏠 **[Wiki Home](https://github.com/sparklings/emily/wiki)** | Plugin philosophy, core values, and processing pipeline architecture | [Open →](https://github.com/sparklings/emily/wiki) |
-| 🚀 **[Detailed Features](https://github.com/sparklings/emily/wiki/Detailed-Features)** | Lossless syntax masking proofreading, 3 translation scopes, code comments translation, Needleman-Wunsch interactive diff modal | [Open →](https://github.com/sparklings/emily/wiki/Detailed-Features) |
-| ⚙️ **[Installation & Setup](https://github.com/sparklings/emily/wiki/Installation-and-Setup)** | GitHub Releases manual install, BRAT quick setup, desktop requirements, and keyboard shortcuts | [Open →](https://github.com/sparklings/emily/wiki/Installation-and-Setup) |
-| 🤖 **[AI Providers Guide](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)** | 2-Tab settings UI, device profile (`os.hostname()`) based multi-PC auto-election, port & key Auto-Probe | [Open →](https://github.com/sparklings/emily/wiki/AI-Providers-Guide) |
-| 💡 **[Troubleshooting & FAQ](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ)** | Connection testing diagnostics, Ollama CORS & local proxy setups, large document chunk optimization tips | [Open →](https://github.com/sparklings/emily/wiki/Troubleshooting-and-FAQ) |
-| 🔒 **[Security & Privacy](https://github.com/sparklings/emily/wiki/Security-and-Privacy)** | Zero telemetry, direct client-to-endpoint network communication, and scoped vault file permissions | [Open →](https://github.com/sparklings/emily/wiki/Security-and-Privacy) |
-| 💖 **[Credits & License](https://github.com/sparklings/emily/wiki/Credits-and-License)** | Acknowledgements to Obsidian API, FreeLLMAPI, Pi Agent, and the MIT License | [Open →](https://github.com/sparklings/emily/wiki/Credits-and-License) |
+Comprehensive user guides, interactive UI mockups, and the latest installation walkthroughs are available on the **[Assistant Emily Official Website](https://sparklings.github.io/emily/)**.
 
 ---
 
@@ -422,7 +396,21 @@ Comprehensive user guides, architecture overviews, recipe integrations, and FAQs
 
 ### Plugin Installation Methods
 
-#### 1. Manual GitHub Releases Installation (Recommended)
+#### 1. Installation via Obsidian Community Plugins (Official Release · Recommended)
+1. Open Obsidian and navigate to **Settings (⚙️) > Community plugins**.
+2. Turn off 'Restricted mode' if enabled.
+3. Click the **Browse** button under Community plugins.
+4. Search for **`Assistant Emily`** in the search bar.
+5. Select **Assistant Emily**, click **Install**, and then click **Enable**.
+6. Click the ✨ ribbon icon on the left sidebar or use the command palette (`Ctrl+P` / `Cmd+P`) to run **Assistant Emily: Open Sidebar** to begin immediately.
+
+#### 2. Installation via BRAT (For Beta / Pre-release Testing)
+To test the latest development builds before official marketplace updates:
+1. In Obsidian Community Plugins, search for and install **BRAT**.
+2. Open the command palette and run `BRAT: Add a beta plugin for testing`.
+3. Enter the repository path `sparklings/emily` and add the plugin.
+
+#### 3. Manual Installation via GitHub Releases (Offline / Manual)
 1. Download the latest **`main.js`**, **`manifest.json`**, and **`styles.css`** files from [GitHub Releases](https://github.com/sparklings/emily/releases).
 2. Open your Obsidian Vault directory and create the following plugin folder path:
    ```
@@ -435,10 +423,6 @@ Comprehensive user guides, architecture overviews, recipe integrations, and FAQs
                └── styles.css
    ```
 3. In Obsidian, navigate to **Settings > Community plugins**, click **Reload installed plugins**, and enable the **Assistant Emily** toggle.
-
-#### 2. Installation via BRAT (Beta Reviewers Auto-update Tester)
-1. In the Obsidian BRAT plugin settings, click **Add Beta plugin**.
-2. Enter the repository path `sparklings/emily` and add the plugin.
 
 ---
 
@@ -455,10 +439,10 @@ Configure the global endpoint shared across all devices:
 
 #### 2. Device Profiles Tab
 Register individual machine profiles when using distinct local ports or API keys across laptops and desktops:
-* **Use Device Profile Override**: When enabled, the profile matching the current machine's OS hostname (`os.hostname()`) takes top priority.
+* **Use Device Profile Override**: When enabled, the profile matching the configured current machine's identifier/hostname takes top priority.
 * **Device Profiles Management**: Click **Add Device Profile** to register machine name, hostname, dedicated URL (or port number), and dedicated API key. Click **Auto-fill Current Hostname** for instant registration.
 * **Port / Key Auto-Probe**: Automatically probes working ports and keys upon local proxy connection errors and updates the active profile.
-* 📖 For step-by-step backend recipes (Ollama, LM Studio, Groq, OpenRouter) and multi-device setups, refer to the **[AI Providers Guide Wiki](https://github.com/sparklings/emily/wiki/AI-Providers-Guide)**.
+* 📖 For more documentation and feature overviews, refer to the **[Assistant Emily Official Website](https://sparklings.github.io/emily/)**.
 
 ---
 
