@@ -1,5 +1,4 @@
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from './translation';
-import { ProofreadTargetTone } from './proofread';
 
 /**
  * 다중 기기(집/회사 노트북) 로컬 LLM Proxy API Key 프로필
@@ -7,17 +6,20 @@ import { ProofreadTargetTone } from './proofread';
 export interface DeviceKeyProfile {
   /** 고유 식별자 */
   id: string;
-  /** 기기 사용자 친화적 명칭 (예: '집 노트북', '회사 노트북 1') */
+  /** 기기 사용자 친화적 명칭 (예: '집 서재 PC', '회사 노트북 1', '작업실 PC 3') */
   name: string;
-  /** OS 호스트명 매칭값 (예: 'G2300227', 'HOME-PC') */
+  /** OS 호스트명 매칭값 (예: 'G2300227', 'HOME-PC', 'DESKTOP-4PC') */
   hostname?: string;
-  /** 프로바이더 1 전용 API 키 */
+  /** 기기 전용 Base URL 또는 포트 번호 (예: 'http://127.0.0.1:11434/v1' 또는 '11434') */
+  url?: string;
+  /** 기기 전용 로컬 API 키 */
+  apiKey?: string;
+  /** 기기 전용 모델 오버라이드 (선택 사항) */
+  modelName?: string;
+  // 하위 호환성 마이그레이션용 옵셔널 필드
   provider1Key?: string;
-  /** 프로바이더 2 전용 API 키 */
   provider2Key?: string;
-  /** 프로바이더 1 전용 Base URL 또는 포트 번호 (예: 'http://127.0.0.1:11434/v1' 또는 '11434') */
   provider1Url?: string;
-  /** 프로바이더 2 전용 Base URL 또는 포트 번호 */
   provider2Url?: string;
 }
 
@@ -32,22 +34,6 @@ export interface EmilySettings {
   apiKey: string;
   /** 사용할 LLM 모델 식별자 (auto, gpt-4o, gemini-3.6-flash 등) */
   modelName: string;
-
-  // AI 서비스 프로바이더 2 (Secondary / Backup - 선택 사항)
-  /** 보조 OpenAI 호환 API 엔드포인트 URL */
-  secondaryApiBaseUrl: string;
-  /** 보조 LLM API 인증 토큰 */
-  secondaryApiKey: string;
-  /** 보조 LLM 모델 식별자 */
-  secondaryModelName: string;
-
-  // 다중 프로바이더 운영 정책
-  /** 기본 질의 대상 프로바이더 ('auto': 헬스체크 기반 자동 선정, 'primary': 프로바이더 1 고정, 'secondary': 프로바이더 2 고정) */
-  activeProvider: 'primary' | 'secondary' | 'auto';
-  /** 주 프로바이더 통신 장애 시 보조 프로바이더로 자동 전환(Failover) 여부 */
-  enableFallback: boolean;
-  /** 대용량 마크다운 청킹 번역 시 두 프로바이더에 청크를 교차 분산할지 여부 */
-  enableChunkDistribution: boolean;
 
   // 다중 기기 환경설정 (Multi-Device Localhost Proxy Support)
   /** 기기별 API Key 매핑 프로필 목록 (클라우드 동기화됨) */
@@ -69,10 +55,6 @@ export interface EmilySettings {
   defaultProofreadSpelling: boolean;
   /** 사이드바 실행 시 문법 검사 기본 선택 여부 */
   defaultProofreadGrammar: boolean;
-  /** 사이드바 실행 시 종결어미 및 문체 일관성 검사 기본 선택 여부 */
-  defaultProofreadTone: boolean;
-  /** 문체 일관성 검사 시 기본 타깃 문체 (auto: 문서 주 문체 감지, honorific: 하십시오체, plain: 해라체, polite: 해요체) */
-  defaultProofreadTargetTone: ProofreadTargetTone;
   /** 사이드바 실행 시 비디오 타임스탬프 삭제 기본 선택 여부 */
   defaultProofreadTimestamp: boolean;
 
@@ -104,16 +86,6 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   apiKey: '',
   modelName: 'auto',
 
-  // 보조 프로바이더 기본값 (비활성화 상태)
-  secondaryApiBaseUrl: '',
-  secondaryApiKey: '',
-  secondaryModelName: 'auto',
-
-  // 다중 프로바이더 정책 기본값
-  activeProvider: 'auto',
-  enableFallback: true,
-  enableChunkDistribution: true,
-
   // 다중 기기 환경 기본값
   deviceProfiles: [],
   useDeviceKeyOverride: true,
@@ -126,8 +98,6 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   // 교열 기본값
   defaultProofreadSpelling: false,
   defaultProofreadGrammar: false,
-  defaultProofreadTone: false,
-  defaultProofreadTargetTone: 'auto',
   defaultProofreadTimestamp: false,
 
   // 번역 기본값

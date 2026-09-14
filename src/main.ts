@@ -8,6 +8,7 @@ import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
 import { ConsistencyEngine } from './core/consistencyEngine';
 import { getTranslation } from './i18n';
+import { migrateDeviceProfiles } from './utils/deviceKeyManager';
 
 /**
  * Assistant Emily - 옵시디언 마크다운 지능형 교열 및 번역 전문 플러그인 메인 클래스
@@ -203,6 +204,11 @@ export default class EmilyPlugin extends Plugin {
       // 하위 호환성 보정 (구버전 '언어 감지' 텍스트를 표준 코드 'auto'로 정규화)
       if (this.settings.defaultTranslationSource === '언어 감지') {
         this.settings.defaultTranslationSource = 'auto';
+      }
+
+      // 기기 프로필 레거시(provider1Url/Key) 자동 1회성 마이그레이션
+      if (migrateDeviceProfiles(this.settings)) {
+        await this.saveData(this.settings);
       }
     } catch (err) {
       console.error('[Assistant Emily] 설정 파일 로드 실패 (기본값 적용):', err);

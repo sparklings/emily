@@ -91,6 +91,28 @@ export function isLocalEndpoint(url: string): boolean {
   return /localhost|127\.0\.0\.1|0\.0\.0\.0|::1/i.test(url);
 }
 
+/**
+ * 레거시 기기 프로필(provider1Url, provider1Key 등)을 단일 url / apiKey 구조로 1회성 마이그레이션합니다.
+ * 변경 사항이 발생하면 true를 반환합니다.
+ */
+export function migrateDeviceProfiles(settings: EmilySettings): boolean {
+  if (!settings.deviceProfiles || !Array.isArray(settings.deviceProfiles)) {
+    return false;
+  }
+  let modified = false;
+  for (const prof of settings.deviceProfiles) {
+    if (!prof.url && prof.provider1Url) {
+      prof.url = prof.provider1Url;
+      modified = true;
+    }
+    if (!prof.apiKey && prof.provider1Key) {
+      prof.apiKey = prof.provider1Key;
+      modified = true;
+    }
+  }
+  return modified;
+}
+
 export interface EffectiveApiKeyResult {
   key: string;
   source: 'profile' | 'global';
@@ -104,10 +126,9 @@ export interface EffectiveApiKeyResult {
  * 2순위: data.json에 동기화된 전역 기본 키
  */
 export function resolveEffectiveApiKey(
-  settings: EmilySettings,
-  provider: 'primary' | 'secondary'
+  settings: EmilySettings
 ): EffectiveApiKeyResult {
-  const globalKey = provider === 'primary' ? (settings.apiKey || '') : (settings.secondaryApiKey || '');
+  const globalKey = settings.apiKey || '';
 
   // 기기별 분기 기능이 비활성화된 경우 전역 키 사용
   if (settings.useDeviceKeyOverride === false) {
@@ -125,7 +146,7 @@ export function resolveEffectiveApiKey(
     });
 
     if (matchedProfile) {
-      const pKey = provider === 'primary' ? matchedProfile.provider1Key : matchedProfile.provider2Key;
+      const pKey = matchedProfile.apiKey || matchedProfile.provider1Key;
       if (pKey && pKey.trim().length > 0) {
         return {
           key: pKey.trim(),
@@ -152,8 +173,7 @@ export interface CandidateKeyItem {
  * 401 오류 시 자동 시도(Auto-Probe)를 위한 후보 키 목록을 중복 없이 추출합니다.
  */
 export function getCandidateKeys(
-  settings: EmilySettings,
-  provider: 'primary' | 'secondary'
+  settings: EmilySettings
 ): CandidateKeyItem[] {
   const results: CandidateKeyItem[] = [];
   const seenKeys = new Set<string>();
@@ -170,14 +190,14 @@ export function getCandidateKeys(
   // 1. 등록된 모든 기기 프로필의 키
   const profiles = settings.deviceProfiles || [];
   for (const prof of profiles) {
-    const k = provider === 'primary' ? prof.provider1Key : prof.provider2Key;
+    const k = prof.apiKey || prof.provider1Key;
     if (k) {
       addKey(k, `${prof.name}${prof.hostname ? ` (${prof.hostname})` : ''}`, 'profile', prof.id);
     }
   }
 
   // 2. 전역 기본 키
-  const globalKey = provider === 'primary' ? settings.apiKey : settings.secondaryApiKey;
+  const globalKey = settings.apiKey;
   if (globalKey) {
     addKey(globalKey, '기본 공용 키 (Global Synced)', 'global');
   }
@@ -200,10 +220,9 @@ export interface EffectiveEndpointResult {
  * 2순위: data.json에 동기화된 전역 기본 URL
  */
 export function resolveEffectiveEndpoint(
-  settings: EmilySettings,
-  provider: 'primary' | 'secondary'
+  settings: EmilySettings
 ): EffectiveEndpointResult {
-  const globalUrl = (provider === 'primary' ? settings.apiBaseUrl : settings.secondaryApiBaseUrl) || 'https://api.openai.com/v1';
+  const globalUrl = settings.apiBaseUrl || 'https://api.openai.com/v1';
   const cleanGlobalUrl = globalUrl.trim().replace(/\/+$/, '');
 
   // 기기별 분기 비활성화 시 전역 URL 사용
@@ -226,7 +245,7 @@ export function resolveEffectiveEndpoint(
     });
 
     if (matchedProfile) {
-      const pUrl = provider === 'primary' ? matchedProfile.provider1Url : matchedProfile.provider2Url;
+      const pUrl = matchedProfile.url || matchedProfile.provider1Url;
       if (pUrl && pUrl.trim().length > 0) {
         const effective = applyPortOrUrl(cleanGlobalUrl, pUrl);
         const isPortOnly = /^\d+$/.test(pUrl.trim().replace(/^:/, ''));
@@ -268,7 +287,7 @@ export function getCandidatePorts(settings: EmilySettings, currentUrl?: string):
 
   // 프로필에 등록된 포트/URL에서 추출
   for (const prof of settings.deviceProfiles || []) {
-    for (const u of [prof.provider1Url, prof.provider2Url]) {
+    for (const u of [prof.url, prof.provider1Url, prof.provider2Url]) {
       if (u && u.trim()) {
         const clean = u.trim().replace(/^:/, '');
         if (/^\d+$/.test(clean)) {

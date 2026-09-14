@@ -1,5 +1,3 @@
-export type ProofreadTargetTone = 'auto' | 'honorific' | 'plain' | 'polite';
-
 export interface ProofreadDiffItem {
   id: string;
   original: string;
@@ -13,8 +11,6 @@ export interface ProofreadDiffItem {
 export interface ProofreadOptions {
   checkSpelling: boolean;
   checkGrammar: boolean;
-  checkTone?: boolean;
-  targetTone?: ProofreadTargetTone;
   removeTimestamps?: boolean;
   improveExpression: boolean;
   checkConsistency: boolean;

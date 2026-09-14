@@ -167,6 +167,7 @@ class PromptBuilder {
   }
 
   static buildTranslationPrompt(markdownContent, options, customInstruction) {
+    const isSameLangEdit = options.isSameLangEdit ?? false;
     const sourceLangText = (!options.sourceLanguage || options.sourceLanguage === '언어 감지' || options.sourceLanguage === 'auto')
       ? '원문 문서 언어 자동 감지'
       : options.sourceLanguage;
@@ -180,11 +181,37 @@ class PromptBuilder {
     }
 
     // 2. 스타일 (Style: 직역/의역) 지침
-    let styleInstruction = '- 번역 스타일: 균형 잡힌 번역 (원문의 의미를 정확히 전달하면서 자연스러운 우리말로 정제)';
+    let styleInstruction = '- 스타일: 균형 잡힌 정제 (원문의 의미를 정확히 유지하면서 자연스럽게 다듬기)';
     if (options.style === 'literal') {
-      styleInstruction = '- 번역 스타일: 직역 중심 (원문의 단어와 문맥 구조를 직관적이고 충실하게 반영)';
+      styleInstruction = '- 스타일: 직관적 원문 충실 (원문의 어휘와 문장 구조를 가급적 보존하며 다듬기)';
     } else if (options.style === 'natural') {
-      styleInstruction = '- 번역 스타일: 자연스러운 의역 (문맥에 맞추어 유려하고 읽기 쉬운 현대적 표현으로 의역)';
+      styleInstruction = '- 스타일: 유려한 자연스러움 (문맥에 맞추어 유려하고 읽기 쉬운 표현으로 다듬기)';
+    }
+
+    // 동일 언어 편집 모드: 번역 지침 대신 편집 및 문체 정합 지침 사용
+    if (isSameLangEdit) {
+      const system = `당신은 전문 마크다운 편집 AI "Assistant Emily"입니다.
+마크다운 문서의 포맷, 링크, 코드 블록, 태그, 테이블 구조를 완벽히 유지하면서 문서를 편집하십시오.
+
+[편집 지침]
+- 언어: ${sourceLangText} (출발어와 도착어가 동일하므로 언어 변환 없이 편집 및 문체 교정만 수행)
+${toneInstruction}
+${styleInstruction}
+- [종결어미 및 문체 일관성]:
+  지정된 문체(Tone)를 엄격히 준수하여 문서 전체의 어미와 어조를 일관되게 정합화하십시오.
+  단, 인용구(> 블록, "..." 인용), 코드 블록(\`\`\`...\`\`\`) 및 인라인 코드(\`...\`), 수식($...$), YAML 프론트매터 내부의 문장은 화자의 원래 발언이나 코드 형식을 유지해야 하므로 종결어미 교정 대상에서 제외하고 원문 그대로 보존하십시오.
+- [프론트매터(YAML Frontmatter) 무결성 보존]:
+  문서 최상단에 YAML 프론트매터(\`--- ... ---\`)가 존재하는 경우, 프론트매터의 키 이름, 값, 콜론, 따옴표, 줄바꿈 및 리스트 들여쓰기 구조를 100% 원본 그대로 완벽하게 보존하십시오.
+- [보호 토큰 무결성]: 본문에 \`__EMILY_...\` 형태의 플레이스홀더 토큰이 포함되어 있다면, 토큰의 철자나 형식을 절대 수정하거나 삭제하지 말고 그대로 보존하십시오.
+- 마크다운 문법(볼드, 이탤릭, 링크, 코드블록, 표, 콜아웃 등)이 깨지지 않도록 정확한 위치에 편집 내용을 배치하십시오.
+- 결과물은 오직 편집된 마크다운 전문만을 출력하십시오 (불필요한 인사말이나 부가 설명 제외).`;
+
+      let user = `다음 마크다운 문서를 편집 규정에 맞추어 편집하십시오.\n`;
+      if (customInstruction && customInstruction.trim()) {
+        user += `\n[편집자 특별 요청사항]\n${customInstruction.trim()}\n`;
+      }
+      user += `\n[마크다운 원문]\n${markdownContent}`;
+      return { system, user };
     }
 
     // 3. 코드 블록 주석 번역 지침
@@ -2788,263 +2815,148 @@ Large language models provide powerful reasoning capabilities for diverse downst
     console.error('  ✗ [TC-38] 검증 실패');
   }
 
-  // [TC-39] 듀얼 AI 서비스 프로바이더(Primary & Secondary) 동시 헬스체크, 기본값 자동 선출 및 무중단 자동 Failover 검증
-  console.log('\n▶ [TC-39] 듀얼 AI 서비스 프로바이더 동시 헬스체크, 기본값 선출 및 무중단 자동 Failover 검증...');
+  // [TC-39] 기기 프로필 기반 다중 PC (1~4호+ 노트북/PC) 식별 및 자동 엔드포인트 선출 검증
+  console.log('\n▶ [TC-39] 기기 프로필 기반 다중 PC (1~4호+ 노트북/PC) 식별 및 자동 엔드포인트 선출 검증...');
 
-  class MockDualLLMProxyClient {
-    constructor(settings) {
-      this.updateMultiConfig(settings);
-      this.p1ShouldFail = false;
-      this.p2ShouldFail = false;
+  const multiPcSettings = {
+    apiBaseUrl: 'https://api.openai.com/v1',
+    apiKey: 'sk-global-default-key',
+    modelName: 'gpt-4o',
+    useDeviceKeyOverride: true,
+    deviceProfiles: [
+      { id: 'dev-1', name: '1호 노트북 (회사)', hostname: 'G2300227', url: '11434', apiKey: 'sk-dev1-key' },
+      { id: 'dev-2', name: '2호 노트북 (출장)', hostname: 'G2400115', url: 'http://127.0.0.1:8000/v1', apiKey: 'sk-dev2-key' },
+      { id: 'dev-3', name: '3호 서재 데스크톱', hostname: 'HOME-DESKTOP', url: '31416', apiKey: 'sk-dev3-key' },
+      { id: 'dev-4', name: '4호 거실 미니PC', hostname: 'LIVING-MINI', url: 'http://192.168.1.100:11434/v1', apiKey: 'sk-dev4-key' }
+    ]
+  };
+
+  function resolveEndpointAndKeyMock(settings, hostName) {
+    const cleanGlobalUrl = (settings.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+    const globalKey = settings.apiKey || '';
+    if (settings.useDeviceKeyOverride === false) {
+      return { url: cleanGlobalUrl, key: globalKey, source: 'global' };
     }
-
-    updateMultiConfig(settings) {
-      this.primaryConfig = {
-        baseUrl: (settings.apiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, ''),
-        apiKey: settings.apiKey || '',
-        model: settings.modelName || 'auto'
-      };
-      if (settings.secondaryApiBaseUrl && settings.secondaryApiBaseUrl.trim().length > 0) {
-        this.secondaryConfig = {
-          baseUrl: settings.secondaryApiBaseUrl.trim().replace(/\/+$/, ''),
-          apiKey: settings.secondaryApiKey || '',
-          model: settings.secondaryModelName || 'auto'
-        };
-      } else {
-        this.secondaryConfig = null;
-      }
-      this.activeProvider = settings.activeProvider || 'auto';
-      this.enableFallback = settings.enableFallback ?? true;
-      this.enableChunkDistribution = settings.enableChunkDistribution ?? true;
-    }
-
-    isMultiProviderAvailable() {
-      return this.secondaryConfig !== null && this.secondaryConfig.baseUrl.length > 0;
-    }
-
-    isChunkDistributionEnabled() {
-      if (this.activeProvider === 'primary' || this.activeProvider === 'secondary') {
-        return false;
-      }
-      return this.isMultiProviderAvailable() && this.enableChunkDistribution;
-    }
-
-    getEffectiveProvider() {
-      if (this.activeProvider === 'secondary' && this.isMultiProviderAvailable()) {
-        return 'secondary';
-      }
-      return 'primary';
-    }
-
-    async testProvider(providerId) {
-      const config = providerId === 'secondary' ? this.secondaryConfig : this.primaryConfig;
-      if (!config || !config.baseUrl) {
-        return { success: false, message: '', latencyMs: 0, model: '', error: 'Not configured' };
-      }
-      if (providerId === 'primary' && this.p1ShouldFail) {
-        return { success: false, message: '', latencyMs: 450, model: config.model, error: 'HTTP 502: Bad Gateway' };
-      }
-      if (providerId === 'secondary' && this.p2ShouldFail) {
-        return { success: false, message: '', latencyMs: 500, model: config.model, error: 'HTTP 503: Service Unavailable' };
-      }
-      return {
-        success: true,
-        message: `Hello from ${providerId === 'primary' ? 'Provider 1' : 'Provider 2'}!`,
-        latencyMs: providerId === 'primary' ? 120 : 85,
-        model: config.model
-      };
-    }
-
-    async testAllProviders() {
-      const primaryPromise = this.testProvider('primary');
-      const secondaryPromise = this.isMultiProviderAvailable()
-        ? this.testProvider('secondary')
-        : Promise.resolve(undefined);
-
-      const [primaryResult, secondaryResult] = await Promise.all([primaryPromise, secondaryPromise]);
-      let recommended = 'primary';
-      if (primaryResult.success) {
-        recommended = 'primary';
-      } else if (secondaryResult && secondaryResult.success) {
-        recommended = 'secondary';
-      }
-      return { primary: primaryResult, secondary: secondaryResult, recommended };
-    }
-
-    async chatCompletion(messages, options) {
-      let targetProvider = options?.providerId || this.getEffectiveProvider();
-      if (targetProvider === 'secondary' && !this.isMultiProviderAvailable()) {
-        targetProvider = 'primary';
-      }
-
-      const execute = (providerId) => {
-        if (providerId === 'primary' && this.p1ShouldFail) {
-          throw new Error('HTTP 502 Bad Gateway: Primary upstream down');
+    const host = (hostName || '').trim().toLowerCase();
+    if (host && settings.deviceProfiles) {
+      const match = settings.deviceProfiles.find(p => p.hostname && p.hostname.trim().toLowerCase() === host);
+      if (match) {
+        const u = match.url || match.provider1Url;
+        const k = match.apiKey || match.provider1Key;
+        let effectiveUrl = cleanGlobalUrl;
+        if (u) {
+          effectiveUrl = applyPortOrUrlMock(cleanGlobalUrl, u);
         }
-        if (providerId === 'secondary' && this.p2ShouldFail) {
-          throw new Error('HTTP 503 Service Unavailable: Secondary down');
-        }
-        const config = providerId === 'secondary' ? this.secondaryConfig : this.primaryConfig;
         return {
-          content: `Response from ${providerId}`,
-          model: config.model,
-          totalTimeMs: 150,
-          tokensPerSec: 45.0,
-          providerUsed: providerId,
-          failedOver: false
+          url: effectiveUrl,
+          key: k || globalKey,
+          source: 'profile',
+          profileName: match.name
         };
-      };
-
-      try {
-        return execute(targetProvider);
-      } catch (err) {
-        const fallbackTarget = targetProvider === 'primary' ? 'secondary' : 'primary';
-        const isFallbackPossible = this.enableFallback &&
-          ((fallbackTarget === 'secondary' && this.isMultiProviderAvailable()) || fallbackTarget === 'primary');
-
-        if (isFallbackPossible) {
-          const fallbackRes = execute(fallbackTarget);
-          fallbackRes.failedOver = true;
-          return fallbackRes;
-        }
-        throw err;
       }
     }
+    return { url: cleanGlobalUrl, key: globalKey, source: 'global' };
   }
 
-  // 1) 듀얼 프로바이더 설정 로드
-  const dualSettings = {
-    apiBaseUrl: 'https://api.openai.com/v1',
-    apiKey: 'sk-primary-key',
-    modelName: 'gpt-4o',
-    secondaryApiBaseUrl: 'https://api.groq.com/openai/v1',
-    secondaryApiKey: 'gsk-secondary-key',
-    secondaryModelName: 'llama-3.3-70b-versatile',
-    activeProvider: 'auto',
-    enableFallback: true,
-    enableChunkDistribution: true
-  };
-  const dualClient = new MockDualLLMProxyClient(dualSettings);
+  // 1) 1호 노트북 (G2300227) ➔ 포트 11434 치환 및 sk-dev1-key
+  const pc1 = resolveEndpointAndKeyMock(multiPcSettings, 'G2300227');
+  const tc39_1 = pc1.source === 'profile' && pc1.url === 'https://api.openai.com:11434/v1' && pc1.key === 'sk-dev1-key';
+  console.log(`  - 1) 1호 노트북 (G2300227): 포트 11434 치환 및 전용 API 키 선출: ${tc39_1}`);
 
-  const tc39_1 = dualClient.isMultiProviderAvailable() === true &&
-                 dualClient.isChunkDistributionEnabled() === true;
-  console.log(`  - 1) 듀얼 프로바이더(Primary & Secondary) 설정 및 상태 판별 성공: ${tc39_1}`);
+  // 2) 2호 노트북 (G2400115) ➔ 전체 URL http://127.0.0.1:8000/v1 및 sk-dev2-key
+  const pc2 = resolveEndpointAndKeyMock(multiPcSettings, 'G2400115');
+  const tc39_2 = pc2.source === 'profile' && pc2.url === 'http://127.0.0.1:8000/v1' && pc2.key === 'sk-dev2-key';
+  console.log(`  - 2) 2호 노트북 (G2400115): 전체 URL 교체 및 전용 API 키 선출: ${tc39_2}`);
 
-  // 2) 동시 헬스체크 및 정상 연결 시 P1 권장 기본값 선출
-  const healthAllNormal = await dualClient.testAllProviders();
-  const tc39_2 = healthAllNormal.primary.success === true &&
-                 healthAllNormal.secondary.success === true &&
-                 healthAllNormal.recommended === 'primary';
-  console.log(`  - 2) 양측 정상 가동 시 동시 헬스체크 및 P1 기본값 선출: ${tc39_2} (P1: ${healthAllNormal.primary.latencyMs}ms, P2: ${healthAllNormal.secondary.latencyMs}ms)`);
+  // 3) 3호 서재 데스크톱 (HOME-DESKTOP) ➔ 포트 31416 치환 및 sk-dev3-key
+  const pc3 = resolveEndpointAndKeyMock(multiPcSettings, 'home-desktop');
+  const tc39_3 = pc3.source === 'profile' && pc3.url === 'https://api.openai.com:31416/v1' && pc3.key === 'sk-dev3-key';
+  console.log(`  - 3) 3호 서재 데스크톱 (HOME-DESKTOP 대소문자 무관): 31416 포트 및 전용 키 선출: ${tc39_3}`);
 
-  // 3) P1 장애 시 동시 헬스체크 및 P2 권장 기본값 자동 선출
-  dualClient.p1ShouldFail = true;
-  const healthP1Down = await dualClient.testAllProviders();
-  const tc39_3 = healthP1Down.primary.success === false &&
-                 healthP1Down.secondary.success === true &&
-                 healthP1Down.recommended === 'secondary';
-  console.log(`  - 3) P1 장애(502) 시 헬스체크를 통한 P2 자동 기본값 선출: ${tc39_3} (권장: ${healthP1Down.recommended})`);
+  // 4) 4호 거실 미니PC (LIVING-MINI) ➔ 원격 미니PC URL 및 sk-dev4-key
+  const pc4 = resolveEndpointAndKeyMock(multiPcSettings, 'LIVING-MINI');
+  const tc39_4 = pc4.source === 'profile' && pc4.url === 'http://192.168.1.100:11434/v1' && pc4.key === 'sk-dev4-key';
+  console.log(`  - 4) 4호 거실 미니PC (LIVING-MINI): LAN URL 및 전용 키 선출: ${tc39_4}`);
 
-  // 4) chatCompletion 실행 중 P1 장애 발생 시 P2로 무중단 자동 Failover
-  const failoverResponse = await dualClient.chatCompletion([{ role: 'user', content: 'test query' }]);
-  const tc39_4 = failoverResponse.failedOver === true &&
-                 failoverResponse.providerUsed === 'secondary' &&
-                 failoverResponse.model === 'llama-3.3-70b-versatile' &&
-                 failoverResponse.content === 'Response from secondary';
-  console.log(`  - 4) 질의 처리 중 P1 장애 감지 ➔ P2 무중단 자동 Failover 응답 완료: ${tc39_4}`);
-
-  // 5) 단일 프로바이더 사용자 하위 호환성 (Secondary 미등록) 검증
-  dualClient.p1ShouldFail = false;
-  dualClient.updateMultiConfig({
-    apiBaseUrl: 'https://api.openai.com/v1',
-    apiKey: 'sk-primary-only',
-    modelName: 'gpt-4o-mini',
-    secondaryApiBaseUrl: '',
-    activeProvider: 'auto'
-  });
-  const singleResponse = await dualClient.chatCompletion([{ role: 'user', content: 'single test' }]);
-  const tc39_5 = dualClient.isMultiProviderAvailable() === false &&
-                 singleResponse.providerUsed === 'primary' &&
-                 singleResponse.failedOver === false &&
-                 singleResponse.content === 'Response from primary';
-  console.log(`  - 5) Secondary 미설정 시 단일 프로바이더 모드 무결성 및 하위 호환성: ${tc39_5}`);
+  // 5) 미등록 5호 PC (NEW-PC) ➔ 전역 기본 엔드포인트 및 공용 키로 안전 Fallback
+  const pc5 = resolveEndpointAndKeyMock(multiPcSettings, 'NEW-PC');
+  const tc39_5 = pc5.source === 'global' && pc5.url === 'https://api.openai.com/v1' && pc5.key === 'sk-global-default-key';
+  console.log(`  - 5) 미등록 5호 PC: 전역 기본 엔드포인트 및 공용 키로 안전 Fallback: ${tc39_5}`);
 
   const test39Passed = tc39_1 && tc39_2 && tc39_3 && tc39_4 && tc39_5;
   if (test39Passed) {
-    console.log('  ✓ [TC-39] 듀얼 프로바이더 동시 헬스체크, 기본값 자동 선출 및 무중단 Failover 100% 검증 완료');
+    console.log('  ✓ [TC-39] 기기 프로필 기반 다중 PC (1~4호+) 식별 및 자동 엔드포인트 선출 100% 검증 완료');
   } else {
     console.error('  ✗ [TC-39] 검증 실패');
   }
 
-  // [TC-40] 대용량 문서 청크 분산(Distributed Chunk Processing) 교차 요청 및 순서 보존 검증
-  console.log('\n▶ [TC-40] 대용량 문서 청크 분산 교차 요청 및 순서 보존 검증...');
+  // [TC-40] 단일 엔드포인트 기반 순차 스마트 청킹 번역 파이프라인 검증
+  console.log('\n▶ [TC-40] 단일 엔드포인트 기반 순차 스마트 청킹 번역 파이프라인 검증...');
 
-  dualClient.updateMultiConfig(dualSettings);
-  dualClient.p1ShouldFail = false;
-  dualClient.p2ShouldFail = false;
+  class MockSingleLLMProxyClient {
+    constructor(settings) {
+      this.updateMultiConfig(settings);
+    }
+    updateMultiConfig(settings) {
+      const ep = resolveEndpointAndKeyMock(settings, 'G2300227');
+      this.config = {
+        baseUrl: ep.url,
+        apiKey: ep.key,
+        model: settings.modelName || 'auto'
+      };
+    }
+    async chatCompletion(messages) {
+      return {
+        content: `Translated: ${messages[0].content}`,
+        model: this.config.model,
+        totalTimeMs: 120,
+        tokensPerSec: 50.0,
+        providerUsed: 'primary',
+        failedOver: false
+      };
+    }
+  }
 
+  const singleClient = new MockSingleLLMProxyClient(multiPcSettings);
   const mockChunks = [
     '# Chunk 1: Introduction\nThis is introductory section.',
     '## Chunk 2: Architecture\nSystem architecture overview.',
-    '## Chunk 3: Detailed Policy\nMulti-provider fallback policies.',
+    '## Chunk 3: Device Profiles\nDevice-specific endpoint resolution.',
     '## Chunk 4: Conclusion\nFinal summary and references.'
   ];
 
   const progressLogs = [];
   const chunkResponses = [];
-  const providersUsedSet = new Set();
 
   for (let i = 0; i < mockChunks.length; i++) {
-    const isDistributed = mockChunks.length > 1 && dualClient.isChunkDistributionEnabled();
-    const chunkProvider = isDistributed ? (i % 2 === 0 ? 'primary' : 'secondary') : undefined;
-
-    // Simulate progress callback
-    progressLogs.push({ current: i + 1, total: mockChunks.length, provider: chunkProvider });
-
-    const resp = await dualClient.chatCompletion(
-      [{ role: 'user', content: mockChunks[i] }],
-      { providerId: chunkProvider }
-    );
-    providersUsedSet.add(resp.providerUsed);
-    chunkResponses.push(`[Translated ${chunkProvider}]: ${mockChunks[i]}`);
+    progressLogs.push({ current: i + 1, total: mockChunks.length });
+    const resp = await singleClient.chatCompletion([{ role: 'user', content: mockChunks[i] }]);
+    chunkResponses.push(resp.content);
   }
 
   const tc40_1 = progressLogs.length === 4 &&
-                 progressLogs[0].provider === 'primary' &&
-                 progressLogs[1].provider === 'secondary' &&
-                 progressLogs[2].provider === 'primary' &&
-                 progressLogs[3].provider === 'secondary';
-  console.log(`  - 1) 4개 청크에 대해 P1과 P2가 [P1: 1/4] ➔ [P2: 2/4] ➔ [P1: 3/4] ➔ [P2: 4/4]로 정확히 교차 분산: ${tc40_1}`);
-
-  const tc40_2 = providersUsedSet.has('primary') && providersUsedSet.has('secondary') && providersUsedSet.size === 2;
-  const effectiveProviderUsed = providersUsedSet.size > 1 ? 'distributed' : 'primary';
-  console.log(`  - 2) 세션 결과 요약 메타데이터에 'distributed(P1+P2 분산)' 판정: ${tc40_2 && effectiveProviderUsed === 'distributed'}`);
+                 progressLogs[0].current === 1 && progressLogs[0].total === 4 &&
+                 progressLogs[3].current === 4 && progressLogs[3].total === 4;
+  console.log(`  - 1) 4개 청크에 대해 안정적인 [1/4] ➔ [2/4] ➔ [3/4] ➔ [4/4] 순차 진행률 보고: ${tc40_1}`);
 
   const assembledDoc = chunkResponses.join('\n\n');
-  const tc40_3 = assembledDoc.indexOf('Chunk 1') < assembledDoc.indexOf('Chunk 2') &&
+  const tc40_2 = assembledDoc.indexOf('Chunk 1') < assembledDoc.indexOf('Chunk 2') &&
                  assembledDoc.indexOf('Chunk 2') < assembledDoc.indexOf('Chunk 3') &&
                  assembledDoc.indexOf('Chunk 3') < assembledDoc.indexOf('Chunk 4');
-  console.log(`  - 3) 분산 번역 완료 후 문서 1~4번 청크의 100% 무손실 및 정확한 원본 순서 보존: ${tc40_3}`);
+  console.log(`  - 2) 청크 번역 완료 후 문서 1~4번 청크의 100% 무손실 및 정확한 원본 순서 보존: ${tc40_2}`);
 
-  // 4) 프로바이더 고정(primary/secondary) 시 청크 분산 비활성화 및 auto 모드에서만 분산 활성화 검증
-  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'primary' });
-  const fixedP1Disabled = dualClient.isChunkDistributionEnabled() === false;
-  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'secondary' });
-  const fixedP2Disabled = dualClient.isChunkDistributionEnabled() === false;
-  dualClient.updateMultiConfig({ ...dualSettings, activeProvider: 'auto' });
-  const autoEnabled = dualClient.isChunkDistributionEnabled() === true;
-  const tc40_4 = fixedP1Disabled && fixedP2Disabled && autoEnabled;
-  console.log(`  - 4) 프로바이더 고정 시 청크 분산 억제 및 auto 모드 분산 보장: ${tc40_4}`);
+  const tc40_3 = chunkResponses.every(r => r.startsWith('Translated:'));
+  console.log(`  - 3) 단일 유효 엔드포인트 기반 균일하고 안정적인 번역 완성: ${tc40_3}`);
 
-  const test40Passed = tc40_1 && tc40_2 && tc40_3 && tc40_4;
+  const test40Passed = tc40_1 && tc40_2 && tc40_3;
   if (test40Passed) {
-    console.log('  ✓ [TC-40] 대용량 문서 청크 분산 교차 요청 및 순서 보존 100% 검증 완료');
+    console.log('  ✓ [TC-40] 단일 엔드포인트 기반 순차 스마트 청킹 번역 파이프라인 100% 검증 완료');
   } else {
     console.error('  ✗ [TC-40] 검증 실패');
   }
 
-  // [TC-41] 설정 탭(EmilySettingTab) AI 서비스 프로바이더 탭 UI/UX (Tab Navigation) 및 ARIA/배지 상태 라이프사이클 검증
-  console.log('\n▶ [TC-41] 설정 탭 AI 서비스 프로바이더 탭 UI/UX (Tab Navigation) 및 ARIA/배지 상태 라이프사이클 검증...');
+  // [TC-41] 설정 탭(EmilySettingTab) AI 서비스 프로바이더 2-Tab UI/UX 및 ARIA 상태 라이프사이클 검증
+  console.log('\n▶ [TC-41] 설정 탭 AI 서비스 프로바이더 2-Tab UI/UX 및 ARIA 상태 라이프사이클 검증...');
 
   class MockSettingsTabElement {
     constructor(tag = 'div', cls = '', attrs = {}) {
@@ -3101,127 +3013,90 @@ Large language models provide powerful reasoning capabilities for diverse downst
     blur() { this.isFocused = false; }
   }
 
-  // Simulated EmilySettingTab state
-  const mockPluginSettings41 = {
-    apiBaseUrl: 'https://api.openai.com/v1',
-    apiKey: 'sk-test-1',
-    modelName: 'gpt-4o',
-    secondaryApiBaseUrl: '',
-    secondaryApiKey: '',
-    secondaryModelName: ''
-  };
-
+  // Simulated EmilySettingTab state with 2 Tabs: 'default' and 'devices'
   const containerEl41 = new MockSettingsTabElement('div', 'vertical-tabs-container');
-  let selectedTab41 = 'primary';
-  let tab2DotEl41 = null;
+  let selectedTab41 = 'default';
 
-  // Render provider tab navigation
+  // Render provider tab navigation (2 Tabs)
   const navEl41 = containerEl41.createDiv({
     cls: 'emily-settings-tab-nav',
-    attr: { role: 'tablist', 'aria-label': 'AI Service Providers' }
+    attr: { role: 'tablist', 'aria-label': 'AI Service Provider' }
   });
   const tabContentEl41 = containerEl41.createDiv({ cls: 'emily-provider-tab-panel' });
 
   const btn1_41 = navEl41.createEl('button', {
-    cls: `emily-settings-tab-btn ${selectedTab41 === 'primary' ? 'is-active' : ''}`,
+    cls: `emily-settings-tab-btn ${selectedTab41 === 'default' ? 'is-active' : ''}`,
     attr: {
       role: 'tab',
-      'aria-selected': selectedTab41 === 'primary' ? 'true' : 'false',
-      tabindex: selectedTab41 === 'primary' ? '0' : '-1'
+      'aria-selected': selectedTab41 === 'default' ? 'true' : 'false',
+      tabindex: selectedTab41 === 'default' ? '0' : '-1'
     }
   });
-  btn1_41.createSpan({ text: '프로바이더 1 (기본)' });
+  btn1_41.createSpan({ text: '기본 설정' });
 
   const btn2_41 = navEl41.createEl('button', {
-    cls: `emily-settings-tab-btn ${selectedTab41 === 'secondary' ? 'is-active' : ''}`,
+    cls: `emily-settings-tab-btn ${selectedTab41 === 'devices' ? 'is-active' : ''}`,
     attr: {
       role: 'tab',
-      'aria-selected': selectedTab41 === 'secondary' ? 'true' : 'false',
-      tabindex: selectedTab41 === 'secondary' ? '0' : '-1'
+      'aria-selected': selectedTab41 === 'devices' ? 'true' : 'false',
+      tabindex: selectedTab41 === 'devices' ? '0' : '-1'
     }
   });
-  btn2_41.createSpan({ text: '프로바이더 2 (보조)' });
-
-  tab2DotEl41 = btn2_41.createSpan({
-    cls: `emily-tab-configured-dot ${mockPluginSettings41.secondaryApiBaseUrl.trim() ? '' : 'is-hidden'}`,
-    attr: { title: '프로바이더 2가 설정되었습니다' }
-  });
+  btn2_41.createSpan({ text: '기기 프로필' });
 
   let renderCount1 = 0;
   let renderCount2 = 0;
-  let currentTabMenuNames = [];
 
   const renderActiveContent41 = () => {
     tabContentEl41.empty();
-    if (selectedTab41 === 'secondary') {
+    if (selectedTab41 === 'devices') {
       renderCount2++;
       const banner = tabContentEl41.createDiv({ cls: 'emily-tab-info-banner' });
-      banner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
-      banner.createSpan({ cls: 'emily-tab-info-text', text: '보조 엔드포인트 설명' });
-
-      // Render the 4 settings in tab 2
-      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 기본 URL' });
-      tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 키' });
-      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '모델 이름' });
-      tabContentEl41.createDiv({ cls: 'setting-item-name', text: '연결 테스트' });
-      currentTabMenuNames = ['API 기본 URL', 'API 키', '모델 이름', '연결 테스트'];
+      banner.createSpan({ cls: 'emily-tab-info-icon', text: '💻' });
+      banner.createSpan({ cls: 'emily-tab-info-text', text: '기기 프로필 관리' });
+      tabContentEl41.createDiv({ cls: 'emily-device-profiles-container' });
     } else {
       renderCount1++;
       const banner = tabContentEl41.createDiv({ cls: 'emily-tab-info-banner' });
       banner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
       banner.createSpan({ cls: 'emily-tab-info-text', text: '기본 엔드포인트 설명' });
-
-      // Render the 4 settings in tab 1
       tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 기본 URL' });
       tabContentEl41.createDiv({ cls: 'setting-item-name', text: 'API 키' });
       tabContentEl41.createDiv({ cls: 'setting-item-name', text: '모델 이름' });
       tabContentEl41.createDiv({ cls: 'setting-item-name', text: '연결 테스트' });
-      currentTabMenuNames = ['API 기본 URL', 'API 키', '모델 이름', '연결 테스트'];
     }
   };
 
-  const switchTab41 = (targetTab) => {
-    if (selectedTab41 === targetTab) return;
-    selectedTab41 = targetTab;
-    btn1_41.classList.toggle('is-active', targetTab === 'primary');
-    btn1_41.setAttribute('aria-selected', targetTab === 'primary' ? 'true' : 'false');
-    btn1_41.setAttribute('tabindex', targetTab === 'primary' ? '0' : '-1');
+  const switchTab41 = (tab) => {
+    selectedTab41 = tab;
+    btn1_41.classList.toggle('is-active', tab === 'default');
+    btn1_41.setAttribute('aria-selected', tab === 'default' ? 'true' : 'false');
+    btn1_41.setAttribute('tabindex', tab === 'default' ? '0' : '-1');
 
-    btn2_41.classList.toggle('is-active', targetTab === 'secondary');
-    btn2_41.setAttribute('aria-selected', targetTab === 'secondary' ? 'true' : 'false');
-    btn2_41.setAttribute('tabindex', targetTab === 'secondary' ? '0' : '-1');
+    btn2_41.classList.toggle('is-active', tab === 'devices');
+    btn2_41.setAttribute('aria-selected', tab === 'devices' ? 'true' : 'false');
+    btn2_41.setAttribute('tabindex', tab === 'devices' ? '0' : '-1');
 
     renderActiveContent41();
   };
 
-  const updateBadge41 = () => {
-    const isConfigured = Boolean(mockPluginSettings41.secondaryApiBaseUrl && mockPluginSettings41.secondaryApiBaseUrl.trim().length > 0);
-    if (isConfigured) {
-      tab2DotEl41.removeClass('is-hidden');
-    } else {
-      tab2DotEl41.addClass('is-hidden');
-    }
-  };
-
-  btn1_41.addEventListener('click', () => switchTab41('primary'));
-  btn2_41.addEventListener('click', () => switchTab41('secondary'));
+  btn1_41.addEventListener('click', () => switchTab41('default'));
+  btn2_41.addEventListener('click', () => switchTab41('devices'));
 
   navEl41.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-      switchTab41('secondary');
+      switchTab41('devices');
       btn2_41.focus();
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      switchTab41('primary');
+      switchTab41('default');
       btn1_41.focus();
     }
   });
 
-  // Initial render (Tab 1)
   renderActiveContent41();
-  const tab1Menus = [...currentTabMenuNames];
 
-  // 1) Test initial tab state
-  const tc41_1 = selectedTab41 === 'primary' &&
+  // 1) Test initial tab state (Default endpoint active)
+  const tc41_1 = selectedTab41 === 'default' &&
                  btn1_41.classList.contains('is-active') &&
                  btn1_41.getAttribute('aria-selected') === 'true' &&
                  btn1_41.getAttribute('tabindex') === '0' &&
@@ -3230,26 +3105,11 @@ Large language models provide powerful reasoning capabilities for diverse downst
                  btn2_41.getAttribute('tabindex') === '-1' &&
                  navEl41.getAttribute('role') === 'tablist' &&
                  renderCount1 === 1 && renderCount2 === 0;
-  console.log(`  - 1) 초기 탭 렌더링 시 프로바이더 1 활성 및 WAI-ARIA 속성 (role="tablist", role="tab", aria-selected="true"): ${tc41_1}`);
+  console.log(`  - 1) 초기 탭 렌더링 시 [기본 설정] 활성 및 WAI-ARIA 속성 (role="tablist", role="tab", aria-selected="true"): ${tc41_1}`);
 
-  // 2) Test green dot badge indicator
-  const tc41_2_initialHidden = tab2DotEl41.classList.contains('is-hidden');
-  mockPluginSettings41.secondaryApiBaseUrl = 'https://api.openai.com/v1';
-  updateBadge41();
-  const tc41_2_shown = !tab2DotEl41.classList.contains('is-hidden');
-  mockPluginSettings41.secondaryApiBaseUrl = '   ';
-  updateBadge41();
-  const tc41_2_hiddenAgain = tab2DotEl41.classList.contains('is-hidden');
-  const tc41_2 = tc41_2_initialHidden && tc41_2_shown && tc41_2_hiddenAgain;
-  console.log(`  - 2) 프로바이더 2 설정 여부에 따른 인디케이터 점등/숨김(dot badge) 동적 반응: ${tc41_2}`);
-
-  // 3) Test tab click switching and 100% menu name consistency
+  // 2) Test click switching to [기기 프로필] tab
   btn2_41.click();
-  const tab2Menus = [...currentTabMenuNames];
-  const menusAreIdentical = JSON.stringify(tab1Menus) === JSON.stringify(tab2Menus);
-  const noProvider2PrefixInMenus = tab2Menus.every(name => !name.includes('프로바이더 2'));
-
-  const tc41_3 = selectedTab41 === 'secondary' &&
+  const tc41_2 = selectedTab41 === 'devices' &&
                  !btn1_41.classList.contains('is-active') &&
                  btn1_41.getAttribute('aria-selected') === 'false' &&
                  btn1_41.getAttribute('tabindex') === '-1' &&
@@ -3257,26 +3117,24 @@ Large language models provide powerful reasoning capabilities for diverse downst
                  btn2_41.getAttribute('aria-selected') === 'true' &&
                  btn2_41.getAttribute('tabindex') === '0' &&
                  renderCount2 === 1 &&
-                 menusAreIdentical &&
-                 noProvider2PrefixInMenus &&
                  tabContentEl41.children[0].classList.contains('emily-tab-info-banner');
-  console.log(`  - 3) 탭 1과 탭 2 메뉴명 100% 일원화([API 기본 URL, API 키, 모델 이름, 연결 테스트]) 및 정보 배너 검증: ${tc41_3}`);
+  console.log(`  - 2) [기기 프로필] 탭 클릭 시 서브탭 화면 정상 전환 및 ARIA 동기화: ${tc41_2}`);
 
-  // 4) Test keyboard navigation (ArrowLeft / ArrowRight)
+  // 3) Test keyboard navigation (ArrowLeft / ArrowRight)
   btn1_41.blur();
   btn2_41.blur();
   navEl41.trigger('keydown', { key: 'ArrowLeft' });
-  const tc41_4_left = selectedTab41 === 'primary' && btn1_41.isFocused === true;
+  const tc41_3_left = selectedTab41 === 'default' && btn1_41.isFocused === true;
 
   navEl41.trigger('keydown', { key: 'ArrowRight' });
-  const tc41_4_right = selectedTab41 === 'secondary' && btn2_41.isFocused === true;
+  const tc41_3_right = selectedTab41 === 'devices' && btn2_41.isFocused === true;
 
-  const tc41_4 = tc41_4_left && tc41_4_right;
-  console.log(`  - 4) 키보드 방향키(ArrowLeft/ArrowRight) 탐색 시 자동 탭 활성화 및 포커스 이동: ${tc41_4}`);
+  const tc41_3 = tc41_3_left && tc41_3_right;
+  console.log(`  - 3) 키보드 방향키(ArrowLeft/ArrowRight) 탐색 시 자동 탭 활성화 및 포커스 이동: ${tc41_3}`);
 
-  const test41Passed = tc41_1 && tc41_2 && tc41_3 && tc41_4;
+  const test41Passed = tc41_1 && tc41_2 && tc41_3;
   if (test41Passed) {
-    console.log('  ✓ [TC-41] 설정 탭 AI 서비스 프로바이더 탭 UI/UX (Tab Navigation) 및 ARIA/배지 100% 검증 완료');
+    console.log('  ✓ [TC-41] 설정 탭 2-Tab 구조 (기본 설정 vs 기기 프로필) UI 네비게이션 및 ARIA 100% 검증 완료');
   } else {
     console.error('  ✗ [TC-41] 검증 실패');
   }
@@ -3851,22 +3709,21 @@ Large language models provide powerful reasoning capabilities for diverse downst
   }
 
   // ===================================================================
-  // [TC-48] 설정 화면 3-Tab 서브탭 구조, 콤팩트 상태 배너 및 통합 기기 관리 검증
+  // [TC-48] 설정 화면 2-Tab 서브탭 구조, 콤팩트 상태 배너 및 기기 프로필 단일 엔드포인트 관리 검증
   // ===================================================================
-  console.log('\n▶ [TC-48] 설정 화면 3-Tab 구조, 콤팩트 상태 배너 및 통합 기기 관리 검증...');
+  console.log('\n▶ [TC-48] 설정 화면 2-Tab 구조, 콤팩트 상태 배너 및 기기 프로필 단일 엔드포인트 관리 검증...');
 
-  // 1) 3-Tab 네비게이션 상태 및 탭 목록 검증
-  const providerTabs = ['primary', 'secondary', 'devices'];
-  let currentActiveSubTab = 'primary';
-  const tabNames = ['프로바이더 1 (기본)', '프로바이더 2 (보조)', '기기 프로필'];
+  // 1) 2-Tab 네비게이션 상태 및 탭 목록 검증 (기본 설정 vs 기기 프로필)
+  const providerTabs = ['default', 'devices'];
+  let currentActiveSubTab = 'default';
+  const tabNames = ['기본 설정', '기기 프로필'];
 
-  const tc48_1 = providerTabs.length === 3 &&
-                 providerTabs[0] === 'primary' &&
-                 providerTabs[1] === 'secondary' &&
-                 providerTabs[2] === 'devices';
-  console.log(`  - 1) 3-Tab 서브탭 구조 (Primary, Secondary, Devices) 구성: ${tc48_1}`);
+  const tc48_1 = providerTabs.length === 2 &&
+                 providerTabs[0] === 'default' &&
+                 providerTabs[1] === 'devices';
+  console.log(`  - 1) 2-Tab 서브탭 구조 (Default, Devices) 구성: ${tc48_1}`);
 
-  // 2) 콤팩트 상태 배너 및 [기기 설정 관리 →] 클릭 시 3번째 탭 전환 검증
+  // 2) 콤팩트 상태 배너 및 [기기 설정 관리 →] 클릭 시 2번째 탭(devices) 전환 검증
   let switchedToDevicesTab = false;
   function simulateStatusBannerClick() {
     currentActiveSubTab = 'devices';
@@ -3877,26 +3734,52 @@ Large language models provide powerful reasoning capabilities for diverse downst
   const tc48_2 = switchedToDevicesTab === true && currentActiveSubTab === 'devices';
   console.log(`  - 2) 콤팩트 배너의 [기기 설정 관리 →] 클릭 시 기기 프로필 탭 전환: ${tc48_2}`);
 
-  // 3) 단일 기기 프로필 카드에서 P1 & P2 동시 통합 저장 및 속성 무결성 검증
-  const sampleIntegratedProfile = {
+  // 3) 단일 기기 프로필 카드에서 url & apiKey 단일 필드 속성 무결성 검증
+  const sampleDeviceProfile = {
     id: 'dev-test-101',
-    name: '연구실 노트북',
-    hostname: 'LAB-LAPTOP',
-    provider1Url: '11434',
-    provider1Key: 'sk-p1-key-1234',
-    provider2Url: 'http://127.0.0.1:8000/v1',
-    provider2Key: 'sk-p2-key-5678'
+    name: '연구실 4호 PC',
+    hostname: 'LAB-PC4',
+    url: 'http://127.0.0.1:8000/v1',
+    apiKey: 'sk-device-unified-key-1234'
   };
 
-  const tc48_3 = sampleIntegratedProfile.name === '연구실 노트북' &&
-                 sampleIntegratedProfile.hostname === 'LAB-LAPTOP' &&
-                 sampleIntegratedProfile.provider1Url === '11434' &&
-                 sampleIntegratedProfile.provider1Key === 'sk-p1-key-1234' &&
-                 sampleIntegratedProfile.provider2Url === 'http://127.0.0.1:8000/v1' &&
-                 sampleIntegratedProfile.provider2Key === 'sk-p2-key-5678';
-  console.log(`  - 3) P1/P2 통합 기기 프로필 등록 및 양방향 속성 무결성 보존: ${tc48_3}`);
+  const tc48_3 = sampleDeviceProfile.name === '연구실 4호 PC' &&
+                 sampleDeviceProfile.hostname === 'LAB-PC4' &&
+                 sampleDeviceProfile.url === 'http://127.0.0.1:8000/v1' &&
+                 sampleDeviceProfile.apiKey === 'sk-device-unified-key-1234';
+  console.log(`  - 3) 단일 URL/API Key 기반 기기 프로필 등록 및 속성 무결성 보존: ${tc48_3}`);
 
-  // 4) CSS 표준 타이포그래피 토큰 정의 정합성 검증
+  // 4) 레거시 프로필(provider1Url, provider1Key) 자동 마이그레이션(migrateDeviceProfiles) 검증
+  const legacySettings = {
+    deviceProfiles: [
+      { id: 'leg-1', name: '레거시 노트북', hostname: 'OLD-LAPTOP', provider1Url: '11434', provider1Key: 'sk-leg-key' }
+    ]
+  };
+
+  function migrateDeviceProfilesMock(settings) {
+    if (!settings.deviceProfiles || !Array.isArray(settings.deviceProfiles)) return false;
+    let modified = false;
+    for (const prof of settings.deviceProfiles) {
+      if (!prof.url && prof.provider1Url) {
+        prof.url = prof.provider1Url;
+        modified = true;
+      }
+      if (!prof.apiKey && prof.provider1Key) {
+        prof.apiKey = prof.provider1Key;
+        modified = true;
+      }
+    }
+    return modified;
+  }
+
+  const migrationModified = migrateDeviceProfilesMock(legacySettings);
+  const migratedProf = legacySettings.deviceProfiles[0];
+  const tc48_4 = migrationModified === true &&
+                 migratedProf.url === '11434' &&
+                 migratedProf.apiKey === 'sk-leg-key';
+  console.log(`  - 4) 레거시 기기 프로필(provider1Url/Key) 단일 url/apiKey 자동 마이그레이션 성공: ${tc48_4}`);
+
+  // 5) CSS 표준 타이포그래피 토큰 정의 정합성 검증
   const fs = await import('fs');
   const cssContent = fs.readFileSync('styles.css', 'utf8');
   const hasFontTitleToken = cssContent.includes('--emily-font-title:');
@@ -3906,27 +3789,49 @@ Large language models provide powerful reasoning capabilities for diverse downst
   const hasCompactBannerStyle = cssContent.includes('.emily-compact-status-banner');
   const hasUnifiedCardStyle = cssContent.includes('.emily-profile-form-card');
 
-  const tc48_4 = hasFontTitleToken &&
+  const tc48_5 = hasFontTitleToken &&
                  hasFontBodyToken &&
                  hasFontDescToken &&
                  hasFontBadgeToken &&
                  hasCompactBannerStyle &&
                  hasUnifiedCardStyle;
-  console.log(`  - 4) Obsidian 테마 연동 CSS 표준 타이포그래피 계층 및 컴팩트 배너 스타일 정합성: ${tc48_4}`);
+  console.log(`  - 5) Obsidian 테마 연동 CSS 표준 타이포그래피 계층 및 컴팩트 배너 스타일 정합성: ${tc48_5}`);
 
-  const test48Passed = tc48_1 && tc48_2 && tc48_3 && tc48_4;
+  const test48Passed = tc48_1 && tc48_2 && tc48_3 && tc48_4 && tc48_5;
   if (test48Passed) {
-    console.log('  ✓ [TC-48] 설정 화면 3-Tab 구조, 콤팩트 상태 배너 및 통합 기기 관리 100% 검증 완료');
+    console.log('  ✓ [TC-48] 설정 화면 2-Tab 구조, 콤팩트 상태 배너 및 기기 프로필 단일 엔드포인트 관리 100% 검증 완료');
   } else {
     console.error('  ✗ [TC-48] 검증 실패');
   }
+  // ===================================================================
+  // [TC-49] 사이드바 UI/UX 개선: 번역 범위 번호 제거 및 문체(Tone) 번역 영역 일원화 종합 검증
+  // ===================================================================
+  console.log('\n▶ [TC-49] 사이드바 UI/UX 개선: 번역 범위 번호 제거 및 문체(Tone) 번역 일원화 종합 검증...');
 
-  // [TC-49] 종결어미 및 문체 일관성 검사기 (Tone Consistency Checker) 종합 검증
-  console.log('\n▶ [TC-49] 종결어미 및 문체 일관성 검사기 (Tone Consistency Checker) 종합 검증...');
+  // 1) 번역 범위(Translation Scope) 버튼 라벨 넘버링 제거 및 다국어(한국어/영어) 정합성
+  const koLocaleContent = fs.readFileSync('src/i18n/locales/ko.ts', 'utf8');
+  const enLocaleContent = fs.readFileSync('src/i18n/locales/en.ts', 'utf8');
 
-  // 1) 프롬프트 빌더: checkTone 및 targetTone(auto, honorific, plain, polite) 프롬프트 및 가드레일 정합성 검증
+  const koHasCleanScopes = koLocaleContent.includes("selection: '선택 영역 번역'") &&
+                           koLocaleContent.includes("all: '전체 문서 번역'") &&
+                           koLocaleContent.includes("paragraphBilingual: '단락별 1:1 대조'") &&
+                           !koLocaleContent.includes("'1. 선택") &&
+                           !koLocaleContent.includes("'2. 전체") &&
+                           !koLocaleContent.includes("'3. 단락");
+
+  const enHasCleanScopes = enLocaleContent.includes("selection: 'Selection Only'") &&
+                           enLocaleContent.includes("all: 'Full Document'") &&
+                           enLocaleContent.includes("paragraphBilingual: 'Paragraph Bilingual'") &&
+                           !enLocaleContent.includes("'1. Selection") &&
+                           !enLocaleContent.includes("'2. Full") &&
+                           !enLocaleContent.includes("'3. Paragraph");
+
+  const tc49_1 = koHasCleanScopes && enHasCleanScopes;
+  console.log(`  - 1) 번역 범위(Scope) 세그먼트 버튼 라벨 숫자 넘버링 제거 및 한/영 i18n 정합성: ${tc49_1}`);
+
+  // 2) 번역 모듈 문체(Tone) 및 스타일(Style) 일원화 프롬프트 빌더 (isSameLangEdit 모드 포함) 검증
   const sampleToneDoc = `---
-title: 어미 검사 테스트
+title: 문체 정합성 테스트
 ---
 # 프로젝트 개요
 저희 팀은 새로운 옵시디언 플러그인을 개발합니다. 사용자는 매우 편리하다고 느낀다. 또한 다양한 설정을 제공해요.
@@ -3939,154 +3844,94 @@ def test():
 \`\`\`
 `;
 
-  const buildProofreadingPromptSim = (markdownContent, options, customInstruction) => {
-    const categories = [];
-    const allowedCatTokens = [];
+  const pSameLangAcademic = PromptBuilder.buildTranslationPrompt(sampleToneDoc, {
+    isSameLangEdit: true,
+    sourceLanguage: '한국어',
+    targetLanguage: '한국어',
+    tone: 'academic',
+    style: 'balanced'
+  });
 
-    if (options.checkSpelling) {
-      categories.push('- 맞춤법, 띄어쓰기, 오탈자 및 잘못된 조사 사용 검사');
-      allowedCatTokens.push('"spelling"', '"bold_format"');
-    }
-    if (options.checkGrammar) {
-      categories.push('- 문법 검사, 문맥 기반 문장 구조 및 시제 일치 검사');
-      allowedCatTokens.push('"grammar"');
-    }
-    if (options.checkTone) {
-      const toneGuide = options.targetTone === 'honorific'
-        ? '하십시오체 (경어체: ~합니다, ~입니다, ~바랍니다)'
-        : (options.targetTone === 'plain'
-          ? '해라체 (평어·학술체: ~한다, ~이다, ~된다)'
-          : (options.targetTone === 'polite'
-            ? '해요체 (친근체: ~해요, ~돼요, ~있어요)'
-            : '문서의 주된 지배적 문체 (Auto-detect)'));
+  const pSameLangPolite = PromptBuilder.buildTranslationPrompt(sampleToneDoc, {
+    isSameLangEdit: true,
+    sourceLanguage: '한국어',
+    targetLanguage: '한국어',
+    tone: 'polite',
+    style: 'balanced'
+  });
 
-      categories.push(`- 종결어미 및 문체 일관성 검사: 기준 문체인 [${toneGuide}]와 일치하지 않거나 본문 내에서 무의식적으로 혼용된 종결어미(예: ~합니다와 ~한다, ~해요의 혼용)를 검출하고 일관된 문체로 교정 제안`);
-      allowedCatTokens.push('"tone"');
-    }
-    if (options.removeTimestamps) {
-      categories.push('- 타임스탬프 삭제 및 스크립트 문단 연결');
-      allowedCatTokens.push('"timestamp"');
-    }
+  const pSameLangCasual = PromptBuilder.buildTranslationPrompt(sampleToneDoc, {
+    isSameLangEdit: true,
+    sourceLanguage: '한국어',
+    targetLanguage: '한국어',
+    tone: 'casual',
+    style: 'natural'
+  });
 
-    const categoryEnumStr = allowedCatTokens.length > 0
-      ? Array.from(new Set(allowedCatTokens)).join(' | ')
-      : '"custom"';
+  const tc49_2 = pSameLangAcademic.system.includes('학술 및 기술 문서체 (~이다/한다') &&
+                 pSameLangAcademic.system.includes('[종결어미 및 문체 일관성]:') &&
+                 pSameLangAcademic.system.includes('인용구(> 블록, "..." 인용), 코드 블록') &&
+                 pSameLangPolite.system.includes('정중한 경어체 (~합니다/하십시오') &&
+                 pSameLangCasual.system.includes('친근한 대화체 (~해요/있어요') &&
+                 pSameLangCasual.system.includes('- 스타일: 유려한 자연스러움');
+  console.log(`  - 2) 동일 언어 편집 모드(isSameLangEdit) 및 번역 모듈의 문체/스타일 일원화 프롬프트 검증: ${tc49_2}`);
 
-    const system = `[필수 교열 원칙]
-4. [종결어미 및 문체 일관성 검사 시 주의사항]:
-   - 인용구(> 블록 또는 따옴표 "..." 내의 인용 발언), 코드 블록(\`\`\`...\`\`\`) 및 인라인 코드(\`...\`), 수식($...$), YAML 프론트매터 내부의 문장은 화자의 원래 발언이나 코드 형식을 유지해야 하므로 종결어미 교정 대상에서 제외하고 원문 그대로 보존하십시오.
-   - 문맥상 제목(# 헤딩)이나 목록형 명사형 종결(~함, ~기, ~것)은 불필요하게 억지로 서술형 종결어미로 바꾸지 마십시오.
-"category": ${categoryEnumStr}`;
-
-    let user = `[적용 검사항목]\n${categories.join('\n')}`;
-    return { system, user };
-  };
-
-  const pAuto = buildProofreadingPromptSim(sampleToneDoc, { checkSpelling: true, checkTone: true, targetTone: 'auto' });
-  const pHonor = buildProofreadingPromptSim(sampleToneDoc, { checkTone: true, targetTone: 'honorific' });
-  const pPlain = buildProofreadingPromptSim(sampleToneDoc, { checkTone: true, targetTone: 'plain' });
-  const pPolite = buildProofreadingPromptSim(sampleToneDoc, { checkTone: true, targetTone: 'polite' });
-
-  const tc49_1 = pAuto.user.includes('문서의 주된 지배적 문체') &&
-                 pAuto.system.includes('"tone"') &&
-                 pHonor.user.includes('하십시오체 (경어체') &&
-                 pPlain.user.includes('해라체 (평어·학술체') &&
-                 pPolite.user.includes('해요체 (친근체') &&
-                 pAuto.system.includes('인용구(> 블록 또는 따옴표') &&
-                 pAuto.system.includes('코드 블록');
-  console.log(`  - 1) 4개 타깃 문체(auto/honorific/plain/polite) 프롬프트 빌더 지침 및 예외 보존 가드레일 정합성: ${tc49_1}`);
-
-  // 2) 화이트리스트 필터링: checkTone 활성화 시 tone 통과, 비활성화 시 tone 제거
-  const mockItems = [
-    { id: '1', original: '맞춤법틀림', replacement: '맞춤법맞음', category: 'spelling' },
-    { id: '2', original: '느낀다', replacement: '느낍니다', category: 'tone' },
-    { id: '3', original: '제공해요', replacement: '제공합니다', category: 'tone' }
-  ];
-
-  const filterItems = (items, options, customInstruction) => {
-    const allowed = new Set();
-    if (options.checkSpelling) { allowed.add('spelling'); allowed.add('bold_format'); }
-    if (options.checkGrammar) { allowed.add('grammar'); }
-    if (options.checkTone) { allowed.add('tone'); }
-    if (options.removeTimestamps) { allowed.add('timestamp'); }
-
-    if (!customInstruction && allowed.size > 0) {
-      return items.filter(item => allowed.has(item.category));
-    }
-    return items;
-  };
-
-  const filteredWithTone = filterItems(mockItems, { checkSpelling: true, checkTone: true });
-  const filteredWithoutTone = filterItems(mockItems, { checkSpelling: true, checkTone: false });
-
-  const tc49_2 = filteredWithTone.length === 3 &&
-                 filteredWithTone.some(it => it.category === 'tone') &&
-                 filteredWithoutTone.length === 1 &&
-                 !filteredWithoutTone.some(it => it.category === 'tone');
-  console.log(`  - 2) 화이트리스트 필터링의 문체(tone) 카테고리 허용/차단 완벽성: ${tc49_2}`);
-
-  // 3) 카테고리 라벨 및 Diff Modal / Session Card 다국어 i18n 매핑 검증
-  const getCatLabelSim = (cat, lang) => {
-    if (lang === 'ko') {
-      return cat === 'spelling' ? '맞춤법 검사' : (cat === 'tone' ? '문체·어미' : (cat === 'timestamp' ? '타임스탬프 삭제' : cat));
-    }
-    return cat === 'spelling' ? 'Spelling Check' : (cat === 'tone' ? 'Tone & Style' : (cat === 'timestamp' ? 'Remove Timestamps' : cat));
-  };
-
-  const tc49_3 = getCatLabelSim('tone', 'ko') === '문체·어미' &&
-                 getCatLabelSim('tone', 'en') === 'Tone & Style' &&
-                 getCatLabelSim('timestamp', 'ko') === '타임스탬프 삭제' &&
-                 getCatLabelSim('timestamp', 'en') === 'Remove Timestamps';
-  console.log(`  - 3) 한국어/영어 i18n 카테고리 명칭(문체·어미 / Tone & Style) 정합성: ${tc49_3}`);
-
-  // 4) UI 세그먼트 버튼 토글 및 타깃 문체 셀렉터 표시/숨김 연동 시뮬레이션
-  const simulatedForm = {
+  // 3) 교열(Proofreading) 영역 클린 3-버튼(맞춤법, 문법, 타임스탬프) 세그먼트 그리드 및 상태 검증
+  const simulatedProofForm = {
     proofreadOptions: {
       checkSpelling: false,
       checkGrammar: false,
-      checkTone: false,
-      targetTone: 'auto',
       removeTimestamps: false
     },
-    subOptionContainerVisible: false,
-    proofCount: 0
+    get proofCount() {
+      return (this.proofreadOptions.checkSpelling ? 1 : 0) +
+             (this.proofreadOptions.checkGrammar ? 1 : 0) +
+             (this.proofreadOptions.removeTimestamps ? 1 : 0);
+    }
   };
 
-  const toggleTone = (checked) => {
-    simulatedForm.proofreadOptions.checkTone = checked;
-    simulatedForm.subOptionContainerVisible = checked;
-    simulatedForm.proofCount = (simulatedForm.proofreadOptions.checkSpelling ? 1 : 0) +
-                               (simulatedForm.proofreadOptions.checkGrammar ? 1 : 0) +
-                               (simulatedForm.proofreadOptions.checkTone ? 1 : 0) +
-                               (simulatedForm.proofreadOptions.removeTimestamps ? 1 : 0);
-  };
+  simulatedProofForm.proofreadOptions.checkSpelling = true;
+  const count1 = simulatedProofForm.proofCount;
+  simulatedProofForm.proofreadOptions.checkGrammar = true;
+  simulatedProofForm.proofreadOptions.removeTimestamps = true;
+  const count3 = simulatedProofForm.proofCount;
+  simulatedProofForm.proofreadOptions.checkSpelling = false;
+  const count2 = simulatedProofForm.proofCount;
 
-  toggleTone(true);
-  const activeCount1 = simulatedForm.proofCount;
-  const isVisible1 = simulatedForm.subOptionContainerVisible;
-  simulatedForm.proofreadOptions.targetTone = 'honorific';
+  // 교열 프롬프트 빌더에 더이상 tone 항목이 유입되지 않음을 검증
+  const proofPromptClean = PromptBuilder.buildProofreadingPrompt(sampleToneDoc, simulatedProofForm.proofreadOptions);
+  const tc49_3 = count1 === 1 &&
+                 count3 === 3 &&
+                 count2 === 2 &&
+                 !proofPromptClean.system.includes('"tone"') &&
+                 proofPromptClean.user.includes('문법 검사') &&
+                 proofPromptClean.user.includes('타임스탬프 삭제');
+  console.log(`  - 3) 교열(Proofreading) 클린 3-버튼 그리드 토글 및 교열 프롬프트 순도 검증: ${tc49_3}`);
 
-  toggleTone(false);
-  const activeCount2 = simulatedForm.proofCount;
-  const isVisible2 = simulatedForm.subOptionContainerVisible;
+  // 4) 설정 탭(SettingsTab) 및 타입(Types) 내 교열 문체 불필요 필드 제거 무결성 검증
+  const settingsTsContent = fs.readFileSync('src/types/settings.ts', 'utf8');
+  const settingsTabContent = fs.readFileSync('src/views/settingsTab.ts', 'utf8');
 
-  const tc49_4 = activeCount1 === 1 &&
-                 isVisible1 === true &&
-                 simulatedForm.proofreadOptions.targetTone === 'honorific' &&
-                 activeCount2 === 0 &&
-                 isVisible2 === false;
-  console.log(`  - 4) 세그먼트 그리드 다중 선택, 타깃 문체 셀렉터 동적 노출 및 카운트 배지 연동: ${tc49_4}`);
+  const tc49_4 = !settingsTsContent.includes('defaultProofreadTone') &&
+                 !settingsTsContent.includes('defaultProofreadTargetTone') &&
+                 !settingsTabContent.includes('proofreadToneTitle') &&
+                 !settingsTabContent.includes('proofreadTargetToneTitle') &&
+                 !koLocaleContent.includes('proofreadToneTitle') &&
+                 !enLocaleContent.includes('proofreadToneTitle');
+  console.log(`  - 4) 설정 탭 및 타입 정의 내 레거시 교열 문체 필드 완전 제거 무결성: ${tc49_4}`);
 
-  // 5) CSS 2x2 그리드(.emily-proofread-grid) 및 문체 서브옵션 컨테이너 스타일 정의 검증
-  const hasProofreadGridCss = cssContent.includes('.emily-proofread-grid') &&
-                              cssContent.includes('grid-template-columns: repeat(2, minmax(0, 1fr))');
-  const hasToneSuboptionCss = cssContent.includes('.emily-tone-suboption-container');
-  const tc49_5 = hasProofreadGridCss && hasToneSuboptionCss;
-  console.log(`  - 5) 4개 교열 버튼 2x2 대칭 그리드 및 문체 서브옵션 CSS 정합성: ${tc49_5}`);
+  // 5) 사이드바 세그먼트 그리드 및 다국어 100% 완전성
+  const sidebarViewContent = fs.readFileSync('src/views/sidebarView.ts', 'utf8');
+  const tc49_5 = sidebarViewContent.includes('t.scopes.selection') &&
+                 sidebarViewContent.includes('t.scopes.all') &&
+                 sidebarViewContent.includes('t.scopes.paragraphBilingual') &&
+                 !sidebarViewContent.includes('checkTone') &&
+                 !sidebarViewContent.includes('targetTone');
+  console.log(`  - 5) 사이드바 뷰 세그먼트 UI 연결 및 다국어 키 매핑 100% 무결성: ${tc49_5}`);
 
   const test49Passed = tc49_1 && tc49_2 && tc49_3 && tc49_4 && tc49_5;
   if (test49Passed) {
-    console.log('  ✓ [TC-49] 종결어미 및 문체 일관성 검사기 (Tone Consistency Checker) 100% 검증 완료');
+    console.log('  ✓ [TC-49] 사이드바 UI/UX 개선: 번역 범위 번호 제거 및 문체 번역 일원화 100% 검증 완료');
   } else {
     console.error('  ✗ [TC-49] 검증 실패');
   }

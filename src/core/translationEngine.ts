@@ -68,7 +68,6 @@ export class TranslationEngine {
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(markdownContent, this.CHUNK_SIZE_THRESHOLD);
     const totalChunks = chunks.length;
-    const isDistributed = totalChunks > 1 && this.client.isChunkDistributionEnabled();
 
     let accumulatedTranslatedMarkdown = '';
     let totalTimeMs = 0;
@@ -77,8 +76,6 @@ export class TranslationEngine {
     let totalTokens = 0;
     let lastModel = 'auto';
     let lastResponse: LLMResponse | null = null;
-    const providersUsed = new Set<'primary' | 'secondary'>();
-    let anyFailover = false;
 
     for (let i = 0; i < totalChunks; i++) {
       if (signal?.aborted) {
@@ -87,13 +84,8 @@ export class TranslationEngine {
         throw abortError;
       }
 
-      let chunkProvider: 'primary' | 'secondary' | undefined;
-      if (isDistributed) {
-        chunkProvider = (i % 2 === 0) ? 'primary' : 'secondary';
-      }
-
       if (onProgress) {
-        onProgress(i + 1, totalChunks, chunkProvider);
+        onProgress(i + 1, totalChunks);
       }
 
       const chunk = chunks[i];
@@ -117,20 +109,12 @@ export class TranslationEngine {
         {
           temperature: 0.3,
           max_tokens: 4096,
-          signal,
-          providerId: chunkProvider
+          signal
         }
       );
 
       if (response.finish_reason === 'length') {
         console.warn(`Assistant Emily: Translation chunk ${i + 1}/${totalChunks} was truncated by LLM output limit.`);
-      }
-
-      if (response.providerUsed) {
-        providersUsed.add(response.providerUsed);
-      }
-      if (response.failedOver) {
-        anyFailover = true;
       }
 
       lastResponse = response;
@@ -189,15 +173,6 @@ export class TranslationEngine {
       ? Number(((totalCompletionTokens / totalTimeMs) * 1000).toFixed(1))
       : lastResponse?.tokensPerSec;
 
-    let effectiveProviderUsed: 'primary' | 'secondary' | 'distributed' = 'primary';
-    if (providersUsed.size > 1) {
-      effectiveProviderUsed = 'distributed';
-    } else if (providersUsed.has('secondary')) {
-      effectiveProviderUsed = 'secondary';
-    } else if (lastResponse?.providerUsed) {
-      effectiveProviderUsed = lastResponse.providerUsed;
-    }
-
     return {
       result,
       totalTimeMs,
@@ -212,8 +187,8 @@ export class TranslationEngine {
       finish_reason: lastResponse?.finish_reason,
       system_fingerprint: lastResponse?.system_fingerprint,
       created: lastResponse?.created,
-      providerUsed: effectiveProviderUsed,
-      failedOver: anyFailover
+      providerUsed: 'primary',
+      failedOver: false
     };
   }
 

@@ -24,18 +24,6 @@ export class PromptBuilder {
       categories.push('- 문법 검사, 문맥 기반 문장 구조 및 시제 일치 검사');
       allowedCatTokens.push('"grammar"');
     }
-    if (options.checkTone) {
-      const toneGuide = options.targetTone === 'honorific'
-        ? '하십시오체 (경어체: ~합니다, ~입니다, ~바랍니다)'
-        : (options.targetTone === 'plain'
-          ? '해라체 (평어·학술체: ~한다, ~이다, ~된다)'
-          : (options.targetTone === 'polite'
-            ? '해요체 (친근체: ~해요, ~돼요, ~있어요)'
-            : '문서의 주된 지배적 문체 (Auto-detect)'));
-
-      categories.push(`- 종결어미 및 문체 일관성 검사: 기준 문체인 [${toneGuide}]와 일치하지 않거나 본문 내에서 무의식적으로 혼용된 종결어미(예: ~합니다와 ~한다, ~해요의 혼용)를 검출하고 일관된 문체로 교정 제안`);
-      allowedCatTokens.push('"tone"');
-    }
     if (options.removeTimestamps) {
       categories.push('- 타임스탬프 삭제 및 스크립트 문단 연결(Concatenation): 유튜브 및 동영상 캡처 스크립트에 포함된 타임스탬프(예: 0:04, 0:27:, **1:29**:, [00:15] 등)와 잦은 줄바꿈을 모두 제거하고, 원문의 단어나 표현을 임의로 요약·삭제·의역·대소문자변경 하지 말고 원문 100% 그대로 단락별로 이어 붙여(Concatenation) 편집자가 읽기 쉽게 정위하십시오.');
       allowedCatTokens.push('"timestamp"');
@@ -74,10 +62,7 @@ export class PromptBuilder {
    - 프론트매터의 키, 값, 줄바꿈, 리스트 들여쓰기 구조를 한 줄로 합치지 마십시오.
    - 교열 제안(items)에 프론트매터 구조를 훼손하는 제안을 절대 포함하지 마십시오.
 3. 기존 마크다운 본문 구조(헤딩 #, 코드블록, 링크 [[...]], 태그 #tag 등)를 손상시키지 마십시오.
-4. [종결어미 및 문체 일관성 검사 시 주의사항]:
-   - 인용구(> 블록 또는 따옴표 "..." 내의 인용 발언), 코드 블록(\`\`\`...\`\`\`) 및 인라인 코드(\`...\`), 수식($...$), YAML 프론트매터 내부의 문장은 화자의 원래 발언이나 코드 형식을 유지해야 하므로 종결어미 교정 대상에서 제외하고 원문 그대로 보존하십시오.
-   - 문맥상 제목(# 헤딩)이나 목록형 명사형 종결(~함, ~기, ~것)은 불필요하게 억지로 서술형 종결어미로 바꾸지 마십시오.
-5. 반드시 아래 JSON 규격으로만 응답해야 합니다. 마크다운 코드블록(\`\`\`json) 안에 담아주십시오.
+4. 반드시 아래 JSON 규격으로만 응답해야 합니다. 마크다운 코드블록(\`\`\`json) 안에 담아주십시오.
 
 [JSON 응답 스키마]
 {
@@ -104,8 +89,8 @@ export class PromptBuilder {
   }
 
   /**
-   * 마크다운 번역 작업을 위한 시스템 및 유저 프롬프트를 생성합니다.
-   * - 출발어/도착어가 동일한 경우 "동일 언어 편집" 모드로 전환
+   * 마크다운 번역 및 편집 작업을 위한 시스템 및 유저 프롬프트를 생성합니다.
+   * - 출발어/도착어가 동일한 경우 "동일 언어 편집 및 문체 교정" 모드로 전환
    * - 문체(학술/경어/친근), 스타일(직역/균형/의역), 코드 주석 번역 지침 반영
    * @param markdownContent 마스킹 완료된 번역 대상 마크다운 본문
    * @param options 번역 세부 옵션
@@ -122,13 +107,34 @@ export class PromptBuilder {
       ? '원문 문서 언어 자동 감지'
       : options.sourceLanguage;
 
-    // 동일 언어 편집 모드: 번역 지침 대신 편집 지침 사용
+    // 1. 문체 (Tone) 지침
+    let toneInstruction = '- 문체(Tone): 학술 및 기술 문서체 (~이다/한다, 간결하고 객관적이며 명확한 어조)';
+    if (options.tone === 'polite') {
+      toneInstruction = '- 문체(Tone): 정중한 경어체 (~합니다/하십시오, 신뢰감 있고 격식 있는 비즈니스 어조)';
+    } else if (options.tone === 'casual') {
+      toneInstruction = '- 문체(Tone): 친근한 대화체 (~해요/있어요, 블로그 및 친근한 설명 안내 어조)';
+    }
+
+    // 2. 스타일 (Style: 직역/의역) 지침
+    let styleInstruction = '- 스타일: 균형 잡힌 정제 (원문의 의미를 정확히 유지하면서 자연스럽게 다듬기)';
+    if (options.style === 'literal') {
+      styleInstruction = '- 스타일: 직관적 원문 충실 (원문의 어휘와 문장 구조를 가급적 보존하며 다듬기)';
+    } else if (options.style === 'natural') {
+      styleInstruction = '- 스타일: 유려한 자연스러움 (문맥에 맞추어 유려하고 읽기 쉬운 표현으로 다듬기)';
+    }
+
+    // 동일 언어 편집 모드: 번역 지침 대신 편집 및 문체 정합 지침 사용
     if (isSameLangEdit) {
       const system = `당신은 전문 마크다운 편집 AI "Assistant Emily"입니다.
 마크다운 문서의 포맷, 링크, 코드 블록, 태그, 테이블 구조를 완벽히 유지하면서 문서를 편집하십시오.
 
 [편집 지침]
-- 언어: ${sourceLangText} (출발어와 도착어가 동일하므로 언어 변환 없이 편집만 수행)
+- 언어: ${sourceLangText} (출발어와 도착어가 동일하므로 언어 변환 없이 편집 및 문체 교정만 수행)
+${toneInstruction}
+${styleInstruction}
+- [종결어미 및 문체 일관성]:
+  지정된 문체(Tone)를 엄격히 준수하여 문서 전체의 어미와 어조를 일관되게 정합화하십시오.
+  단, 인용구(> 블록, "..." 인용), 코드 블록(\`\`\`...\`\`\`) 및 인라인 코드(\`...\`), 수식($...$), YAML 프론트매터 내부의 문장은 화자의 원래 발언이나 코드 형식을 유지해야 하므로 종결어미 교정 대상에서 제외하고 원문 그대로 보존하십시오.
 - [프론트매터(YAML Frontmatter) 무결성 보존]:
   문서 최상단에 YAML 프론트매터(\`--- ... ---\`)가 존재하는 경우, 프론트매터의 키 이름, 값, 콜론, 따옴표, 줄바꿈 및 리스트 들여쓰기 구조를 100% 원본 그대로 완벽하게 보존하십시오.
 - [보호 토큰 무결성]: 본문에 \`__EMILY_...\` 형태의 플레이스홀더 토큰이 포함되어 있다면, 토큰의 철자나 형식을 절대 수정하거나 삭제하지 말고 그대로 보존하십시오.
@@ -141,22 +147,6 @@ export class PromptBuilder {
       }
       user += `\n[마크다운 원문]\n${markdownContent}`;
       return { system, user };
-    }
-
-    // 1. 문체 (Tone) 지침
-    let toneInstruction = '- 문체(Tone): 학술 및 기술 문서체 (~이다/한다, 간결하고 객관적이며 명확한 어조)';
-    if (options.tone === 'polite') {
-      toneInstruction = '- 문체(Tone): 정중한 경어체 (~합니다/하십시오, 신뢰감 있고 격식 있는 비즈니스 어조)';
-    } else if (options.tone === 'casual') {
-      toneInstruction = '- 문체(Tone): 친근한 대화체 (~해요/있어요, 블로그 및 친근한 설명 안내 어조)';
-    }
-
-    // 2. 스타일 (Style: 직역/의역) 지침
-    let styleInstruction = '- 번역 스타일: 균형 잡힌 번역 (원문의 의미를 정확히 전달하면서 자연스러운 우리말로 정제)';
-    if (options.style === 'literal') {
-      styleInstruction = '- 번역 스타일: 직역 중심 (원문의 단어와 문맥 구조를 직관적이고 충실하게 반영)';
-    } else if (options.style === 'natural') {
-      styleInstruction = '- 번역 스타일: 자연스러운 의역 (문맥에 맞추어 유려하고 읽기 쉬운 현대적 표현으로 의역)';
     }
 
     // 3. 코드 블록 주석 번역 지침
