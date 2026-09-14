@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
 
   <!-- Primary SEO Meta Tags -->
   <title>Assistant Emily - 옵시디언 지능형 마크다운 무손실 교열 & 맥락 인식 전문 번역 AI 플러그인</title>
@@ -92,7 +95,7 @@
     <div class="hero-content">
       <div class="badge-version">
         <span class="dot"></span>
-        <span>최신 릴리즈 v1.0.15 배포 완료</span>
+        <span>공식 커뮤니티 플러그인 출시 · v1.0.15</span>
       </div>
       <h1 class="hero-title">옵시디언을 위한 지능형 무손실 교열 &amp; 전문 번역 AI 플러그인</h1>
       <p class="hero-subtitle">
@@ -101,7 +104,7 @@
       </p>
       <div class="hero-actions">
         <a href="#installation" class="btn-primary">
-          <span>🚀 플러그인 설치하기</span>
+          <span>🚀 커뮤니티 플러그인으로 설치하기</span>
         </a>
       </div>
     </div>
@@ -288,10 +291,29 @@ updated: 2026-09-13
 
     <div class="install-tabs">
       <div class="install-tab-header">
-        <button class="install-tab-btn active" onclick="switchTab('brat')">방법 1: BRAT 플러그인 (가장 편리)</button>
-        <button class="install-tab-btn" onclick="switchTab('manual')">방법 2: GitHub 릴리즈 수동 설치</button>
+        <button class="install-tab-btn active" data-tab="community" onclick="switchTab('community')">방법 1: 커뮤니티 플러그인 (공식 출시 · 추천)</button>
+        <button class="install-tab-btn" data-tab="brat" onclick="switchTab('brat')">방법 2: BRAT 베타 테스트</button>
+        <button class="install-tab-btn" data-tab="manual" onclick="switchTab('manual')">방법 3: GitHub 릴리즈 수동 설치</button>
       </div>
-      <div class="install-tab-content" id="tab-brat">
+
+      <div class="install-tab-content" id="tab-community">
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.2rem;">
+          Assistant Emily는 <strong>Obsidian 공식 커뮤니티 플러그인</strong>으로 정식 출시되었습니다. 옵시디언 앱 내에서 검색 한 번으로 간편하게 설치하고 안전하게 자동 업데이트를 지원받으실 수 있습니다.
+        </p>
+        <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.9;">
+          <li>옵시디언을 실행하고 좌측 하단 <strong>설정(Settings ⚙️) &gt; 커뮤니티 플러그인(Community plugins)</strong>으로 이동합니다.</li>
+          <li>'제한 모드(Restricted mode)'가 켜져 있다면 <strong>[제한 모드 끄기(Turn off)]</strong>를 선택합니다.</li>
+          <li>커뮤니티 플러그인 목록의 <strong>[탐색(Browse)]</strong> 버튼을 클릭합니다.</li>
+          <li>검색창에 <strong><code>Assistant Emily</code></strong>를 검색합니다.</li>
+          <li>검색 결과에서 <strong>Assistant Emily</strong>를 선택하고 <strong>[설치(Install)]</strong>를 누른 후, 설치가 완료되면 <strong>[활성화(Enable)]</strong> 버튼을 클릭합니다.</li>
+          <li>좌측 리본 바(✨ 아이콘) 또는 명령어 팔레트(<code>Ctrl+P</code> / <code>Cmd+P</code>)에서 <strong>Assistant Emily: Open Sidebar</strong>를 실행하여 즉시 사용하실 수 있습니다.</li>
+        </ol>
+      </div>
+
+      <div class="install-tab-content" id="tab-brat" style="display: none;">
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+          공식 커뮤니티 플러그인 업데이트 전, GitHub 저장소에 배포되는 최신 개발/프리릴리즈 빌드를 가장 먼저 테스트해보고 싶으신 경우 BRAT 플러그인을 활용하실 수 있습니다.
+        </p>
         <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.8;">
           <li>옵시디언 커뮤니티 플러그인에서 <strong>BRAT (Beta Reviewers Auto-update Tester)</strong>를 검색하여 설치 및 활성화합니다.</li>
           <li>명령어 팔레트(<code>Ctrl+P</code> / <code>Cmd+P</code>)에서 <code>BRAT: Add a beta plugin for testing</code>을 실행합니다.</li>
@@ -307,6 +329,9 @@ updated: 2026-09-13
       </div>
 
       <div class="install-tab-content" id="tab-manual" style="display: none;">
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1rem;">
+          인터넷 연결이 차단된 오프라인 환경 또는 사내 보안망에서 수동으로 설치해야 하는 경우 사용합니다.
+        </p>
         <ol style="margin-left: 1.2rem; color: #cbd5e1; line-height: 1.8;">
           <li><a href="https://github.com/sparklings/emily/releases" target="_blank" rel="noopener"><strong>GitHub Releases 페이지</strong></a>에서 최신 <code>main.js</code>, <code>manifest.json</code>, <code>styles.css</code> 파일을 다운로드합니다.</li>
           <li>본인의 옵시디언 볼트 폴더 내 <code>.obsidian/plugins/assistant-emily/</code> 디렉토리를 생성하고 위 3개 파일을 넣습니다.</li>
@@ -343,21 +368,19 @@ updated: 2026-09-13
   <!-- Tab Switching Script -->
   <script>
     function switchTab(tabId) {
-      const bratTab = document.getElementById('tab-brat');
-      const manualTab = document.getElementById('tab-manual');
+      const tabs = ['community', 'brat', 'manual'];
+      tabs.forEach(function(t) {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === tabId) ? 'block' : 'none';
+      });
       const btns = document.querySelectorAll('.install-tab-btn');
-
-      if (tabId === 'brat') {
-        bratTab.style.display = 'block';
-        manualTab.style.display = 'none';
-        btns[0].classList.add('active');
-        btns[1].classList.remove('active');
-      } else {
-        bratTab.style.display = 'none';
-        manualTab.style.display = 'block';
-        btns[0].classList.remove('active');
-        btns[1].classList.add('active');
-      }
+      btns.forEach(function(btn) {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
     }
   </script>
 </body>

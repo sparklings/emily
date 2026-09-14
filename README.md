@@ -155,7 +155,21 @@ Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 �
 
 ### 플러그인 설치 방법
 
-#### 1. 깃허브 릴리즈 수동 설치 (권장)
+#### 1. 옵시디언 커뮤니티 플러그인을 통한 설치 (공식 출시 · 권장)
+1. 옵시디언 실행 후 좌측 하단 **설정(Settings ⚙️) > 커뮤니티 플러그인(Community plugins)** 으로 이동합니다.
+2. '제한 모드(Restricted mode)'가 켜져 있다면 해제(Turn off)합니다.
+3. 커뮤니티 플러그인 목록의 **탐색(Browse)** 버튼을 클릭합니다.
+4. 검색창에 **`Assistant Emily`** 를 검색합니다.
+5. 검색 결과에서 **Assistant Emily** 를 선택하고 **[설치(Install)]** 를 누른 후 **[활성화(Enable)]** 버튼을 클릭합니다.
+6. 사이드바 리본의 ✨ 아이콘 또는 명령어 팔레트(`Ctrl+P` / `Cmd+P`)에서 **Assistant Emily: Open Sidebar** 를 실행하여 즉시 사용할 수 있습니다.
+
+#### 2. BRAT(Beta Reviewers Auto-update Tester)을 통한 설치 (베타/프리릴리즈)
+공식 마켓플레이스 업데이트 전 최신 개발 빌드를 먼저 테스트하고 싶으신 경우:
+1. 옵시디언 커뮤니티 플러그인에서 **BRAT** 을 검색하여 설치 및 활성화합니다.
+2. 명령어 팔레트에서 `BRAT: Add a beta plugin for testing` 을 실행합니다.
+3. 저장소 주소 `sparklings/emily` 를 입력하여 추가합니다.
+
+#### 3. 깃허브 릴리즈 수동 설치 (오프라인/직접 설치)
 1. [GitHub Releases](https://github.com/sparklings/emily/releases)에서 최신 버전의 **`main.js`**, **`manifest.json`**, **`styles.css`** 3개 파일을 다운로드합니다.
 2. 옵시디언 보관함(Vault) 폴더로 이동하여 아래 경로를 생성하고 파일을 배치합니다:
    ```
@@ -168,10 +182,6 @@ Assistant Emily의 모든 설정법, 심층 기능 시나리오, 실전 활용 �
                └── styles.css
    ```
 3. 옵시디언의 **설정(Settings) > 커뮤니티 플러그인(Community plugins)** 에서 설치된 플러그인 목록을 새로고침하고, **Assistant Emily** 토글을 켭니다.
-
-#### 2. BRAT(Beta Reviewers Auto-update Tester)을 통한 설치
-1. 옵시디언 BRAT 플러그인 설정에서 **Add Beta plugin** 을 클릭합니다.
-2. 리포지토리 주소 `sparklings/emily`를 입력하여 추가합니다.
 
 ---
 

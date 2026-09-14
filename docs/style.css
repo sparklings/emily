@@ -503,6 +503,7 @@ a:hover {
 
 .install-tab-header {
   display: flex;
+  flex-wrap: wrap;
   background: #11121c;
   border-bottom: 1px solid var(--border-color);
 }
