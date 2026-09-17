@@ -12,7 +12,7 @@ Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian t
 - **Primary Keywords**: 옵시디언 번역, 옵시디언 AI 번역, Obsidian Translation, 옵시디언 마크다운 번역, 옵시디언 대조 번역, 옵시디언 교열
 - **License**: MIT (100% Free & Open Source)
 - **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.0.15
+- **Version**: 1.0.16
 
 ## 옵시디언 번역 핵심 기능 (Obsidian Translation Highlights)
 
