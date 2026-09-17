@@ -2924,6 +2924,191 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   font-size: var(--emily-font-desc, 12px);
 }
 
+/* Unified Provider Dashboard & Active Device Panel */
+.emily-unified-provider-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.emily-active-device-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  background: linear-gradient(135deg, rgba(123, 108, 217, 0.07), var(--background-secondary));
+  border: 1.5px solid var(--interactive-accent, #7b6cd9);
+  border-radius: var(--radius-m, 8px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.emily-active-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.emily-active-card-title {
+  font-size: var(--emily-font-title, 14px);
+  font-weight: 700;
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.emily-active-status-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+}
+
+.emily-status-summary-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.emily-profiles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.emily-empty-profiles-box {
+  padding: 16px;
+  text-align: center;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: 6px;
+  background: var(--background-secondary-alt);
+}
+
+.emily-global-fallback-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+/* Compact Device Profile Modal (Inspired by FreeLLMAPI Proxy) */
+.modal.emily-device-modal {
+  max-width: 520px;
+  width: 90vw;
+  padding: 24px;
+  border-radius: 14px;
+  background: var(--background-primary);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.emily-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-right: 32px;
+}
+
+.emily-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-normal);
+}
+
+.emily-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.emily-modal-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .emily-modal-row-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+.emily-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emily-modal-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emily-modal-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.emily-modal-hint {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.emily-modal-input {
+  width: 100%;
+  height: 36px;
+  padding: 6px 12px;
+  background: var(--background-modifier-form-field);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-normal);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emily-modal-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(123, 108, 217, 0.2);
+  outline: none;
+}
+
+.emily-modal-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  width: 100%;
+}
+
+.emily-modal-input-wrapper .emily-modal-input {
+  flex: 1;
+}
+
+.emily-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+
+
 
 
 

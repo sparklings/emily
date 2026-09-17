@@ -5,10 +5,14 @@ import { TranslationStrings } from '../i18n/types';
 import { getSystemContext } from '../utils/systemInfo';
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
 import { DeviceKeyProfile } from '../types/settings';
+import { DeviceProfileModal } from './deviceProfileModal';
 import {
   getDeviceHostname,
   setDeviceHostname,
   getDeviceDisplayName,
+  getActiveProfileId,
+  setActiveProfileId,
+  getActiveProfile,
   resolveEffectiveApiKey,
   resolveEffectiveEndpoint,
   applyPortOrUrl,
@@ -24,7 +28,6 @@ import {
 export class EmilySettingTab extends PluginSettingTab {
   plugin: EmilyPlugin;
   private selectedProviderTab: 'default' | 'devices' = 'default';
-  private editingProfileId: string | null = null;
   private switchTabFn: ((tab: 'default' | 'devices') => void) | null = null;
 
   constructor(app: App, plugin: EmilyPlugin) {
@@ -80,8 +83,8 @@ export class EmilySettingTab extends PluginSettingTab {
     // =========================================================================
     new Setting(containerEl).setName(t.settings.providerSectionHeading).setDesc(t.settings.providerSectionDesc).setHeading();
 
-    // AI 서비스 프로바이더 설정 (Tab 네비게이션)
-    this.renderProviderTabs(containerEl, t);
+    // AI 서비스 프로바이더 설정 (단일 통합 대시보드)
+    this.renderUnifiedProviderDashboard(containerEl, t);
 
     // =========================================================================
     // Section 2: 교열 기본 설정 (Proofreading Preferences)
@@ -383,7 +386,7 @@ export class EmilySettingTab extends PluginSettingTab {
                 void (async () => {
                   await this.saveProbeToCurrentProfile({ url: String(probed.workingPort) });
                   new Notice(`포트 ${probed.workingPort}가 현재 기기 프로필에 저장되었습니다.`);
-                  this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
+                  this.renderSettings(this.containerEl);
                 })();
               });
             } else {
@@ -408,20 +411,28 @@ export class EmilySettingTab extends PluginSettingTab {
           void (async () => {
             probeBtn.disabled = true;
             probeBtn.setText(t.settings.autoProbeTesting);
-            const candidates = getCandidateKeys(this.plugin.settings).map((c) => c.key);
+            const candidates = getCandidateKeys(this.plugin.settings);
             const sysContext = getSystemContext();
-            const probed = await this.plugin.getLLMClient().probeWorkingKey(candidates, sysContext.languageName, sysContext.timePeriod);
+            const probed = await this.plugin.getLLMClient().probeWorkingKey(candidates.map((c) => c.key), sysContext.languageName, sysContext.timePeriod);
             if (probed) {
-              new Notice(t.settings.autoProbeFoundNotice.replace('{label}', probed.workingKey.slice(0, 8) + '...'));
+              const matchedCandidate = candidates.find((c) => c.key === probed.workingKey);
+              const label = matchedCandidate ? matchedCandidate.label : (probed.workingKey.slice(0, 8) + '...');
+              new Notice(t.settings.autoProbeFoundNotice.replace('{label}', label));
               const applyBtn = probeBox.createEl('button', {
                 text: `✓ ${t.settings.applyProbedKeyBtn}`,
                 cls: 'emily-btn-cta'
               });
               applyBtn.addEventListener('click', () => {
                 void (async () => {
-                  await this.saveProbeToCurrentProfile({ apiKey: probed.workingKey });
-                  new Notice('발견된 API 키가 현재 기기 프로필에 저장되었습니다.');
-                  this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
+                  if (matchedCandidate && matchedCandidate.profileId) {
+                    setActiveProfileId(matchedCandidate.profileId);
+                    this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+                    new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', matchedCandidate.label));
+                  } else {
+                    await this.saveProbeToCurrentProfile({ apiKey: probed.workingKey });
+                    new Notice('발견된 API 키가 현재 기기 프로필에 저장되었습니다.');
+                  }
+                  this.renderSettings(this.containerEl);
                 })();
               });
             } else {
@@ -436,15 +447,9 @@ export class EmilySettingTab extends PluginSettingTab {
   }
 
   private async saveProbeToCurrentProfile(updates: Partial<DeviceKeyProfile>): Promise<void> {
-    const host = getDeviceHostname(this.plugin.settings).toLowerCase();
-    if (!this.plugin.settings.deviceProfiles) {
-      this.plugin.settings.deviceProfiles = [];
-    }
-    const prof = this.plugin.settings.deviceProfiles.find(
-      (p) => (p.hostname || '').toLowerCase().trim() === host
-    );
-    if (prof) {
-      Object.assign(prof, updates);
+    const activeProf = getActiveProfile(this.plugin.settings);
+    if (activeProf) {
+      Object.assign(activeProf, updates);
     } else {
       const newProf: DeviceKeyProfile = {
         id: `dev-${Date.now()}`,
@@ -452,105 +457,159 @@ export class EmilySettingTab extends PluginSettingTab {
         hostname: getDeviceHostname(this.plugin.settings) || undefined,
         ...updates
       };
+      if (!this.plugin.settings.deviceProfiles) {
+        this.plugin.settings.deviceProfiles = [];
+      }
       this.plugin.settings.deviceProfiles.push(newProf);
+      setActiveProfileId(newProf.id);
     }
     await this.plugin.saveSettings();
     this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
   }
 
   private renderProviderTabs(containerEl: HTMLElement, t: TranslationStrings): void {
-    const navEl = containerEl.createDiv({
-      cls: 'emily-settings-tab-nav',
-      attr: { role: 'tablist', 'aria-label': 'AI Service Provider' }
-    });
-
-    const tabContentEl = containerEl.createDiv({ cls: 'emily-provider-tab-panel' });
-
-    // Tab 1: Default Endpoint
-    const btn1 = navEl.createEl('button', {
-      cls: `emily-settings-tab-btn ${this.selectedProviderTab === 'default' ? 'is-active' : ''}`,
-      attr: {
-        role: 'tab',
-        'aria-selected': this.selectedProviderTab === 'default' ? 'true' : 'false',
-        tabindex: this.selectedProviderTab === 'default' ? '0' : '-1'
-      }
-    });
-    const icon1 = btn1.createSpan();
-    setIcon(icon1, 'sparkles');
-    btn1.createSpan({ text: t.settings.providerTabDefault || '기본 설정' });
-
-    // Tab 2: Device Profiles
-    const btn2 = navEl.createEl('button', {
-      cls: `emily-settings-tab-btn ${this.selectedProviderTab === 'devices' ? 'is-active' : ''}`,
-      attr: {
-        role: 'tab',
-        'aria-selected': this.selectedProviderTab === 'devices' ? 'true' : 'false',
-        tabindex: this.selectedProviderTab === 'devices' ? '0' : '-1'
-      }
-    });
-    const icon2 = btn2.createSpan();
-    setIcon(icon2, 'laptop');
-    btn2.createSpan({ text: t.settings.providerTabDevices });
-
-    const tabs: Array<'default' | 'devices'> = ['default', 'devices'];
-    const buttons = [btn1, btn2];
-
-    const switchTab = (tab: 'default' | 'devices') => {
-      if (this.selectedProviderTab === tab) return;
-      this.selectedProviderTab = tab;
-
-      btn1.classList.toggle('is-active', tab === 'default');
-      btn1.setAttribute('aria-selected', tab === 'default' ? 'true' : 'false');
-      btn1.setAttribute('tabindex', tab === 'default' ? '0' : '-1');
-
-      btn2.classList.toggle('is-active', tab === 'devices');
-      btn2.setAttribute('aria-selected', tab === 'devices' ? 'true' : 'false');
-      btn2.setAttribute('tabindex', tab === 'devices' ? '0' : '-1');
-
-      this.renderActiveTabContent(tabContentEl, t);
-    };
-
-    this.switchTabFn = switchTab;
-
-    btn1.addEventListener('click', () => switchTab('default'));
-    btn2.addEventListener('click', () => switchTab('devices'));
-
-    navEl.addEventListener('keydown', (e: KeyboardEvent) => {
-      const currentIndex = tabs.indexOf(this.selectedProviderTab);
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const nextIndex = (currentIndex + 1) % tabs.length;
-        switchTab(tabs[nextIndex]);
-        buttons[nextIndex].focus();
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const prevIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-        switchTab(tabs[prevIndex]);
-        buttons[prevIndex].focus();
-      }
-    });
-
-    this.renderActiveTabContent(tabContentEl, t);
+    this.renderUnifiedProviderDashboard(containerEl, t);
   }
 
-  private renderActiveTabContent(tabContentEl: HTMLElement, t: TranslationStrings): void {
-    if (this.selectedProviderTab === 'devices') {
-      this.renderDeviceProfilesTab(tabContentEl, t);
+  private renderUnifiedProviderDashboard(containerEl: HTMLElement, t: TranslationStrings): void {
+    const dashboard = containerEl.createDiv({ cls: 'emily-unified-provider-dashboard' });
+
+    // 1. Notice banner for multi-machine isolated keys
+    const noticeBanner = dashboard.createDiv({ cls: 'emily-tab-info-banner' });
+    noticeBanner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
+    noticeBanner.createSpan({
+      cls: 'emily-tab-info-text',
+      text: `${t.settings.identicalPortNotice} ${t.settings.currentMachineProfileDesc}`
+    });
+
+    // 2. Top Card: Current PC Active Profile & Live Status
+    const activeProf = getActiveProfile(this.plugin.settings);
+    const activeId = getActiveProfileId();
+    const effectiveEndpoint = resolveEffectiveEndpoint(this.plugin.settings);
+    const effectiveKey = resolveEffectiveApiKey(this.plugin.settings);
+    const profiles = this.plugin.settings.deviceProfiles || [];
+
+    const activeCard = dashboard.createDiv({ cls: 'emily-active-device-panel' });
+    const headerRow = activeCard.createDiv({ cls: 'emily-active-card-header' });
+    const titleSpan = headerRow.createSpan({ cls: 'emily-active-card-title' });
+    titleSpan.setText(`💻 ${t.settings.currentMachineProfileTitle}`);
+
+    // Dropdown for Active Profile
+    new Setting(activeCard)
+      .setName(t.settings.currentMachineProfileTitle)
+      .setDesc(t.settings.currentMachineProfileDesc)
+      .addDropdown((dropdown) => {
+        dropdown.addOption('__global__', t.settings.useGlobalDefaultOption);
+        for (const p of profiles) {
+          const u = p.url ? ` (${p.url})` : '';
+          dropdown.addOption(p.id, `🏢 ${p.name}${u}`);
+        }
+        dropdown.setValue(activeId || (activeProf ? activeProf.id : '__global__'));
+        dropdown.onChange(async (val) => {
+          setActiveProfileId(val);
+          this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+          const chosenName = val === '__global__'
+            ? '전역 기본값'
+            : (profiles.find((p) => p.id === val)?.name || val);
+          new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', chosenName));
+          this.renderSettings(this.containerEl);
+        });
+      });
+
+    // Live Effective Status Box
+    const statusBox = activeCard.createDiv({ cls: 'emily-active-status-box' });
+    const statusRow1 = statusBox.createDiv({ cls: 'emily-status-summary-row' });
+
+    const badgeProfile = statusRow1.createSpan({
+      cls: `emily-badge ${activeProf ? 'is-done font-bold' : ''}`
+    });
+    badgeProfile.setText(activeProf ? `🏢 ${activeProf.name}` : '🌐 전역 기본값');
+
+    const badgeUrl = statusRow1.createSpan({ cls: 'emily-badge emily-endpoint-badge' });
+    badgeUrl.setText(`URL: ${effectiveEndpoint.url}`);
+
+    const badgeKey = statusRow1.createSpan({
+      cls: `emily-badge ${effectiveKey.source === 'profile' ? 'is-done' : ''}`
+    });
+    const maskedKey = effectiveKey.key && effectiveKey.key.length > 0
+      ? `${effectiveKey.key.slice(0, 4)}••••${effectiveKey.key.slice(-3)}`
+      : '(API Key 없음)';
+    badgeKey.setText(`Key: ${maskedKey} (${effectiveKey.source === 'profile' ? '기기 전용' : '공용'})`);
+
+    // Test Connection Button & Result Box inside the Active Card
+    const testResultDiv = activeCard.createDiv({ cls: 'emily-test-result-box' });
+
+    new Setting(activeCard)
+      .setName(t.settings.sayHelloTitle)
+      .setDesc(t.settings.activeConnectionDesc)
+      .addButton((btn) => {
+        btn
+          .setButtonText(t.settings.testActiveConnectionBtn || t.settings.sayHelloBtn)
+          .setCta()
+          .onClick(async () => {
+            btn.setDisabled(true);
+            btn.setButtonText(t.settings.sayHelloTesting);
+            testResultDiv.empty();
+
+            try {
+              const sysContext = getSystemContext();
+              const client = this.plugin.getLLMClient();
+              const res = await client.testProvider(sysContext.languageName, sysContext.timePeriod);
+              this.renderTestResult(testResultDiv, res, t);
+              if (res.success) {
+                new Notice(t.settings.sayHelloNoticeSuccess);
+              } else {
+                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
+              }
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              this.renderTestResult(testResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
+              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
+            } finally {
+              btn.setDisabled(false);
+              btn.setButtonText(t.settings.testActiveConnectionBtn || t.settings.sayHelloBtn);
+            }
+          });
+      });
+
+    activeCard.appendChild(testResultDiv);
+
+    // 3. Section: Registered Device Profiles Pool (OneDrive Synced)
+    const poolContainer = dashboard.createDiv({ cls: 'emily-profiles-section' });
+    const poolHeader = new Setting(poolContainer)
+      .setName(t.settings.profilePoolTitle)
+      .setDesc(t.settings.profilePoolDesc)
+      .setHeading();
+
+    poolHeader.addButton((btn) => {
+      btn
+        .setButtonText(`➕ ${t.settings.addProfileBtn}`)
+        .setCta()
+        .onClick(() => {
+          new DeviceProfileModal(this.app, this.plugin, null, () => {
+            this.renderSettings(this.containerEl);
+          }).open();
+        });
+    });
+
+    const tableEl = poolContainer.createDiv({ cls: 'emily-profiles-table' });
+    if (profiles.length === 0) {
+      const emptyBox = tableEl.createDiv({ cls: 'emily-empty-profiles-box text-muted text-xs' });
+      emptyBox.setText('등록된 기기 프로필이 없습니다. 상단의 [새 기기 프로필 추가] 버튼으로 PC 설정을 등록하세요.');
     } else {
-      this.renderDefaultContent(tabContentEl, t);
+      for (const prof of profiles) {
+        this.renderProfileItemCard(tableEl, prof, activeProf?.id || '', t);
+      }
     }
-  }
 
-  private renderDefaultContent(containerEl: HTMLElement, t: TranslationStrings): void {
-    containerEl.empty();
-    const infoBanner = containerEl.createDiv({ cls: 'emily-tab-info-banner' });
-    infoBanner.createSpan({ cls: 'emily-tab-info-icon', text: '💡' });
-    infoBanner.createSpan({ cls: 'emily-tab-info-text', text: t.settings.defaultEndpointDesc || t.settings.providerSectionDesc });
+    // 4. Section: Global Synced Default Settings (Fallback)
+    const globalSection = dashboard.createDiv({ cls: 'emily-global-fallback-section' });
+    new Setting(globalSection)
+      .setName('🌐 전역 기본 설정 (Global Synced Fallback)')
+      .setDesc('기기 전용 프로필을 지정하지 않은 컴퓨터나 기기 분기를 껐을 때 공통으로 사용할 엔드포인트와 API Key입니다.')
+      .setHeading();
 
-    // Compact device status banner
-    this.renderCompactDeviceBanner(containerEl, t);
-
-    new Setting(containerEl)
+    new Setting(globalSection)
       .setName(t.settings.apiBaseUrlTitle)
       .setDesc(t.settings.apiBaseUrlDesc)
       .addText((text) =>
@@ -560,6 +619,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.apiBaseUrl = value.trim();
             await this.plugin.saveSettings();
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           })
       )
       .addExtraButton((btn) => {
@@ -568,11 +628,12 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.apiBaseUrl = 'https://api.openai.com/v1';
             await this.plugin.saveSettings();
-            this.renderDefaultContent(containerEl, t);
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+            this.renderSettings(this.containerEl);
           });
       });
 
-    new Setting(containerEl)
+    new Setting(globalSection)
       .setName(t.settings.apiKeyTitle)
       .setDesc(t.settings.apiKeyDesc)
       .addText((text) => {
@@ -583,6 +644,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.apiKey = value.trim();
             await this.plugin.saveSettings();
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           });
 
         const toggleBtn = text.inputEl.parentElement?.createEl('button', {
@@ -609,11 +671,12 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.apiKey = '';
             await this.plugin.saveSettings();
-            this.renderDefaultContent(containerEl, t);
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+            this.renderSettings(this.containerEl);
           });
       });
 
-    new Setting(containerEl)
+    new Setting(globalSection)
       .setName(t.settings.modelTitle)
       .setDesc(t.settings.modelDesc)
       .addText((text) =>
@@ -623,6 +686,7 @@ export class EmilySettingTab extends PluginSettingTab {
           .onChange(async (val) => {
             this.plugin.settings.modelName = val.trim() || 'auto';
             await this.plugin.saveSettings();
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           })
       )
       .addExtraButton((btn) => {
@@ -631,88 +695,12 @@ export class EmilySettingTab extends PluginSettingTab {
           .onClick(async () => {
             this.plugin.settings.modelName = 'auto';
             await this.plugin.saveSettings();
-            this.renderDefaultContent(containerEl, t);
+            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+            this.renderSettings(this.containerEl);
           });
       });
 
-    const testResultDiv = containerEl.createDiv({ cls: 'emily-test-result-box' });
-
-    new Setting(containerEl)
-      .setName(t.settings.sayHelloTitle)
-      .setDesc(t.settings.sayHelloDesc)
-      .addButton((btn) => {
-        btn
-          .setButtonText(t.settings.sayHelloBtn)
-          .setCta()
-          .onClick(async () => {
-            btn.setDisabled(true);
-            btn.setButtonText(t.settings.sayHelloTesting);
-            testResultDiv.empty();
-
-            try {
-              const sysContext = getSystemContext();
-              const client = this.plugin.getLLMClient();
-              const res = await client.testProvider(sysContext.languageName, sysContext.timePeriod);
-              this.renderTestResult(testResultDiv, res, t);
-              if (res.success) {
-                new Notice(t.settings.sayHelloNoticeSuccess);
-              } else {
-                new Notice(`${t.settings.sayHelloNoticeFailed}${res.error}`);
-              }
-            } catch (err: unknown) {
-              const errMsg = err instanceof Error ? err.message : String(err);
-              this.renderTestResult(testResultDiv, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
-              new Notice(`${t.settings.sayHelloNoticeFailed}${errMsg}`);
-            } finally {
-              btn.setDisabled(false);
-              btn.setButtonText(t.settings.sayHelloBtn);
-            }
-          });
-      });
-
-    containerEl.appendChild(testResultDiv);
-  }
-
-  private renderCompactDeviceBanner(containerEl: HTMLElement, t: TranslationStrings): void {
-    const effectiveEndpoint = resolveEffectiveEndpoint(this.plugin.settings);
-    const effectiveKey = resolveEffectiveApiKey(this.plugin.settings);
-    const isProfile = effectiveEndpoint.source === 'profile' || effectiveKey.source === 'profile';
-    const profileName = effectiveEndpoint.profileName || effectiveKey.profileName;
-
-    const banner = containerEl.createDiv({
-      cls: `emily-compact-status-banner ${isProfile ? 'is-matched' : ''}`
-    });
-
-    const left = banner.createDiv({ cls: 'emily-status-left' });
-    if (isProfile && profileName) {
-      left.createSpan({ cls: 'emily-badge is-done', text: `🏢 ${profileName}` });
-      const descText = t.settings.profileActiveCompact
-        .replace('{profile}', profileName)
-        .replace('{port}', effectiveEndpoint.url);
-      left.createSpan({ text: descText, cls: 'text-muted text-xs' });
-    } else {
-      left.createSpan({ cls: 'emily-badge', text: '🌐 전역 기본값' });
-      left.createSpan({ text: t.settings.globalDefaultCompact, cls: 'text-muted text-xs' });
-    }
-
-    const linkBtn = banner.createEl('button', {
-      cls: 'emily-status-link-btn',
-      text: t.settings.manageDevicesLink
-    });
-    linkBtn.addEventListener('click', () => {
-      this.switchTabFn?.('devices');
-    });
-  }
-
-  private renderDeviceProfilesTab(containerEl: HTMLElement, t: TranslationStrings): void {
-    containerEl.empty();
-
-    const infoBanner = containerEl.createDiv({ cls: 'emily-tab-info-banner' });
-    infoBanner.createSpan({ cls: 'emily-tab-info-icon', text: '💻' });
-    infoBanner.createSpan({ cls: 'emily-tab-info-text', text: t.settings.providerTabDevicesDesc });
-
-    // Global toggle options
-    new Setting(containerEl)
+    new Setting(globalSection)
       .setName(t.settings.useDeviceOverrideTitle)
       .setDesc(t.settings.useDeviceOverrideDesc)
       .addToggle((toggle) =>
@@ -722,102 +710,24 @@ export class EmilySettingTab extends PluginSettingTab {
             this.plugin.settings.useDeviceKeyOverride = val;
             await this.plugin.saveSettings();
             this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
-            this.renderDeviceProfilesTab(containerEl, t);
+            this.renderSettings(this.containerEl);
           })
       );
-
-    new Setting(containerEl)
-      .setName(t.settings.autoProbeCandidateKeysTitle)
-      .setDesc(t.settings.autoProbeCandidateKeysDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoProbeCandidateKeys ?? true)
-          .onChange(async (val) => {
-            this.plugin.settings.autoProbeCandidateKeys = val;
-            await this.plugin.saveSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t.settings.currentDeviceIdentifierTitle)
-      .setDesc(t.settings.currentDeviceIdentifierDesc)
-      .addText((text) =>
-        text
-          .setPlaceholder('예: G2300227, HOME-PC, 서재데스크톱')
-          .setValue(getDeviceHostname(this.plugin.settings))
-          .onChange(async (val) => {
-            setDeviceHostname(val, this.plugin.settings);
-            await this.plugin.saveSettings();
-            this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
-            this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
-          })
-      );
-
-    const profilesContainer = containerEl.createDiv({ cls: 'emily-device-profiles-container' });
-
-    // 1. Current Device Header Card
-    const currentHost = getDeviceHostname(this.plugin.settings);
-    const currentDisplayName = getDeviceDisplayName(this.plugin.settings);
-    const effectiveEndpoint = resolveEffectiveEndpoint(this.plugin.settings);
-    const effectiveKey = resolveEffectiveApiKey(this.plugin.settings);
-
-    const headerCard = profilesContainer.createDiv({ cls: 'emily-device-card-header' });
-    const titleCol = headerCard.createDiv({ cls: 'emily-device-card-title' });
-    titleCol.createSpan({ text: '🖥️' });
-    titleCol.createSpan({ text: `${t.settings.currentDeviceBadge}: ${currentDisplayName}` });
-    if (currentHost && currentHost !== currentDisplayName) {
-      titleCol.createSpan({ text: `(${currentHost})`, cls: 'text-muted text-xs font-mono' });
-    }
-
-    const badgeCol = headerCard.createDiv({ cls: 'emily-status-left' });
-    badgeCol.createSpan({
-      text: `URL: ${effectiveEndpoint.url}`,
-      cls: 'emily-badge emily-endpoint-badge'
-    });
-    badgeCol.createSpan({
-      text: effectiveKey.source === 'profile' ? `Key: ${effectiveKey.profileName} (전용)` : 'Key: 전역 공용',
-      cls: `emily-badge ${effectiveKey.source === 'profile' ? 'is-done' : ''}`
-    });
-
-    // 2. Registered Profiles List
-    const listHeader = profilesContainer.createDiv({ cls: 'emily-profiles-header' });
-    const profiles = this.plugin.settings.deviceProfiles || [];
-    listHeader.createSpan({ text: `📋 등록된 기기 프로필 (${profiles.length}개)` });
-
-    const tableEl = profilesContainer.createDiv({ cls: 'emily-profiles-table' });
-    if (profiles.length === 0) {
-      tableEl.createDiv({
-        cls: 'text-muted text-xs',
-        text: '등록된 기기 프로필이 없습니다. 아래에서 PC(1호 노트북, 2호 PC, 3호 데스크톱 등) 프로필을 추가하세요.'
-      });
-    } else {
-      for (const prof of profiles) {
-        if (this.editingProfileId === prof.id) {
-          this.renderProfileFormCard(tableEl, prof, t, false);
-        } else {
-          this.renderProfileItemCard(tableEl, prof, currentHost, t);
-        }
-      }
-    }
-
-    // 3. New Profile Form Card
-    if (!this.editingProfileId) {
-      const addSection = profilesContainer.createDiv();
-      const addHeader = addSection.createDiv({ cls: 'emily-profiles-header' });
-      addHeader.createSpan({ text: `➕ ${t.settings.addProfileBtn}` });
-      this.renderProfileFormCard(addSection, null, t, true);
-    }
   }
 
   private renderProfileItemCard(
     containerEl: HTMLElement,
     prof: DeviceKeyProfile,
-    currentHost: string,
+    activeProfileId: string,
     t: TranslationStrings
   ): void {
-    const isMatched = Boolean(currentHost && prof.hostname && prof.hostname.trim().toLowerCase() === currentHost.trim().toLowerCase());
+    const currentHost = getDeviceHostname(this.plugin.settings).toLowerCase();
+    const isActiveOnThisPC = activeProfileId === prof.id || (
+      !activeProfileId && Boolean(currentHost && prof.hostname && prof.hostname.trim().toLowerCase() === currentHost)
+    );
+
     const row = containerEl.createDiv({
-      cls: `emily-profile-item ${isMatched ? 'is-current-device' : ''}`
+      cls: `emily-profile-item ${isActiveOnThisPC ? 'is-current-device' : ''}`
     });
 
     const info = row.createDiv({ cls: 'emily-profile-info' });
@@ -826,9 +736,9 @@ export class EmilySettingTab extends PluginSettingTab {
     if (prof.hostname) {
       nameRow.createSpan({ text: `(${prof.hostname})`, cls: 'text-muted text-xs font-mono' });
     }
-    if (isMatched) {
+    if (isActiveOnThisPC) {
       nameRow.createSpan({
-        text: '★ 현재 기기 매칭됨 (자동 적용 중)',
+        text: `✓ ${t.settings.activeOnCurrentMachineBadge}`,
         cls: 'emily-badge is-active font-bold'
       });
     }
@@ -842,13 +752,30 @@ export class EmilySettingTab extends PluginSettingTab {
 
     // Action buttons
     const actCol = row.createDiv({ cls: 'emily-profile-actions' });
+
+    if (!isActiveOnThisPC) {
+      const applyBtn = actCol.createEl('button', {
+        text: `📍 ${t.settings.applyToCurrentMachineBtn}`,
+        cls: 'emily-btn-cta text-xs'
+      });
+      applyBtn.addEventListener('click', () => {
+        void (async () => {
+          setActiveProfileId(prof.id);
+          this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+          new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', prof.name));
+          this.renderSettings(this.containerEl);
+        })();
+      });
+    }
+
     const editBtn = actCol.createEl('button', {
       text: `✏️ ${t.settings.editProfileBtn}`,
       cls: 'emily-btn-secondary text-xs'
     });
     editBtn.addEventListener('click', () => {
-      this.editingProfileId = prof.id;
-      this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
+      new DeviceProfileModal(this.app, this.plugin, prof, () => {
+        this.renderSettings(this.containerEl);
+      }).open();
     });
 
     const delBtn = actCol.createEl('button', {
@@ -859,148 +786,13 @@ export class EmilySettingTab extends PluginSettingTab {
     delBtn.addEventListener('click', () => {
       void (async () => {
         this.plugin.settings.deviceProfiles = (this.plugin.settings.deviceProfiles || []).filter((p) => p.id !== prof.id);
+        if (getActiveProfileId() === prof.id) {
+          setActiveProfileId('');
+        }
         await this.plugin.saveSettings();
         this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
         new Notice(t.settings.profileDeleteSuccessNotice);
-        this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
-      })();
-    });
-  }
-
-  private renderProfileFormCard(
-    containerEl: HTMLElement,
-    prof: DeviceKeyProfile | null,
-    t: TranslationStrings,
-    isAdd: boolean
-  ): void {
-    const card = containerEl.createDiv({ cls: 'emily-profile-form-card' });
-
-    let name = prof ? prof.name : '';
-    let hostname = prof ? (prof.hostname || '') : '';
-    let url = prof ? (prof.url || prof.provider1Url || '') : '';
-    let apiKey = prof ? (prof.apiKey || prof.provider1Key || '') : '';
-
-    const titleEl = card.createDiv({ cls: 'form-section-title' });
-    titleEl.setText(isAdd ? `➕ ${t.settings.addProfileBtn}` : `✏️ [${prof?.name}] 프로필 수정`);
-
-    new Setting(card)
-      .setName(t.settings.profileNameTitle)
-      .addText((text) =>
-        text
-          .setPlaceholder('예: 서재 PC 3, 거실 노트북 4, 작업실 PC')
-          .setValue(name)
-          .onChange((v) => name = v.trim())
-      );
-
-    const hostSetting = new Setting(card)
-      .setName(t.settings.profileHostnameTitle)
-      .addText((text) => {
-        text
-          .setPlaceholder('예: G2300227, HOME-PC, DESKTOP-STUDY')
-          .setValue(hostname)
-          .onChange((v) => hostname = v.trim());
-      })
-      .addExtraButton((btn) => {
-        btn.setIcon('laptop')
-          .setTooltip(t.settings.autoDetectCurrentDevice)
-          .onClick(() => {
-            const h = getDeviceHostname(this.plugin.settings);
-            if (h) {
-              const inputEl = hostSetting.controlEl.querySelector('input') as HTMLInputElement;
-              if (inputEl) {
-                inputEl.value = h;
-                hostname = h;
-              }
-            } else {
-              new Notice(t.settings.autoFillHostnameNotFoundNotice || '현재 기기 식별자가 설정되지 않았습니다. 상단에서 현재 기기 식별자를 먼저 입력해 주세요.');
-            }
-          });
-      });
-
-    new Setting(card)
-      .setName('기기 전용 포트 또는 URL')
-      .setDesc('기기별로 다른 포트 번호(예: 11434, 31416) 또는 전체 URL을 지정합니다. (미입력 시 전역 기본 URL 사용)')
-      .addText((text) =>
-        text
-          .setPlaceholder('예: 11434 또는 http://127.0.0.1:11434/v1')
-          .setValue(url)
-          .onChange((v) => url = v.trim())
-      );
-
-    new Setting(card)
-      .setName('기기 전용 API 키')
-      .setDesc('해당 기기에서만 유효한 로컬 프록시 API 키를 지정합니다. (미입력 시 전역 공용 키 사용)')
-      .addText((text) => {
-        text.inputEl.type = 'password';
-        text
-          .setPlaceholder('기기 전용 로컬 API Key')
-          .setValue(apiKey)
-          .onChange((v) => apiKey = v.trim());
-
-        const toggleBtn = text.inputEl.parentElement?.createEl('button', {
-          cls: 'emily-icon-btn',
-          attr: { title: 'Password' }
-        });
-        if (toggleBtn) {
-          setIcon(toggleBtn, 'eye');
-          toggleBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (text.inputEl.type === 'password') {
-              text.inputEl.type = 'text';
-              setIcon(toggleBtn, 'eye-off');
-            } else {
-              text.inputEl.type = 'password';
-              setIcon(toggleBtn, 'eye');
-            }
-          });
-        }
-      });
-
-    // Action Buttons Row
-    const btnRow = card.createDiv({ cls: 'emily-profile-add-btn-row' });
-    if (!isAdd) {
-      const cancelBtn = btnRow.createEl('button', { text: '✕ 취소', cls: 'emily-btn-secondary' });
-      cancelBtn.addEventListener('click', () => {
-        this.editingProfileId = null;
-        this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
-      });
-    }
-
-    const saveBtn = btnRow.createEl('button', {
-      text: isAdd ? `➕ ${t.settings.addProfileBtn}` : '💾 저장',
-      cls: 'emily-btn-cta'
-    });
-    saveBtn.addEventListener('click', () => {
-      void (async () => {
-        if (!name) {
-          new Notice('기기 이름을 입력해 주세요.');
-          return;
-        }
-
-        if (isAdd) {
-          const newProfile: DeviceKeyProfile = {
-            id: `dev-${Date.now()}`,
-            name,
-            hostname: hostname || undefined,
-            url: url || undefined,
-            apiKey: apiKey || undefined
-          };
-          if (!this.plugin.settings.deviceProfiles) {
-            this.plugin.settings.deviceProfiles = [];
-          }
-          this.plugin.settings.deviceProfiles.push(newProfile);
-        } else if (prof) {
-          prof.name = name;
-          prof.hostname = hostname || undefined;
-          prof.url = url || undefined;
-          prof.apiKey = apiKey || undefined;
-          this.editingProfileId = null;
-        }
-
-        await this.plugin.saveSettings();
-        this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
-        new Notice(t.settings.profileSaveSuccessNotice);
-        this.renderActiveTabContent(this.containerEl.querySelector('.emily-provider-tab-panel') as HTMLElement, t);
+        this.renderSettings(this.containerEl);
       })();
     });
   }

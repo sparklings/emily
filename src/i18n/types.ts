@@ -101,6 +101,18 @@ export interface TranslationStrings {
     portProbeFoundNotice: string;
     portProbeNotFoundNotice: string;
     applyProbedPortBtn: string;
+    // 단일 통합 AI 서비스 프로바이더 및 기기 바인딩
+    currentMachineProfileTitle: string;
+    currentMachineProfileDesc: string;
+    applyToCurrentMachineBtn: string;
+    appliedToCurrentMachineNotice: string;
+    activeOnCurrentMachineBadge: string;
+    useGlobalDefaultOption: string;
+    identicalPortNotice: string;
+    profilePoolTitle: string;
+    profilePoolDesc: string;
+    activeConnectionDesc: string;
+    testActiveConnectionBtn: string;
     proofreadSectionTitle: string;
     proofreadSectionDesc: string;
     proofreadSpellingTitle: string;
