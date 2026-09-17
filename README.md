@@ -111,22 +111,30 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 * **데스크톱 편의성**: `Ctrl+Enter` / `Cmd+Enter` 글로벌 단축키 실행, 한글 IME 조합 중복 방지, 실수로 인한 모달 닫힘 방지(Shake 효과)가 적용되어 있습니다.
 
 ### 6. 기기 프로필 기반 스마트 엔드포인트 관리 (Device Profile-Based Provider Management)
-* **2-Tab 서브탭 구조 (`[기본 설정]` vs `[기기 프로필]`)**
-  * 전역 공용 AI 서비스 엔드포인트(`API 기본 URL`, `API 키`, `모델 이름`, `연결 테스트`)와 기기별 프로필 관리 화면을 직관적인 2-Tab 네비게이션으로 깔끔하게 분리하였습니다.
-  * WAI-ARIA 접근성 표준(`role="tablist"`, `role="tab"`, `aria-selected`)을 준수하며, 키보드 좌우 방향키(`ArrowLeft`/`ArrowRight`)를 통한 즉각적인 탭 전환을 지원합니다.
-* **다중 기기(1~4호+ 노트북/PC) 자동 호스트명 식별 및 엔드포인트 선출**
-  * 집, 회사, 연구실 등 서로 다른 여러 PC에서 옵시디언 볼트를 동기화(Obsidian Sync, OneDrive 등)하여 사용할 때, 각 기기마다 로컬 프록시 포트(`11434`, `8000`, `31416` 등)나 API 키가 달라도 번거롭게 설정을 매번 변경할 필요가 없습니다.
-  * Node.js / Electron OS 호스트명(`os.hostname()`)을 자동 감지하여 현재 기기 전용 프로필의 엔드포인트 URL과 API 키를 1순위로 즉시 선출합니다. 등록되지 않은 새 기기에서는 전역 기본 설정으로 안전하게 Fallback됩니다.
+* **단일 통합 대시보드 (Unified Provider Dashboard)**
+  * 기존의 복잡했던 2-Tab 분열 구조를 폐기하고, 상단의 **현재 컴퓨터 활성 기기 카드**와 하단의 **등록된 기기 프로필 풀** 및 전역 기본(Fallback) 설정을 하나의 대시보드에서 직관적으로 관리할 수 있도록 전면 개편하였습니다.
+  * 상단 드롭다운에서 현재 PC에 바인딩할 프로필을 선택하는 즉시 실시간 활성 엔드포인트와 마스킹된 API Key가 표시되며, `[⚡ 현재 기기 연결 테스트]` 버튼으로 즉시 통신 및 모델을 검증할 수 있습니다.
+* **로컬 격리 바인딩 및 클라우드 동기화(OneDrive) 연쇄 장애 원천 차단**
+  * 여러 대의 노트북(회사 노트북 1, 회사 노트북 2, 집 PC 등)이 동일한 `http://127.0.0.1:11434/v1`(동일 localhost 및 동일 포트)를 사용하면서도 서로 다른 API Key를 가질 때 발생하는 동기화 충돌을 완벽하게 해결하였습니다.
+  * 기기 프로필 목록(`deviceProfiles`)은 옵시디언 볼트(`data.json`)를 통해 모든 PC에 안전하게 공유(한 번만 등록하면 끝)하되, **"현재 컴퓨터가 어떤 프로필을 활성화하고 있는가"**는 각 PC 로컬 스토리지(`localStorage`)에만 독립 격리 저장됩니다.
+  * 이를 통해 OneDrive나 Obsidian Sync로 볼트 설정이 동기화되더라도 다른 컴퓨터의 API Key나 포트 설정을 덮어쓰는 연쇄 장애가 100% 차단됩니다.
+* **FreeLLMAPI Proxy 스타일 컴팩트 팝업 모달 (`DeviceProfileModal`)**
+  * 기기 프로필 추가/수정 시 세로 공간을 낭비하던 인라인 폼 카드를 제거하고, 간결한 2컬럼 레이아웃의 독립 팝업 대화상자로 간소화하였습니다.
+  * 기기 이름, 포트 또는 엔드포인트 URL, 비밀번호 가시성 토글(eye 아이콘)이 탑재된 API Key 입력창을 제공합니다.
+* **옵시디언 커뮤니티 플러그인 심사 규정 준수 & 프라이버시 원칙**
+  * 사용자 OS 내부 식별자나 호스트명을 무단 조회하는 방식 대신, 사용자가 직접 정의한 친숙한 기기 이름(예: `회사 노트북 1`, `집 노트북`)을 기반으로 안전하게 동작합니다.
 * **스마트 포트 치환 및 전체 URL 유연 지원 (`applyPortOrUrl`)**
   * 기기 프로필에 숫자 포트(예: `11434` 또는 `:8000`)만 입력하면 기존 기본 엔드포인트의 호스트와 경로(`http://127.0.0.1:11434/v1`)를 온전히 유지하며 포트만 똑똑하게 치환합니다.
   * 다른 호스트의 전체 URL(예: `http://192.168.0.20:8000/v1`)을 입력하면 전체 URL로 안전하게 전환됩니다.
-* **포트 및 후보 키 자동 진단(Auto-Probe)과 원클릭 프로필 저장**
-  * 연결 거부(Connection Refused) 또는 인증 오류(401) 감지 시, 사용 가능한 후보 포트와 키를 자동으로 진단(Auto-Probe)하여 정상 작동하는 엔드포인트를 발견하고 현재 기기 프로필에 즉시 저장합니다.
+* **포트 및 후보 키 자동 진단(Auto-Probe)과 자가 치유(Self-Healing)**
+  * 로컬 엔드포인트 연결 오류(Connection Refused) 또는 인증 실패(401) 감지 시, 등록된 후보 키와 포트를 자동으로 진단(Auto-Probe)하여 유효한 연결을 찾아내고 현재 기기 프로필을 즉시 자가 치유(Self-Healing)합니다.
 * **연결 테스트 프롬프트 가드레일 및 추론 독백(`<think>`) 정제**
   * 현재 시간대(아침/오후/저녁/밤) 및 로케일 언어에 맞춘 자연스러운 인사말을 생성합니다.
   * DeepSeek R1, Qwen 2.5 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`) 태그 블록 및 영문 독백을 정교한 정규식으로 완벽 제거하고 순수 한국어 인사말만 정제하여 표시합니다.
 
 ### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
+* **사이드바 원클릭 새로고침 (Work State Refresh & UI Cleansing)**
+  * 사이드바 헤더 상단에 **새로고침(`refresh-cw`) 버튼**을 탑재하여, 작업 중단이나 에러 발생 시 언제든지 클릭 한 번으로 모든 진행 중인 비동기 요청을 즉시 중단(Abort)하고, 코어 서비스를 동적으로 재초기화하며, UI 상태를 플러그인이 처음 실행된 것처럼 깨끗하게 초기화합니다.
 * **실시간 즉시 작업 취소 (Immediate Task Cancel with AbortController)**
   * 긴 문서 번역이나 교열 작업 중 사용자가 언제든지 중단할 수 있도록 스트림 헤더에 **`[❌ 작업 취소]`** 버튼을 제공합니다.
   * 취소 클릭 시 `AbortController`를 통해 진행 중이던 비동기 HTTP 통신을 즉시 중단하고, 생성 중이던 미완성 임시 파일을 옵시디언 휴지통(`trashFile`)으로 자동 정리하여 볼트 오염을 원천 방지합니다.
@@ -168,20 +176,22 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 
 ### AI 서비스 엔드포인트 및 기기 프로필 설정 가이드
 
-옵시디언 **설정 > Assistant Emily** 탭에서 전역 기본 엔드포인트 및 다중 기기 프로필을 설정하십시오:
+옵시디언 **설정 > Assistant Emily** 탭에서 단일 통합 대시보드를 통해 엔드포인트 및 기기 프로필을 손쉽게 설정하십시오:
 
-#### 1. 기본 설정 탭 (Default Settings)
-모든 기기에서 기본으로 공유되는 전역 엔드포인트를 등록합니다.
-* **API 기본 URL**: 예) `http://127.0.0.1:31416/v1` (로컬 프록시), `https://api.openai.com/v1`, `http://localhost:11434/v1` (Ollama)
-* **API 키**: 전역 API 인증 키
-* **모델 이름**: 예) `auto`, `gpt-4o`, `llama3.3`
-* **연결 테스트**: 현재 설정된 엔드포인트와 모델의 정상 동작을 즉시 진단합니다.
+#### 1. 현재 컴퓨터 활성 기기 관리
+* 상단 드롭다운에서 현재 컴퓨터에 적용할 프로필을 선택하면 즉시 로컬에 바인딩됩니다.
+* 실시간으로 활성 프로필, 적용 중인 엔드포인트 URL, 마스킹된 API Key 배지가 표시됩니다.
+* **[⚡ 현재 기기 연결 테스트]**: 현재 PC에 적용된 설정으로 통신 상태와 모델 정상 작동을 즉시 진단합니다.
 
-#### 2. 기기 프로필 탭 (Device Profiles)
+#### 2. 등록된 기기 프로필 풀 (OneDrive 동기화)
 집, 회사, 연구실 등 다중 PC 환경에서 기기별로 서로 다른 로컬 프록시 포트나 API 키를 사용할 때 기기별 프로필을 등록합니다.
-* **기기 프로필 기반 분기 사용**: 활성화 시 설정된 현재 기기 식별자(호스트명)와 일치하는 프로필의 URL과 API 키를 최우선(1순위)으로 자동 선출합니다.
-* **기기 프로필 관리**: [기기 프로필 추가]를 눌러 기기 이름, 호스트명, 전용 URL(또는 포트 번호), 전용 API 키를 등록할 수 있습니다. [현재 기기 호스트명 자동 입력] 버튼으로 간편하게 등록 가능합니다.
-* **후보 키/포트 자동 진단 (Auto-Probe)**: 로컬 프록시 연결 오류 시 유효한 포트나 키를 자동 탐색하여 현재 기기 프로필에 즉시 저장합니다.
+* **[➕ 새 기기 프로필 추가]**: FreeLLMAPI Proxy 스타일의 컴팩트 팝업 모달이 열리며 기기 이름, 포트 또는 엔드포인트 URL, API Key를 직관적으로 등록할 수 있습니다.
+* **[📍 이 컴퓨터에 적용]**: 프로필 풀의 원하는 기기 카드를 클릭 한 번으로 현재 컴퓨터의 활성 프로필로 즉시 바인딩합니다.
+* **클라우드 동기화 격리**: 프로필 목록은 볼트 동기화로 모든 PC에서 공유되지만, 활성 상태는 각 PC의 `localStorage`에만 저장되어 다른 컴퓨터의 설정을 덮어쓰지 않습니다.
+* **후보 키/포트 자동 진단 (Auto-Probe)**: 로컬 프록시 연결 오류 또는 401 오류 시 유효한 포트나 키를 자동 탐색하여 현재 기기 프로필에 즉시 자가 치유(Self-Healing) 저장합니다.
+
+#### 3. 전역 기본 설정 (Fallback)
+프로필을 지정하지 않은 새로운 기기에서 안전하게 기본으로 적용될 엔드포인트(URL, 공용 API Key, 모델명)를 설정합니다.
 * 📖 더 자세한 백엔드별 연동 안내와 설정법은 **[공식 웹사이트](https://sparklings.github.io/emily/)**를 참고하십시오.
 
 ---
@@ -360,21 +370,28 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **Desktop Productivity**: Features `Ctrl+Enter` / `Cmd+Enter` global shortcuts, IME composition protection for Korean/CJK input, and modal shake effects to prevent accidental dismissal.
 
 ### 6. Device Profile-Based Provider Management & Smart Auto-Probe
-* **2-Tab Subtab Layout (`[Default Settings]` vs `[Device Profiles]`)**
-  * Segregates global shared AI endpoint configuration (`API Base URL`, `API Key`, `Model Name`, `Test Connection`) from device-specific profile management into a clean, intuitive 2-Tab interface.
-  * Adheres to WAI-ARIA accessibility standards (`role="tablist"`, `role="tab"`, `aria-selected`) with keyboard arrow (`ArrowLeft`/`ArrowRight`) navigation support.
-* **Multi-PC (1st–4th+ PCs/Laptops) Automatic Hostname Identification & Endpoint Election**
-  * When synchronizing your Obsidian Vault across different computers (work laptop, home desktop, living room mini PC, etc.), there is no need to manually alter your proxy port or API key every time you switch devices.
-  * Emily automatically identifies the current machine's OS hostname (`os.hostname()`) and immediately prioritizes the matching profile's URL and API key. Unregistered machines safely fall back to the global default configuration.
+* **Unified Provider Dashboard**
+  * Replaces fragmented tab navigation with a consolidated, streamlined control panel featuring the **Active Device Card** on top, followed by the **Device Profiles Pool** and Global Fallback settings.
+  * Instant machine profile selection via the active dropdown menu immediately updates live endpoint badges, masked API keys, and unlocks one-click connection diagnostics via `[⚡ Test Active Connection]`.
+* **Local Storage Isolation & Prevention of Cloud Sync (OneDrive) Race Conditions**
+  * Fully resolves cascading authentication failures when multiple laptops (work laptops, home PCs) share the same `http://127.0.0.1:11434/v1` address but require distinct API keys.
+  * Machine profiles are safely pooled and synced across vaults in `data.json`, whereas each machine's active profile selection is strictly isolated inside `window.localStorage`. This prevents cloud sync services from overwriting local keys or configurations across different machines.
+* **Compact Device Profile Modal (`DeviceProfileModal`)**
+  * Streamlines profile creation and editing into an elegant, FreeLLMAPI Proxy-style 2-column modal dialog instead of bloated inline cards.
+  * Features clean fields for Device Name (Label), Port / Full Endpoint URL, and API Key with visibility eye toggle.
+* **Strict Obsidian Review Guideline & Privacy Compliance**
+  * Eliminates intrusive OS hostname querying (`os.hostname()`) and auto-detection buttons, operating transparently based on user-defined device names (e.g., `Work Laptop 1`, `Home PC`).
 * **Smart Port Replacement & Full URL Support (`applyPortOrUrl`)**
   * Specifying a numeric port (e.g. `11434` or `:8000`) neatly swaps the port while preserving the base host and route path (`http://127.0.0.1:11434/v1`).
   * Specifying a full URL (e.g. `http://192.168.0.20:8000/v1`) seamlessly switches to the designated target host.
-* **Port & Candidate Key Auto-Probe with Instant Profile Save**
-  * When connection refused or HTTP 401 authentication errors are detected, Emily systematically tests candidate ports and keys (Auto-Probe), pinpointing the active local endpoint and immediately saving it to your current device profile.
+* **Port & Candidate Key Auto-Probe with Self-Healing**
+  * When connection refused or HTTP 401 errors are detected, Emily systematically tests candidate ports and keys (Auto-Probe), automatically healing and persisting the active endpoint to the current profile.
 * **Reasoning Monologue (`<think>`) Sanitization**
   * Automatically strips internal thinking tokens (`<think>...</think>`) and internal English monologue generated by modern reasoning LLMs (such as DeepSeek R1 and Qwen 2.5), presenting only clean, formatted greetings.
 
 ### 7. Real-Time Task Cancellation & Desktop UX
+* **One-Click Sidebar Refresh (Work State Refresh & UI Cleansing)**
+  * A dedicated **refresh button (`refresh-cw`)** in the sidebar header allows users to instantly abort ongoing asynchronous operations, dynamically reinitialize core services, and clean all selections/inputs back to initial launch state.
 * **Instant Task Cancellation (`AbortController`)**
   * An intuitive **`[❌ Cancel Task]`** button is displayed in the active streaming header during long-running tasks.
   * Clicking Cancel immediately aborts asynchronous HTTP requests and moves any partially written temporary files to Obsidian's trash (`trashFile`), keeping your vault pristine.
@@ -416,20 +433,22 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 
 ### AI Service Endpoint & Device Profiles Setup Guide
 
-Navigate to Obsidian **Settings > Assistant Emily** to configure your global default endpoint and multi-device profiles:
+Navigate to Obsidian **Settings > Assistant Emily** to easily configure endpoints and multi-device profiles via the Unified Dashboard:
 
-#### 1. Default Settings Tab
-Configure the global endpoint shared across all devices:
-* **API Base URL**: e.g., `http://127.0.0.1:31416/v1` (local proxy), `https://api.openai.com/v1`, `http://localhost:11434/v1` (Ollama)
-* **API Key**: Global API authentication key
-* **Model Name**: e.g., `auto`, `gpt-4o`, `llama3.3`
-* **Test Connection**: Verifies live operational status and response latency.
+#### 1. Active Machine Configuration
+* Select the active machine profile from the header dropdown to immediately bind it locally.
+* Real-time badges display the active profile name, effective URL, and masked API key.
+* **[⚡ Test Active Connection]**: Verifies live connection status, response latency, and model availability.
 
-#### 2. Device Profiles Tab
-Register individual machine profiles when using distinct local ports or API keys across laptops and desktops:
-* **Use Device Profile Override**: When enabled, the profile matching the configured current machine's identifier/hostname takes top priority.
-* **Device Profiles Management**: Click **Add Device Profile** to register machine name, hostname, dedicated URL (or port number), and dedicated API key. Click **Auto-fill Current Hostname** for instant registration.
-* **Port / Key Auto-Probe**: Automatically probes working ports and keys upon local proxy connection errors and updates the active profile.
+#### 2. Registered Device Profiles Pool (Cloud Synchronized)
+Manage profiles across multiple machines with different local ports or API keys:
+* **[➕ Add Device Profile]**: Opens a compact, 2-column modal to register Device Name, Port or Endpoint URL, and API Key.
+* **[📍 Apply to Current Machine]**: Instantly binds any saved profile to the local computer.
+* **Cloud Sync Isolation**: Profiles are shared across vaults, but active assignment is held in local browser storage, avoiding multi-computer configuration clobbering.
+* **Port / Key Auto-Probe**: Automatically diagnoses working ports and keys upon connection/401 errors, self-healing the current machine binding.
+
+#### 3. Global Default Configuration (Fallback)
+Set fallback defaults (Base URL, Global API Key, Model Name) for newly added computers without an explicit profile.
 * 📖 For more documentation and feature overviews, refer to the **[Assistant Emily Official Website](https://sparklings.github.io/emily/)**.
 
 ---

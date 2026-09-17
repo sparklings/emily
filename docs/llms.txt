@@ -36,9 +36,10 @@ Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian t
 6. **대화형 Diff 검토 (Needleman-Wunsch)**:
    - 번역/교열 결과를 단어 및 문장 단위로 나란히 비교하고 원하는 항목만 선택 적용.
 
-7. **로컬 AI(Ollama, LM Studio) 오프라인 완전 무료 번역**:
+7. **로컬 AI(Ollama, LM Studio) 오프라인 완전 무료 번역 & 다중 기기 독립 바인딩**:
    - 제로 텔레메트리, 100% 로컬 직접 통신으로 인터넷 없이도 안전하고 완전 무료로 옵시디언 번역 수행.
-   - 다중 PC 호스트명 자동 식별 및 스마트 포트 자동 탐색(Auto-Probe) 지원.
+   - 단일 통합 AI 대시보드 및 다중 PC 로컬 독립 프로필 바인딩(클라우드 동기화 간섭 차단), 포트/키 자동 진단(Auto-Probe) 지원.
+   - 작업 상태 원클릭 새로고침(Refresh) 및 UI 클린징 지원.
 
 ## Installation in Obsidian
 
