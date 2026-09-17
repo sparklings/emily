@@ -8,14 +8,12 @@ import { DeviceKeyProfile } from '../types/settings';
 import { DeviceProfileModal } from './deviceProfileModal';
 import {
   getDeviceHostname,
-  setDeviceHostname,
   getDeviceDisplayName,
   getActiveProfileId,
   setActiveProfileId,
   getActiveProfile,
   resolveEffectiveApiKey,
   resolveEffectiveEndpoint,
-  applyPortOrUrl,
   getCandidateKeys,
   getCandidatePorts,
   isLocalEndpoint
@@ -425,7 +423,8 @@ export class EmilySettingTab extends PluginSettingTab {
               applyBtn.addEventListener('click', () => {
                 void (async () => {
                   if (matchedCandidate && matchedCandidate.profileId) {
-                    setActiveProfileId(matchedCandidate.profileId);
+                    setActiveProfileId(matchedCandidate.profileId, this.plugin.settings);
+                    await this.plugin.saveSettings();
                     this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
                     new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', matchedCandidate.label));
                   } else {
@@ -461,7 +460,7 @@ export class EmilySettingTab extends PluginSettingTab {
         this.plugin.settings.deviceProfiles = [];
       }
       this.plugin.settings.deviceProfiles.push(newProf);
-      setActiveProfileId(newProf.id);
+      setActiveProfileId(newProf.id, this.plugin.settings);
     }
     await this.plugin.saveSettings();
     this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
@@ -484,7 +483,7 @@ export class EmilySettingTab extends PluginSettingTab {
 
     // 2. Top Card: Current PC Active Profile & Live Status
     const activeProf = getActiveProfile(this.plugin.settings);
-    const activeId = getActiveProfileId();
+    const activeId = getActiveProfileId(this.plugin.settings);
     const effectiveEndpoint = resolveEffectiveEndpoint(this.plugin.settings);
     const effectiveKey = resolveEffectiveApiKey(this.plugin.settings);
     const profiles = this.plugin.settings.deviceProfiles || [];
@@ -506,7 +505,8 @@ export class EmilySettingTab extends PluginSettingTab {
         }
         dropdown.setValue(activeId || (activeProf ? activeProf.id : '__global__'));
         dropdown.onChange(async (val) => {
-          setActiveProfileId(val);
+          setActiveProfileId(val, this.plugin.settings);
+          await this.plugin.saveSettings();
           this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           const chosenName = val === '__global__'
             ? '전역 기본값'
@@ -760,7 +760,8 @@ export class EmilySettingTab extends PluginSettingTab {
       });
       applyBtn.addEventListener('click', () => {
         void (async () => {
-          setActiveProfileId(prof.id);
+          setActiveProfileId(prof.id, this.plugin.settings);
+          await this.plugin.saveSettings();
           this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', prof.name));
           this.renderSettings(this.containerEl);
@@ -786,8 +787,8 @@ export class EmilySettingTab extends PluginSettingTab {
     delBtn.addEventListener('click', () => {
       void (async () => {
         this.plugin.settings.deviceProfiles = (this.plugin.settings.deviceProfiles || []).filter((p) => p.id !== prof.id);
-        if (getActiveProfileId() === prof.id) {
-          setActiveProfileId('');
+        if (getActiveProfileId(this.plugin.settings) === prof.id) {
+          setActiveProfileId('', this.plugin.settings);
         }
         await this.plugin.saveSettings();
         this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);

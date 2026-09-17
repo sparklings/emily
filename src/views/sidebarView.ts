@@ -330,7 +330,7 @@ export class EmilySidebarView extends ItemView {
       window,
       'keydown',
       (e: KeyboardEvent) => {
-        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13 || e.which === 13;
+        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
         if ((e.ctrlKey || e.metaKey) && isEnter) {
           const activeEl = document.activeElement;
           if (activeEl && this.containerEl.contains(activeEl)) {
@@ -345,7 +345,7 @@ export class EmilySidebarView extends ItemView {
     this.containerEl.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
-        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13 || e.which === 13;
+        const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
         if ((e.ctrlKey || e.metaKey) && isEnter) {
           triggerStartTask(e);
         }
@@ -936,7 +936,7 @@ export class EmilySidebarView extends ItemView {
 
     // Keyboard shortcut (Ctrl+Enter or Cmd+Enter to start task)
     const handleCtrlEnter = (e: KeyboardEvent) => {
-      const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter' || e.keyCode === 13 || e.which === 13;
+      const isEnter = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       if ((e.ctrlKey || e.metaKey) && isEnter) {
         e.preventDefault();
         e.stopPropagation();

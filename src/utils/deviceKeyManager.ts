@@ -1,54 +1,35 @@
 import { EmilySettings, DeviceKeyProfile } from '../types/settings';
 
-export const DEVICE_HOSTNAME_STORAGE_KEY = 'assistant-emily-device-hostname';
-export const ACTIVE_PROFILE_STORAGE_KEY = 'assistant-emily-active-profile-id';
-
 /**
- * 현재 기기(로컬 스토리지)에 영구 바인딩된 활성 프로필 ID를 조회합니다.
- * - OneDrive 등 클라우드에 동기화되지 않으며 오직 해당 PC의 브라우저/앱 로컬에만 보관됩니다.
+ * 현재 기기의 활성 프로필 ID를 플러그인 설정(Obsidian Plugin Data API)에서 조회합니다.
  */
-export function getActiveProfileId(): string {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const stored = window.localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY);
-      if (stored && stored.trim().length > 0) {
-        return stored.trim();
-      }
-    }
-  } catch {
-    // 샌드박스 보안 예외 무시
+export function getActiveProfileId(settings?: EmilySettings): string {
+  if (settings && settings.activeProfileId && settings.activeProfileId.trim().length > 0) {
+    return settings.activeProfileId.trim();
   }
   return '';
 }
 
 /**
- * 현재 기기(로컬 스토리지)에 활성 프로필 ID를 바인딩 저장합니다.
+ * 현재 기기의 활성 프로필 ID를 플러그인 설정(Obsidian Plugin Data API)에 저장합니다.
  * - '__global__'로 지정 시 전역 기본값 강제 사용
- * - 빈 문자열 지정 시 바인딩 해제 (호스트명 fallback)
+ * - 빈 문자열 지정 시 바인딩 해제
  */
-export function setActiveProfileId(profileId: string): void {
+export function setActiveProfileId(profileId: string, settings?: EmilySettings): void {
   const trimmed = profileId.trim();
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      if (trimmed) {
-        window.localStorage.setItem(ACTIVE_PROFILE_STORAGE_KEY, trimmed);
-      } else {
-        window.localStorage.removeItem(ACTIVE_PROFILE_STORAGE_KEY);
-      }
-    }
-  } catch {
-    // 무시
+  if (settings) {
+    settings.activeProfileId = trimmed;
   }
 }
 
 /**
  * 현재 기기에 활성화된 프로필 객체를 반환합니다.
- * 1순위: localStorage에 바인딩된 프로필
+ * 1순위: 활성 프로필 ID 매칭 프로필
  * 2순위: 호스트명 매칭 프로필
  * 없거나 전역 기본값 선택 시 null 반환
  */
 export function getActiveProfile(settings: EmilySettings): DeviceKeyProfile | null {
-  const activeId = getActiveProfileId();
+  const activeId = getActiveProfileId(settings);
   const profiles = settings.deviceProfiles || [];
   if (activeId === '__global__') {
     return null;
@@ -66,22 +47,10 @@ export function getActiveProfile(settings: EmilySettings): DeviceKeyProfile | nu
 }
 
 /**
- * 현재 기기의 사용자 지정 식별자(호스트명)를 조회합니다.
+ * 현재 기기의 사용자 지정 식별자(호스트명)를 플러그인 설정(settings.currentDeviceHostname)에서 조회합니다.
  * - 시스템 고유 정보(os.hostname, process.env 등)를 조회하지 않고 사용자가 직접 입력한 기기 식별자를 사용합니다.
- * - 1순위: 기기 로컬 저장소(localStorage) - 기기별 독립 저장 (클라우드 미동기화)
- * - 2순위: 플러그인 설정(settings.currentDeviceHostname)
  */
 export function getDeviceHostname(settings?: EmilySettings): string {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const stored = window.localStorage.getItem(DEVICE_HOSTNAME_STORAGE_KEY);
-      if (stored && stored.trim().length > 0) {
-        return stored.trim();
-      }
-    }
-  } catch {
-    // 샌드박스 또는 보안 제한 시 무시
-  }
   if (settings && settings.currentDeviceHostname && settings.currentDeviceHostname.trim().length > 0) {
     return settings.currentDeviceHostname.trim();
   }
@@ -89,21 +58,10 @@ export function getDeviceHostname(settings?: EmilySettings): string {
 }
 
 /**
- * 현재 기기의 사용자 지정 식별자(호스트명)를 저장합니다.
+ * 현재 기기의 사용자 지정 식별자(호스트명)를 플러그인 설정에 저장합니다.
  */
 export function setDeviceHostname(hostname: string, settings?: EmilySettings): void {
   const trimmed = hostname.trim();
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      if (trimmed) {
-        window.localStorage.setItem(DEVICE_HOSTNAME_STORAGE_KEY, trimmed);
-      } else {
-        window.localStorage.removeItem(DEVICE_HOSTNAME_STORAGE_KEY);
-      }
-    }
-  } catch {
-    // 무시
-  }
   if (settings) {
     settings.currentDeviceHostname = trimmed;
   }
@@ -225,9 +183,9 @@ export function resolveEffectiveApiKey(
 
   const profiles = settings.deviceProfiles || [];
 
-  // 1순위: 로컬 스토리지에 바인딩된 활성 프로필 ID (명시적 customHost가 없을 때 최우선)
+  // 1순위: 활성 프로필 ID (명시적 customHost가 없을 때 최우선)
   if (!customHost) {
-    const activeId = getActiveProfileId();
+    const activeId = getActiveProfileId(settings);
     if (activeId === '__global__') {
       return { key: globalKey, source: 'global' };
     }
@@ -348,9 +306,9 @@ export function resolveEffectiveEndpoint(
 
   const profiles = settings.deviceProfiles || [];
 
-  // 1순위: 로컬 스토리지에 바인딩된 활성 프로필 ID (명시적 customHost가 없을 때 최우선)
+  // 1순위: 활성 프로필 ID (명시적 customHost가 없을 때 최우선)
   if (!customHost) {
-    const activeId = getActiveProfileId();
+    const activeId = getActiveProfileId(settings);
     if (activeId === '__global__') {
       return {
         url: cleanGlobalUrl,

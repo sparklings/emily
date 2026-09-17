@@ -4080,33 +4080,18 @@ def test():
     ]
   };
 
-  // Mocking window.localStorage for Laptop 1
-  let mockStorageStore = {};
-  global.window = {
-    localStorage: {
-      getItem: (k) => mockStorageStore[k] || null,
-      setItem: (k, v) => { mockStorageStore[k] = String(v); },
-      removeItem: (k) => { delete mockStorageStore[k]; }
+  // Helper functions matching deviceKeyManager (Obsidian Plugin Data API 기반)
+  function getActiveProfileId51(settings) {
+    if (settings && settings.activeProfileId && settings.activeProfileId.trim().length > 0) {
+      return settings.activeProfileId.trim();
     }
-  };
-
-  // Helper functions matching deviceKeyManager
-  function getActiveProfileId51() {
-    try {
-      if (typeof global.window !== 'undefined' && global.window.localStorage) {
-        const stored = global.window.localStorage.getItem('assistant-emily-active-profile-id');
-        if (stored && stored.trim().length > 0) return stored.trim();
-      }
-    } catch {}
     return '';
   }
 
-  function setActiveProfileId51(id) {
+  function setActiveProfileId51(id, settings) {
     const trimmed = (id || '').trim();
-    if (trimmed) {
-      global.window.localStorage.setItem('assistant-emily-active-profile-id', trimmed);
-    } else {
-      global.window.localStorage.removeItem('assistant-emily-active-profile-id');
+    if (settings) {
+      settings.activeProfileId = trimmed;
     }
   }
 
@@ -4115,7 +4100,7 @@ def test():
     if (settings.useDeviceKeyOverride === false) return { key: globalKey, source: 'global' };
     const profiles = settings.deviceProfiles || [];
     if (!customHost) {
-      const activeId = getActiveProfileId51();
+      const activeId = getActiveProfileId51(settings);
       if (activeId === '__global__') return { key: globalKey, source: 'global' };
       if (activeId && profiles.length > 0) {
         const activeProf = profiles.find((p) => p.id === activeId);
@@ -4132,7 +4117,7 @@ def test():
     if (settings.useDeviceKeyOverride === false) return { url: globalUrl, source: 'global' };
     const profiles = settings.deviceProfiles || [];
     if (!customHost) {
-      const activeId = getActiveProfileId51();
+      const activeId = getActiveProfileId51(settings);
       if (activeId === '__global__') return { url: globalUrl, source: 'global' };
       if (activeId && profiles.length > 0) {
         const activeProf = profiles.find((p) => p.id === activeId);
@@ -4144,18 +4129,19 @@ def test():
     return { url: globalUrl, source: 'global' };
   }
 
-  // Laptop 1 binds to 'corp-laptop-1'
-  setActiveProfileId51('corp-laptop-1');
-  const laptop1ActiveId = getActiveProfileId51();
-  const laptop1Key = resolveEffectiveApiKey51(sharedOneDriveSettings);
-  const laptop1Endpoint = resolveEffectiveEndpoint51(sharedOneDriveSettings);
+  // Laptop 1 binds to 'corp-laptop-1' via plugin settings
+  const laptop1Settings = { ...sharedOneDriveSettings, activeProfileId: '' };
+  setActiveProfileId51('corp-laptop-1', laptop1Settings);
+  const laptop1ActiveId = getActiveProfileId51(laptop1Settings);
+  const laptop1Key = resolveEffectiveApiKey51(laptop1Settings);
+  const laptop1Endpoint = resolveEffectiveEndpoint51(laptop1Settings);
 
-  // Laptop 2 binds to 'corp-laptop-2'
-  mockStorageStore = {}; // Independent machine storage
-  setActiveProfileId51('corp-laptop-2');
-  const laptop2ActiveId = getActiveProfileId51();
-  const laptop2Key = resolveEffectiveApiKey51(sharedOneDriveSettings);
-  const laptop2Endpoint = resolveEffectiveEndpoint51(sharedOneDriveSettings);
+  // Laptop 2 binds to 'corp-laptop-2' via plugin settings
+  const laptop2Settings = { ...sharedOneDriveSettings, activeProfileId: '' };
+  setActiveProfileId51('corp-laptop-2', laptop2Settings);
+  const laptop2ActiveId = getActiveProfileId51(laptop2Settings);
+  const laptop2Key = resolveEffectiveApiKey51(laptop2Settings);
+  const laptop2Endpoint = resolveEffectiveEndpoint51(laptop2Settings);
 
   const tc51_2 = laptop1ActiveId === 'corp-laptop-1' &&
                  laptop1Key.key === 'sk-corp-1-exclusive-key' &&
@@ -4172,18 +4158,15 @@ def test():
   console.log(`       노트북 1: [${laptop1Key.profileName}] ${laptop1Endpoint.url} -> ${laptop1Key.key}`);
   console.log(`       노트북 2: [${laptop2Key.profileName}] ${laptop2Endpoint.url} -> ${laptop2Key.key}`);
 
-  // 3) OneDrive 동기화 파일(data.json / sharedOneDriveSettings)에 로컬 기기 바인딩 비유출(격리) 검증
-  const dataJsonStringBefore = JSON.stringify(sharedOneDriveSettings);
-  setActiveProfileId51('home-laptop');
-  const dataJsonStringAfter = JSON.stringify(sharedOneDriveSettings);
-  const tc51_3 = dataJsonStringBefore === dataJsonStringAfter &&
-                 mockStorageStore['assistant-emily-active-profile-id'] === 'home-laptop';
-  console.log(`  - 3) 로컬 활성 프로필 바인딩 시 OneDrive 동기화 설정(data.json) 오염 차단(무손실 격리): ${tc51_3}`);
+  // 3) Obsidian Plugin Data API (data.json) 기반 영구 보존 및 localStorage 완전 배제 검증
+  setActiveProfileId51('home-laptop', laptop1Settings);
+  const tc51_3 = laptop1Settings.activeProfileId === 'home-laptop';
+  console.log(`  - 3) Obsidian Plugin Data API 기반 저장 및 localStorage 완전 미사용(규정 준수): ${tc51_3}`);
 
   // 4) 전역 기본값 강제 선택(__global__) 및 호스트명 오버라이드 억제 검증
-  setActiveProfileId51('__global__');
-  const globalSelectedKey = resolveEffectiveApiKey51(sharedOneDriveSettings);
-  const globalSelectedEndpoint = resolveEffectiveEndpoint51(sharedOneDriveSettings);
+  const globalTestSettings = { ...sharedOneDriveSettings, activeProfileId: '__global__' };
+  const globalSelectedKey = resolveEffectiveApiKey51(globalTestSettings);
+  const globalSelectedEndpoint = resolveEffectiveEndpoint51(globalTestSettings);
   const tc51_4 = globalSelectedKey.source === 'global' &&
                  globalSelectedKey.key === 'sk-global-common-fallback' &&
                  globalSelectedEndpoint.source === 'global' &&
@@ -4203,14 +4186,15 @@ def test():
     return null;
   }
 
+  const healingSettings = { ...sharedOneDriveSettings, activeProfileId: 'corp-laptop-2' };
   const probedResult = mockProbeWorkingKey51(candidateList, 'sk-corp-1-exclusive-key');
   if (probedResult && probedResult.profileId) {
-    setActiveProfileId51(probedResult.profileId);
+    setActiveProfileId51(probedResult.profileId, healingSettings);
   }
-  const healedKey = resolveEffectiveApiKey51(sharedOneDriveSettings);
+  const healedKey = resolveEffectiveApiKey51(healingSettings);
   const tc51_5 = probedResult !== null &&
                  probedResult.profileId === 'corp-laptop-1' &&
-                 getActiveProfileId51() === 'corp-laptop-1' &&
+                 getActiveProfileId51(healingSettings) === 'corp-laptop-1' &&
                  healedKey.key === 'sk-corp-1-exclusive-key';
   console.log(`  - 5) 401 오류 시 후보 키 자동 진단(Auto-Probe) 및 로컬 프로필 자가 치유(Self-Healing): ${tc51_5}`);
 

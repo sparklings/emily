@@ -145,9 +145,9 @@ export class DeviceProfileModal extends Modal {
           this.plugin.settings.deviceProfiles.push(newProfile);
 
           // If no active profile was bound, auto-bind this one
-          const curActive = getActiveProfileId();
+          const curActive = getActiveProfileId(this.plugin.settings);
           if (!curActive || curActive === '__global__') {
-            setActiveProfileId(newProfile.id);
+            setActiveProfileId(newProfile.id, this.plugin.settings);
           }
 
           await this.plugin.saveSettings();
