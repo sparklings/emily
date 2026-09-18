@@ -1,5 +1,5 @@
 import { ProofreadOptions } from '../types/proofread';
-import { TranslationOptions } from '../types/translation';
+import { TranslationOptions, MarkdownFormatStripOptions } from '../types/translation';
 
 /**
  * LLM 호출 시 각 작업(교열, 번역, 직접 편집, 일관성 검증)에 최적화된 시스템/유저 프롬프트를 구성하는 빌더 클래스
@@ -12,13 +12,95 @@ export class PromptBuilder {
    * @param customInstruction 사용자 임의 지시 텍스트 (선택)
    * @returns 시스템 프롬프트(system) 및 사용자 프롬프트(user) 객체
    */
-  static buildProofreadingPrompt(markdownContent: string, options: ProofreadOptions, customInstruction?: string): { system: string; user: string } {
+  static buildProofreadingPrompt(
+    markdownContent: string,
+    options: ProofreadOptions,
+    customInstruction?: string,
+    language: string = 'ko'
+  ): { system: string; user: string } {
+    const isKorean = language === 'ko';
+
+    if (!isKorean) {
+      const categories: string[] = [];
+      const allowedCatTokens: string[] = [];
+
+      if (options.checkSpelling) {
+        categories.push('- Spelling, typos, and spacing errors');
+        allowedCatTokens.push('"spelling"');
+      }
+      if (options.checkGrammar) {
+        categories.push('- Grammar, syntax, contextual sentence structure, and tense agreement');
+        allowedCatTokens.push('"grammar"');
+      }
+      if (options.removeTimestamps) {
+        categories.push('- Timestamp removal and paragraph concatenation: remove video/script timestamps (e.g., 0:04, 0:27:, **1:29**:, [00:15]) and excessive line breaks, merging text into readable paragraphs without altering original words or meaning.');
+        allowedCatTokens.push('"timestamp"');
+      }
+      if (options.improveExpression) {
+        categories.push('- Expression and clarity improvements (sentence length, formal tone)');
+        allowedCatTokens.push('"expression"');
+      }
+      if (options.searchCitation) {
+        categories.push('- Citation format inspection (APA/MLA/Chicago)');
+        allowedCatTokens.push('"citation"');
+      }
+      if (options.checkConsistency) {
+        categories.push('- Internal vault consistency verification');
+        allowedCatTokens.push('"consistency"');
+      }
+
+      const categoryEnumStr = allowedCatTokens.length > 0
+        ? Array.from(new Set(allowedCatTokens)).join(' | ')
+        : '"custom"';
+
+      const system = `You are "Assistant Emily", an intelligent Markdown editorial and proofreading AI assistant for Obsidian.
+Analyze the provided Markdown document and generate proofreading suggestions strictly formatted as JSON.
+
+[Strict Guardrails]
+1. Do NOT suggest unrequested changes outside the categories specified by the editor (e.g., do not rewrite expressions, change vocabulary, reformat casing, summarize, or omit text unless specifically requested).
+2. Generate proofreading suggestions (items) strictly adhering to the active inspection rules listed under [Active Inspection Items] below.
+3. [Timestamp Removal]: Do not alter any words, casing, vocabulary, or sentences; only remove timestamps and merge fragmented line breaks into readable paragraphs.
+4. If there are no issues matching the active inspection rules, return an empty array: "items": []. Do NOT invent or hallucinate suggestions.
+5. All "explanation" fields MUST be written strictly in English (the configured user interface language). Never output explanations in any other language.
+
+[Essential Proofreading Principles]
+1. Preserve all existing Markdown formatting syntax, headings, code blocks, wikilinks, tags, and table structures unless explicitly targeted.
+2. [YAML Frontmatter Preservation]:
+   - Never modify, merge, or delete YAML frontmatter (\`--- ... ---\`) at the top of the document.
+   - Do not include suggestions that alter frontmatter structure or metadata.
+3. You must respond ONLY with valid JSON in a \`\`\`json code block conforming to the schema below.
+
+[JSON Response Schema]
+{
+  "items": [
+    {
+      "id": "item_1",
+      "original": "Exact original text from the document to be corrected",
+      "replacement": "Proposed replacement text",
+      "category": ${categoryEnumStr},
+      "explanation": "Clear explanation of the error and correction rationale in English"
+    }
+  ]
+}`;
+
+      let user = `Proofread the following document according to the active inspection items:\n\n[Active Inspection Items]\n${categories.length > 0 ? categories.join('\n') : '- Editor-specified inspection'}\n`;
+
+      if (customInstruction && customInstruction.trim()) {
+        user += `\n[Editor Special Instructions]\n${customInstruction.trim()}\n`;
+      }
+
+      user += `\n[Markdown Document]\n${markdownContent}`;
+
+      return { system, user };
+    }
+
+    // Korean locale branch (기본 한국어)
     const categories: string[] = [];
     const allowedCatTokens: string[] = [];
 
     if (options.checkSpelling) {
-      categories.push('- 맞춤법, 띄어쓰기, 오탈자 및 잘못된 조사 사용 검사');
-      allowedCatTokens.push('"spelling"', '"bold_format"');
+      categories.push('- 맞춤법, 띄어쓰기, 오탈자 검사');
+      allowedCatTokens.push('"spelling"');
     }
     if (options.checkGrammar) {
       categories.push('- 문법 검사, 문맥 기반 문장 구조 및 시제 일치 검사');
@@ -53,16 +135,15 @@ export class PromptBuilder {
 2. 오직 아래 [적용 검사항목]에 명시된 규칙에만 엄격하게 집중하여 교열 제안(items)을 생성하십시오.
 3. [타임스탬프 삭제 작업 시]: 원문의 단어, 대소문자, 어휘, 문장을 1글자도 임의로 수정하거나 바꾸지 말고 오직 타임스탬프 제거 및 잦은 줄바꿈 연결만 수행하십시오.
 4. 만약 활성화된 검사 항목에 부합하는 교정 대상이 없다면, 억지로 제안을 만들지 말고 "items": [] (빈 배열)을 반환하십시오.
+5. 모든 수정 이유(explanation)는 반드시 한국어(기본 설정 언어)로 명확하고 상세하게 작성하십시오.
 
 [필수 교열 원칙]
-1. 한국어 조사 및 마크다운 볼드 서식 규칙:
-   - 한국어는 조사 특성상 '**단어** 조사' 처럼 뒤에 공백 없이 조사가 붙으면 마크다운 서식이 깨질 수 있습니다. 또는 불필요하게 볼드 안에 조사가 들어가거나 잘못 띄어쓰기된 경우(예: '**서식 에**' -> '**서식에**')를 적극적으로 감지하여 올바른 옵시디언 마크다운으로 교정하십시오.
+1. 기존 마크다운 본문 구조(헤딩 #, 코드블록, 링크 [[...]], 태그 #tag, 테이블 등)를 손상시키지 마십시오.
 2. [프론트매터(YAML Frontmatter) 무결성 및 구조 절대 보존]:
    - 문서 최상단의 YAML 프론트매터(\`---\`로 둘러싸인 메타데이터: title, source, author, published, created, tags 등)는 절대 임의로 수정, 병합, 삭제하지 마십시오.
    - 프론트매터의 키, 값, 줄바꿈, 리스트 들여쓰기 구조를 한 줄로 합치지 마십시오.
    - 교열 제안(items)에 프론트매터 구조를 훼손하는 제안을 절대 포함하지 마십시오.
-3. 기존 마크다운 본문 구조(헤딩 #, 코드블록, 링크 [[...]], 태그 #tag 등)를 손상시키지 마십시오.
-4. 반드시 아래 JSON 규격으로만 응답해야 합니다. 마크다운 코드블록(\`\`\`json) 안에 담아주십시오.
+3. 반드시 아래 JSON 규격으로만 응답해야 합니다. 마크다운 코드블록(\`\`\`json) 안에 담아주십시오.
 
 [JSON 응답 스키마]
 {
@@ -72,7 +153,7 @@ export class PromptBuilder {
       "original": "수정 대상 원본 문장 또는 단어",
       "replacement": "개선 제안 문장 또는 단어",
       "category": ${categoryEnumStr},
-      "explanation": "수정 이유 및 교열 근거 상세 설명"
+      "explanation": "수정 이유 및 교열 근거 상세 설명 (한국어로 작성)"
     }
   ]
 }`;
@@ -138,7 +219,7 @@ ${styleInstruction}
 - [프론트매터(YAML Frontmatter) 무결성 보존]:
   문서 최상단에 YAML 프론트매터(\`--- ... ---\`)가 존재하는 경우, 프론트매터의 키 이름, 값, 콜론, 따옴표, 줄바꿈 및 리스트 들여쓰기 구조를 100% 원본 그대로 완벽하게 보존하십시오.
 - [보호 토큰 무결성]: 본문에 \`__EMILY_...\` 형태의 플레이스홀더 토큰이 포함되어 있다면, 토큰의 철자나 형식을 절대 수정하거나 삭제하지 말고 그대로 보존하십시오.
-- 마크다운 문법(볼드, 이탤릭, 링크, 코드블록, 표, 콜아웃 등)이 깨지지 않도록 정확한 위치에 편집 내용을 배치하십시오.
+- 마크다운 문법(볼드, 이탤릭, 링크, 코드블록, 표, 콜아웃 등)이 깨지지 않도록 정확한 위치에 편집 내용을 배치하십시오.${PromptBuilder.buildFormatStripInstruction(options.formatStripOptions)}
 - 결과물은 오직 편집된 마크다운 전문만을 출력하십시오 (불필요한 인사말이나 부가 설명 제외).`;
 
       let user = `다음 마크다운 문서를 편집 규정에 맞추어 편집하십시오.\n`;
@@ -181,7 +262,7 @@ ${codeCommentInstruction}
   (잘못된 예: **효율적인 소스 관리** : → 올바른 표현: **효율적인 소스 관리**: / **다중 노트북** , → **다중 노트북**,)
   공백이 없으면 옵시디언 마크다운 파서에서 볼드가 풀리고 ** 기호가 그대로 노출됩니다.
 - [보호 토큰 무결성]: 본문에 \`__EMILY_...\` 형태의 플레이스홀더 토큰(예: \`__EMILY_WIKITARGET_0__\`, \`__EMILY_TAG_1__\`, \`__EMILY_CODEBLOCK_2__\` 등)이 포함되어 있다면, 토큰의 철자나 형식을 절대 수정하거나 번역하거나 삭제하지 말고 그대로 보존하십시오.
-- 마크다운 문법(볼드, 이탤릭, 링크, 코드블록, 표, 콜아웃 등)이 깨지지 않도록 정확한 위치에 번역문을 배치하십시오.
+- 마크다운 문법(볼드, 이탤릭, 링크, 코드블록, 표, 콜아웃 등)이 깨지지 않도록 정확한 위치에 번역문을 배치하십시오.${PromptBuilder.buildFormatStripInstruction(options.formatStripOptions)}
 - 본문의 모든 설명과 문장을 요약하거나 생략하지 말고 충실하고 상세하게 번역하십시오.
 - 결과물은 오직 번역된 마크다운 전문만을 출력하십시오 (불필요한 인사말이나 부가 설명 제외).`;
 
@@ -233,20 +314,38 @@ ${codeCommentInstruction}
   }
 
   /**
-   * 사용자 자유 자연어 지시(Custom Instructions)에 따라 마크다운을 직접 수정/재구성하는 프롬프트를 생성합니다.
-   * @param markdownContent 편집할 원본 마크다운 본문
-   * @param customInstruction 사용자 입력 편집 요청사항
+   * 사용자 선택 서식 제거(볼드, 기울이기, 취소선, 하이라이트) 지침 문자열을 생성합니다.
+   */
+  private static buildFormatStripInstruction(stripOpts?: MarkdownFormatStripOptions): string {
+    if (!stripOpts) return '';
+    const stripGuidelines: string[] = [];
+    if (stripOpts.stripBold) stripGuidelines.push('볼드체(**, __) 서식 제외');
+    if (stripOpts.stripItalic) stripGuidelines.push('기울이기(*, _) 서식 제외');
+    if (stripOpts.stripStrikethrough) stripGuidelines.push('취소선(~~) 서식 제외');
+    if (stripOpts.stripHighlight) stripGuidelines.push('하이라이트(==) 서식 제외');
+    return stripGuidelines.length > 0
+      ? `\n- [서식 제한 (Plain Markdown)]: 다음 서식 기호는 생성하지 마십시오: ${stripGuidelines.join(', ')}. 해당 내용은 강조 기호 없이 일반 텍스트로만 출력하십시오.`
+      : '';
+  }
+
+  /**
+   * 사용자 지정 편집/질의 프롬프트(Custom Edit Mode)를 생성합니다.
+   * @param markdownContent 편집할 원본 마크다운 텍스트
+   * @param customInstruction 사용자 임의 지시 텍스트
+   * @param stripOptions 서식 제거 옵션 (선택)
    * @returns 시스템 프롬프트(system) 및 사용자 프롬프트(user) 객체
    */
   static buildCustomEditPrompt(
     markdownContent: string,
-    customInstruction: string
+    customInstruction: string,
+    stripOptions?: MarkdownFormatStripOptions
   ): { system: string; user: string } {
+    const stripInstruction = PromptBuilder.buildFormatStripInstruction(stripOptions);
     const system = `당신은 Obsidian 마크다운 편집 및 서식 전문 AI "Assistant Emily"입니다.
 사용자의 편집 요청사항을 충실히 반영하여 마크다운 문서를 직접 수정 및 재구성하십시오.
 문서 최상단에 YAML 프론트매터(--- ... ---)가 존재하는 경우, 프론트매터의 키-값 쌍, 콜론, 들여쓰기, 줄바꿈 구조를 100% 원본 그대로 보존해야 합니다.
 기존 마크다운 문서의 포맷, 링크, 코드 블록, 태그, 테이블 구조를 온전히 보존하십시오.
-한국어, 일본어, 한자어의 경우 굵은 글씨(**단어**) 뒤에 조사나 문자가 올 때 닫는 볼드 태그 뒤에 공백 1칸을 추가하십시오 (예: **단어** 는).
+한국어, 일본어, 한자어의 경우 굵은 글씨(**단어**) 뒤에 조사나 문자가 올 때 닫는 볼드 태그 뒤에 공백 1칸을 추가하십시오 (예: **단어** 는).${stripInstruction}
 반드시 편집이 완료된 최종 마크다운 본문만을 출력해야 합니다. 불필요한 인사말, 사족, 설명 문구는 절대 포함하지 마십시오.`;
 
     const user = `[편집자 작업 요청사항]\n${customInstruction.trim()}\n\n[마크다운 원문]\n${markdownContent}`;

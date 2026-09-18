@@ -275,7 +275,64 @@ export class EmilySettingTab extends PluginSettingTab {
       );
 
     // =========================================================================
-    // Section 5: 에디터 및 인터페이스 환경설정 (Editor Preferences)
+    // Section 5: 편집 및 서식 제거 기본 설정 (Editing & Format Removal Preferences)
+    // =========================================================================
+    new Setting(containerEl).setName(t.settings.editPreferencesHeader).setHeading();
+
+    new Setting(containerEl)
+      .setName(t.settings.stripBoldTitle)
+      .setDesc(t.settings.stripBoldDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(Boolean(this.plugin.settings.defaultStripBold))
+          .onChange(async (val) => {
+            this.plugin.settings.defaultStripBold = val;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.stripItalicTitle)
+      .setDesc(t.settings.stripItalicDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(Boolean(this.plugin.settings.defaultStripItalic))
+          .onChange(async (val) => {
+            this.plugin.settings.defaultStripItalic = val;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.stripStrikethroughTitle)
+      .setDesc(t.settings.stripStrikethroughDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(Boolean(this.plugin.settings.defaultStripStrikethrough))
+          .onChange(async (val) => {
+            this.plugin.settings.defaultStripStrikethrough = val;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName(t.settings.stripHighlightTitle)
+      .setDesc(t.settings.stripHighlightDesc)
+      .addToggle((toggle) =>
+        toggle
+          .setValue(Boolean(this.plugin.settings.defaultStripHighlight))
+          .onChange(async (val) => {
+            this.plugin.settings.defaultStripHighlight = val;
+            await this.plugin.saveSettings();
+            this.plugin.syncSidebarSettings();
+          })
+      );
+
+    // =========================================================================
+    // Section 6: 에디터 및 인터페이스 환경설정 (Editor Preferences)
     // =========================================================================
     new Setting(containerEl).setName(t.settings.editorPreferencesHeader).setHeading();
 

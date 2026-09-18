@@ -1,9 +1,9 @@
-import { ItemView, WorkspaceLeaf, setIcon, Notice, MarkdownView, TFile } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, Notice, MarkdownView, TFile, debounce } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
-import { ProofreadOptions, ProofreadDiffItem } from '../types/proofread';
-import { TranslationOptions, TranslationTone, TranslationStyle } from '../types/translation';
+import { ProofreadOptions, ProofreadDiffItem, ProofreadSelectionRange } from '../types/proofread';
+import { TranslationOptions, TranslationTone, TranslationStyle, MarkdownFormatStripOptions } from '../types/translation';
 import { ProofreadDiffModal } from './proofreadDiffModal';
 import { TranslationDiffModal } from './translationDiffModal';
 import { detectDocumentLanguage, isSameLanguage } from '../core/languageDetector';
@@ -36,6 +36,8 @@ interface RollingSessionData {
   fileName: string;
   filePath?: string;
   sessionType?: 'proofread' | 'translation' | 'custom_edit';
+  proofreadScope?: 'selection' | 'all';
+  selectionRange?: ProofreadSelectionRange;
   status?: 'completed' | 'cancelled';
   targetPath?: string;
   promptText: string;
@@ -55,6 +57,7 @@ interface RollingSessionData {
   translatedMarkdown?: string;
   proofreadOptions: ProofreadOptions;
   translationOptions: TranslationOptions;
+  formatStripOptions?: MarkdownFormatStripOptions;
   /** 출발어 = 도착어인 경우 true (세션 카드 레이블을 "편집"으로 표시) */
   isSameLangEdit?: boolean;
   sessionEl?: HTMLElement;
@@ -86,6 +89,13 @@ export class EmilySidebarView extends ItemView {
     preservation: 'new_file'
   };
 
+  private formatStripOptions: MarkdownFormatStripOptions = {
+    stripBold: false,
+    stripItalic: false,
+    stripStrikethrough: false,
+    stripHighlight: false
+  };
+
   private customPromptText: string = '';
   private selectedSourceFileName: string = '';
   private lastCreatedTempPath: string | null = null;
@@ -94,6 +104,9 @@ export class EmilySidebarView extends ItemView {
   private lockedTargetView: MarkdownView | null = null;
   private currentAbortController: AbortController | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private debouncedUpdateTargetDocument = debounce(() => {
+    this.updateTargetDocument();
+  }, 150);
 
   // UI Containers
   private contentScrollEl: HTMLElement | null = null;
@@ -133,6 +146,13 @@ export class EmilySidebarView extends ItemView {
       tone: this.plugin.settings.defaultTranslationTone || 'academic',
       style: this.plugin.settings.defaultTranslationStyle || 'balanced',
       translateCodeComments: this.plugin.settings.defaultTranslateCodeComments || false
+    };
+
+    this.formatStripOptions = {
+      stripBold: Boolean(this.plugin.settings.defaultStripBold),
+      stripItalic: Boolean(this.plugin.settings.defaultStripItalic),
+      stripStrikethrough: Boolean(this.plugin.settings.defaultStripStrikethrough),
+      stripHighlight: Boolean(this.plugin.settings.defaultStripHighlight)
     };
   }
 
@@ -215,6 +235,10 @@ export class EmilySidebarView extends ItemView {
         this.updateTargetDocument();
       })
     );
+    // Real-time document text selection listener
+    this.registerDomEvent(document, 'selectionchange', () => {
+      this.debouncedUpdateTargetDocument();
+    });
   }
 
   renderView() {
@@ -377,11 +401,28 @@ export class EmilySidebarView extends ItemView {
     const target = this.plugin.getTargetMarkdownView();
     if (target?.file) {
       this.promptTargetFileEl.empty();
-      const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
+      const leftWrap = this.promptTargetFileEl.createDiv({ cls: 'emily-prompt-file-left' });
+      const iconSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-icon' });
       setIcon(iconSpan, 'file-text');
-      const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name' });
+      const nameSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-name' });
       nameSpan.setText(target.file.name);
       this.promptTargetFileEl.setAttribute('title', target.file.path);
+
+      // Real-time selection vs entire document scope indicator
+      const sel = target.editor ? target.editor.getSelection() : '';
+      const hasSelection = Boolean(sel && sel.trim().length > 0);
+      const scopeBadge = this.promptTargetFileEl.createSpan({
+        cls: `emily-prompt-scope-badge ${hasSelection ? 'is-selection' : 'is-all'}`
+      });
+      if (hasSelection) {
+        scopeBadge.setText(
+          t.sidebar.scopeSelectionBadge.replace('{count}', sel.length.toLocaleString())
+        );
+        scopeBadge.setAttribute('title', t.sidebar.scopeSelectionTooltip);
+      } else {
+        scopeBadge.setText(t.sidebar.scopeAllBadge);
+        scopeBadge.setAttribute('title', t.sidebar.scopeAllTooltip);
+      }
     } else {
       this.promptTargetFileEl.empty();
       const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
@@ -425,6 +466,10 @@ export class EmilySidebarView extends ItemView {
       if (this.proofreadOptions.improveExpression) count++;
       if (this.proofreadOptions.checkConsistency) count++;
       if (this.proofreadOptions.searchCitation) count++;
+      if (this.formatStripOptions.stripBold) count++;
+      if (this.formatStripOptions.stripItalic) count++;
+      if (this.formatStripOptions.stripStrikethrough) count++;
+      if (this.formatStripOptions.stripHighlight) count++;
       return count;
     };
 
@@ -513,6 +558,69 @@ export class EmilySidebarView extends ItemView {
       Boolean(this.proofreadOptions.removeTimestamps),
       (checked) => {
         this.proofreadOptions.removeTimestamps = checked;
+        updateProofCountBadge();
+      }
+    );
+
+    // Format Stripping Options (4 Toggle Segmented Buttons: Bold, Italic, Strikethrough, Highlight)
+    const formatStripGroup = body.createDiv({ cls: 'emily-field-group' });
+    formatStripGroup.createSpan({
+      text: t.sidebar.formatStripTitle,
+      cls: 'emily-field-label font-semibold'
+    });
+
+    const formatStripGrid = formatStripGroup.createDiv({
+      cls: 'emily-segmented-grid emily-format-strip-grid'
+    });
+
+    // 1. Bold (** / __)
+    this.createToggleSegmentedButton(
+      formatStripGrid,
+      'bold',
+      t.sidebar.stripBold,
+      t.sidebar.stripBoldTooltip,
+      Boolean(this.formatStripOptions.stripBold),
+      (checked) => {
+        this.formatStripOptions.stripBold = checked;
+        updateProofCountBadge();
+      }
+    );
+
+    // 2. Italic (* / _)
+    this.createToggleSegmentedButton(
+      formatStripGrid,
+      'italic',
+      t.sidebar.stripItalic,
+      t.sidebar.stripItalicTooltip,
+      Boolean(this.formatStripOptions.stripItalic),
+      (checked) => {
+        this.formatStripOptions.stripItalic = checked;
+        updateProofCountBadge();
+      }
+    );
+
+    // 3. Strikethrough (~~)
+    this.createToggleSegmentedButton(
+      formatStripGrid,
+      'strikethrough',
+      t.sidebar.stripStrikethrough,
+      t.sidebar.stripStrikethroughTooltip,
+      Boolean(this.formatStripOptions.stripStrikethrough),
+      (checked) => {
+        this.formatStripOptions.stripStrikethrough = checked;
+        updateProofCountBadge();
+      }
+    );
+
+    // 4. Highlight (==)
+    this.createToggleSegmentedButton(
+      formatStripGrid,
+      'highlighter',
+      t.sidebar.stripHighlight,
+      t.sidebar.stripHighlightTooltip,
+      Boolean(this.formatStripOptions.stripHighlight),
+      (checked) => {
+        this.formatStripOptions.stripHighlight = checked;
         updateProofCountBadge();
       }
     );
@@ -899,7 +1007,6 @@ export class EmilySidebarView extends ItemView {
       }
     });
     textareaEl.value = this.customPromptText;
-
     // Start Task Button with (Ctrl+Enter) hint and right-aligned character count
     const applyBtn = section.createEl('button', {
       cls: 'emily-btn-primary',
@@ -1032,22 +1139,33 @@ export class EmilySidebarView extends ItemView {
     }
     const promptText = (textareaEl ? textareaEl.value : (this.customPromptText || '')).trim();
 
-    if (!hasProofreadOptions && !hasTranslation && !promptText) {
+    const hasFormatStrip = Boolean(
+      this.formatStripOptions.stripBold ||
+      this.formatStripOptions.stripItalic ||
+      this.formatStripOptions.stripStrikethrough ||
+      this.formatStripOptions.stripHighlight
+    );
+
+    if (!hasProofreadOptions && !hasTranslation && !promptText && !hasFormatStrip) {
       new Notice(t.sidebar.specifyTaskNotice);
       return;
     }
 
-    // API 연결 설정 유효성 검사 (엔드포인트 누락 또는 원격 API 키 누락 시 사전 안내)
-    const baseUrl = (this.plugin.settings.apiBaseUrl || '').trim();
-    const apiKey = (this.plugin.settings.apiKey || '').trim();
-    if (!baseUrl) {
-      new Notice('API Base URL이 설정되지 않았습니다. [설정 > Assistant Emily]에서 엔드포인트를 입력해 주세요.');
-      return;
-    }
-    const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(baseUrl);
-    if (!isLocalEndpoint && !apiKey) {
-      new Notice('API Key가 설정되지 않았습니다. [설정 > Assistant Emily]에서 API 키를 입력해 주세요.');
-      return;
+    const isLocalFormatOnly = !hasProofreadOptions && !hasTranslation && !promptText && hasFormatStrip;
+
+    if (!isLocalFormatOnly) {
+      // API 연결 설정 유효성 검사 (엔드포인트 누락 또는 원격 API 키 누락 시 사전 안내)
+      const baseUrl = (this.plugin.settings.apiBaseUrl || '').trim();
+      const apiKey = (this.plugin.settings.apiKey || '').trim();
+      if (!baseUrl) {
+        new Notice('API Base URL이 설정되지 않았습니다. [설정 > Assistant Emily]에서 엔드포인트를 입력해 주세요.');
+        return;
+      }
+      const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(baseUrl);
+      if (!isLocalEndpoint && !apiKey) {
+        new Notice('API Key가 설정되지 않았습니다. [설정 > Assistant Emily]에서 API 키를 입력해 주세요.');
+        return;
+      }
     }
 
     // Set UI to Loading & Disabled State (Lock target document & all options during execution)
@@ -1192,7 +1310,8 @@ export class EmilySidebarView extends ItemView {
           isSameLangEdit,
           tone: this.translationOptions.tone || this.plugin.settings.defaultTranslationTone,
           style: this.translationOptions.style || this.plugin.settings.defaultTranslationStyle,
-          translateCodeComments: this.translationOptions.translateCodeComments ?? this.plugin.settings.defaultTranslateCodeComments
+          translateCodeComments: this.translationOptions.translateCodeComments ?? this.plugin.settings.defaultTranslateCodeComments,
+          formatStripOptions: { ...this.formatStripOptions }
         };
 
         const transResult = await transEngine.runTranslation(
@@ -1296,6 +1415,7 @@ export class EmilySidebarView extends ItemView {
           effectiveSrc: transEffectiveSrc,
           providerUsed: transResult.providerUsed,
           failedOver: transResult.failedOver,
+          formatStripOptions: { ...this.formatStripOptions },
           t
         });
       } else if (hasProofreadOptions) {
@@ -1311,17 +1431,38 @@ export class EmilySidebarView extends ItemView {
         if (this.proofreadOptions.searchCitation) appliedProofOpts.push(t.sidebar.citation);
         const proofOptsSummary = appliedProofOpts.join(', ');
 
+        // Check if user selected text in active editor
+        const selectedText = editor.getSelection();
+        const isSelectionScope = Boolean(selectedText && selectedText.trim().length > 0);
+        const contentToProofread = isSelectionScope ? selectedText : currentDoc;
+        const proofSelectionRange: ProofreadSelectionRange | undefined = isSelectionScope
+          ? {
+              from: editor.getCursor('from'),
+              to: editor.getCursor('to'),
+              originalText: selectedText
+            }
+          : undefined;
+
+        const scopeLabel = isSelectionScope ? `[${t.scopes.selection}]` : `[${t.scopes.all}]`;
+
         this.updateTimelineStep(
           step2,
           'active',
-          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary})`,
-          t.sidebar.opProofRunningDesc
+          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary}) • ${scopeLabel}`,
+          isSelectionScope
+            ? t.sidebar.opProofRunningSelectionDesc.replace('{count}', String(selectedText.length))
+            : t.sidebar.opProofRunningDesc
         );
 
         const proofreader = this.plugin.getProofreadingEngine();
+        proofreader.setDisplayLanguage(this.plugin.settings.language);
+        const effectiveProofOptions = {
+          ...this.proofreadOptions,
+          scope: isSelectionScope ? ('selection' as const) : ('all' as const)
+        };
         const proofResult = await proofreader.runProofreading(
-          currentDoc,
-          this.proofreadOptions,
+          contentToProofread,
+          effectiveProofOptions,
           promptText,
           signal
         );
@@ -1333,7 +1474,7 @@ export class EmilySidebarView extends ItemView {
         this.updateTimelineStep(
           step2,
           'done',
-          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary})${proofFailoverText}`,
+          `${t.sidebar.pipelineLlmProof} (${proofOptsSummary}) • ${scopeLabel}${proofFailoverText}`,
           t.sidebar.opProofCompletedDesc.replace('{time}', String(proofResult.totalTimeMs)).replace('{speed}', String(proofResult.tokensPerSec || 0))
         );
 
@@ -1358,6 +1499,9 @@ export class EmilySidebarView extends ItemView {
           this.finalizeCompletedSession({
             activeFile,
             sessionType: 'proofread',
+            proofreadScope: isSelectionScope ? 'selection' : 'all',
+            selectionRange: proofSelectionRange,
+            formatStripOptions: { ...this.formatStripOptions },
             model: proofResult.model,
             totalTimeMs: proofResult.totalTimeMs,
             tokensPerSec: proofResult.tokensPerSec,
@@ -1404,6 +1548,9 @@ export class EmilySidebarView extends ItemView {
               this.finalizeCompletedSession({
                 activeFile,
                 sessionType: 'proofread',
+                proofreadScope: isSelectionScope ? 'selection' : 'all',
+                selectionRange: proofSelectionRange,
+                formatStripOptions: { ...this.formatStripOptions },
                 model: proofResult.model,
                 totalTimeMs: proofResult.totalTimeMs,
                 tokensPerSec: proofResult.tokensPerSec,
@@ -1430,6 +1577,9 @@ export class EmilySidebarView extends ItemView {
               this.finalizeCompletedSession({
                 activeFile,
                 sessionType: 'proofread',
+                proofreadScope: isSelectionScope ? 'selection' : 'all',
+                selectionRange: proofSelectionRange,
+                formatStripOptions: { ...this.formatStripOptions },
                 status: 'cancelled',
                 model: proofResult.model,
                 totalTimeMs: proofResult.totalTimeMs,
@@ -1446,55 +1596,103 @@ export class EmilySidebarView extends ItemView {
                 t
               });
             },
-            this.plugin.settings.language
+            this.plugin.settings.language,
+            proofSelectionRange,
+            hasFormatStrip ? this.formatStripOptions : undefined
           );
           modal.open();
         }
       } else {
         // ==========================================
-        // ✏️ 3. 직접 편집 / 질의 (Custom Edit / Query) 파이프라인 실행
+        // ✏️ 3. 직접 편집 / 서식 제거 / 질의 파이프라인 실행
         // ==========================================
-        this.updateTimelineStep(
-          step2,
-          'active',
-          t.sidebar.pipelineLlmCustom,
-          t.sidebar.opDirectEditRunningDesc
-        );
+        let editedDoc = '';
+        let totalTimeMs = 0;
+        let tokensPerSec = 0;
+        let modelUsed = this.plugin.settings.modelName || 'auto';
+        let responseUsage: LLMUsage | undefined;
+        let responseId: string | undefined;
+        let responseFinishReason: string | undefined;
+        let responseSystemFingerprint: string | undefined;
+        let responseCreated: number | undefined;
+        let responseProviderUsed: 'primary' | 'secondary' | 'distributed' | undefined;
+        let responseFailedOver: boolean | undefined;
 
-        const llmClient = this.plugin.getLLMClient();
-        const promptPayload = PromptBuilder.buildCustomEditPrompt(currentDoc, promptText);
-        const startTime = Date.now();
-        const response = await llmClient.chatCompletion([
-          { role: 'system', content: promptPayload.system },
-          { role: 'user', content: promptPayload.user }
-        ], { signal });
+        if (isLocalFormatOnly) {
+          this.updateTimelineStep(
+            step2,
+            'active',
+            t.sidebar.formatStripTitle,
+            t.sidebar.pipelineRunning
+          );
+          const startTime = Date.now();
+          editedDoc = MarkdownFormatter.stripMarkdownDecorations(currentDoc, this.formatStripOptions);
+          editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+          totalTimeMs = Date.now() - startTime;
+          modelUsed = 'Plain Markdown Clean (Local)';
 
-        let editedDoc = response.content.trim();
-        // Remove markdown block wrapper if LLM wrapped entire output in ```markdown ... ```
-        if (editedDoc.startsWith('```markdown') && editedDoc.endsWith('```')) {
-          editedDoc = editedDoc.slice(11, -3).trim();
-        } else if (editedDoc.startsWith('```md') && editedDoc.endsWith('```')) {
-          editedDoc = editedDoc.slice(5, -3).trim();
-        } else if (editedDoc.startsWith('```') && editedDoc.endsWith('```')) {
-          editedDoc = editedDoc.slice(3, -3).trim();
+          this.updateTimelineStep(
+            step2,
+            'done',
+            t.sidebar.formatStripTitle,
+            t.sidebar.appliedChangesCount.replace('{count}', '1')
+          );
+        } else {
+          this.updateTimelineStep(
+            step2,
+            'active',
+            t.sidebar.pipelineLlmCustom,
+            t.sidebar.opDirectEditRunningDesc
+          );
+
+          const llmClient = this.plugin.getLLMClient();
+          const promptPayload = PromptBuilder.buildCustomEditPrompt(currentDoc, promptText, this.formatStripOptions);
+          const startTime = Date.now();
+          const response = await llmClient.chatCompletion([
+            { role: 'system', content: promptPayload.system },
+            { role: 'user', content: promptPayload.user }
+          ], { signal });
+
+          editedDoc = response.content.trim();
+          // Remove markdown block wrapper if LLM wrapped entire output in ```markdown ... ```
+          if (editedDoc.startsWith('```markdown') && editedDoc.endsWith('```')) {
+            editedDoc = editedDoc.slice(11, -3).trim();
+          } else if (editedDoc.startsWith('```md') && editedDoc.endsWith('```')) {
+            editedDoc = editedDoc.slice(5, -3).trim();
+          } else if (editedDoc.startsWith('```') && editedDoc.endsWith('```')) {
+            editedDoc = editedDoc.slice(3, -3).trim();
+          }
+
+          // Apply format stripping if requested
+          if (hasFormatStrip) {
+            editedDoc = MarkdownFormatter.stripMarkdownDecorations(editedDoc, this.formatStripOptions);
+          }
+
+          // Apply East Asian bold spacing rule (**단어** 조사 -> **단어** 조사)
+          editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+
+          totalTimeMs = Date.now() - startTime;
+          tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));
+          modelUsed = response.model || this.plugin.settings.modelName;
+          responseUsage = response.usage;
+          responseId = response.id;
+          responseFinishReason = response.finish_reason;
+          responseSystemFingerprint = response.system_fingerprint;
+          responseCreated = response.created;
+          responseProviderUsed = response.providerUsed;
+          responseFailedOver = response.failedOver;
+
+          const editFailoverText = response.failedOver
+            ? ` (${t.sidebar.providerFailoverTimeline})`
+            : '';
+
+          this.updateTimelineStep(
+            step2,
+            'done',
+            `${t.sidebar.pipelineLlmCustom}${editFailoverText}`,
+            t.sidebar.opDirectEditCompletedDesc.replace('{time}', String(totalTimeMs)).replace('{speed}', String(tokensPerSec))
+          );
         }
-
-        // Apply East Asian bold spacing rule (**단어** 조사 -> **단어** 조사)
-        editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
-
-        const totalTimeMs = Date.now() - startTime;
-        const tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));
-
-        const editFailoverText = response.failedOver
-          ? ` (${t.sidebar.providerFailoverTimeline})`
-          : '';
-
-        this.updateTimelineStep(
-          step2,
-          'done',
-          `${t.sidebar.pipelineLlmCustom}${editFailoverText}`,
-          t.sidebar.opDirectEditCompletedDesc.replace('{time}', String(totalTimeMs)).replace('{speed}', String(tokensPerSec))
-        );
 
         // Apply edited text directly to active editor
         editor.setValue(editedDoc);
@@ -1519,18 +1717,19 @@ export class EmilySidebarView extends ItemView {
         this.finalizeCompletedSession({
           activeFile,
           sessionType: 'custom_edit',
-          model: response.model || this.plugin.settings.modelName,
+          model: modelUsed,
           totalTimeMs,
           tokensPerSec,
-          usage: response.usage,
-          responseId: response.id,
-          finishReason: response.finish_reason,
-          systemFingerprint: response.system_fingerprint,
-          createdTimestamp: response.created,
+          usage: responseUsage,
+          responseId: responseId,
+          finishReason: responseFinishReason,
+          systemFingerprint: responseSystemFingerprint,
+          createdTimestamp: responseCreated,
           items: [],
           effectiveSrc: detectedLang.name,
-          providerUsed: response.providerUsed,
-          failedOver: response.failedOver,
+          providerUsed: responseProviderUsed,
+          failedOver: responseFailedOver,
+          formatStripOptions: { ...this.formatStripOptions },
           t
         });
       }
@@ -1739,6 +1938,8 @@ export class EmilySidebarView extends ItemView {
   private finalizeCompletedSession(params: {
     activeFile: TFile;
     sessionType: 'proofread' | 'translation' | 'custom_edit';
+    proofreadScope?: 'selection' | 'all';
+    selectionRange?: ProofreadSelectionRange;
     status?: 'completed' | 'cancelled';
     isSameLangEdit?: boolean;
     targetPath?: string;
@@ -1756,11 +1957,14 @@ export class EmilySidebarView extends ItemView {
     originalMarkdown?: string;
     translatedMarkdown?: string;
     effectiveSrc?: string;
+    formatStripOptions?: MarkdownFormatStripOptions;
     t: TranslationKeys;
   }) {
     const {
       activeFile,
       sessionType,
+      proofreadScope,
+      selectionRange,
       status,
       isSameLangEdit,
       targetPath,
@@ -1796,6 +2000,8 @@ export class EmilySidebarView extends ItemView {
       fileName: activeFile.name,
       filePath: activeFile.path,
       sessionType,
+      proofreadScope,
+      selectionRange,
       status: status || 'completed',
       isSameLangEdit,
       targetPath,
@@ -1814,8 +2020,12 @@ export class EmilySidebarView extends ItemView {
       items,
       originalMarkdown,
       translatedMarkdown,
-      proofreadOptions: { ...this.proofreadOptions },
-      translationOptions: recordedTransOptions
+      proofreadOptions: {
+        ...this.proofreadOptions,
+        scope: proofreadScope || this.proofreadOptions.scope
+      },
+      translationOptions: recordedTransOptions,
+      formatStripOptions: params.formatStripOptions
     };
 
     // Append completed Session Card to sessionsContainerEl
@@ -2132,7 +2342,10 @@ export class EmilySidebarView extends ItemView {
       }
 
       const proofRow = optionsSummary.createDiv({ cls: 'emily-meta-row' });
-      proofRow.createSpan({ text: `${t.sidebar.proofreading}:`, cls: 'emily-option-tag-title' });
+      const scopeTag = session.proofreadScope === 'selection'
+        ? ` (${t.scopes.selection})`
+        : ` (${t.scopes.all})`;
+      proofRow.createSpan({ text: `${t.sidebar.proofreading}${scopeTag}:`, cls: 'emily-option-tag-title' });
       proofRow.createSpan({
         text: proofOpts.length > 0 ? proofOpts.join(', ') : t.sidebar.noSelectionText,
         cls: 'emily-option-tags'
@@ -2182,7 +2395,7 @@ export class EmilySidebarView extends ItemView {
     if (session.status === 'cancelled') {
       const detailsSection = body.createDiv({ cls: 'emily-session-details-section' });
       const itemsCount = session.items ? session.items.length : session.itemsCount;
-      const emptyNotice = detailsSection.createDiv({ cls: 'text-muted text-xs' });
+      const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
       emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
 
       if (session.items && session.items.length > 0) {
@@ -2249,7 +2462,7 @@ export class EmilySidebarView extends ItemView {
           }
         }
       } else {
-        const emptyNotice = detailsSection.createDiv({ cls: 'text-muted text-xs' });
+        const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
         emptyNotice.setText(t.sidebar.noIssuesDetected);
       }
     } else if (session.sessionType === 'translation' && (session.translatedMarkdown || session.targetPath)) {
@@ -2443,7 +2656,9 @@ export class EmilySidebarView extends ItemView {
       () => {
         new Notice(t.sidebar.proofreadCancelNotice);
       },
-      this.plugin.settings.language
+      this.plugin.settings.language,
+      session.selectionRange,
+      session.formatStripOptions
     );
     modal.open();
   }
@@ -2666,6 +2881,17 @@ export class EmilySidebarView extends ItemView {
 
     const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
     setIcon(iconSpan, icon);
+    if (!iconSpan.firstElementChild) {
+      if (icon === 'bold') {
+        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-bold"><path d="M6 12h9a4 4 0 0 0 0-8H6v8Z"/><path d="M6 12h10a4 4 0 0 1 0 8H6v-8Z"/></svg>';
+      } else if (icon === 'italic') {
+        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-italic"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg>';
+      } else if (icon === 'strikethrough') {
+        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-strikethrough"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/></svg>';
+      } else if (icon === 'highlighter') {
+        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-highlighter"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2.78 2.78 0 0 1-3.9 0l-4.1-4.1a2.78 2.78 0 0 1 0-3.9L14 1"/><path d="m18 6 3 3"/></svg>';
+      }
+    }
 
     this.renderSegmentedLabel(btn, label);
 

@@ -1,4 +1,5 @@
 import { ConsistencyIssue } from '../types/proofread';
+import { MarkdownFormatStripOptions } from '../types/translation';
 import { getTranslation } from '../i18n';
 
 export class MarkdownFormatter {
@@ -165,5 +166,105 @@ export class MarkdownFormatter {
     }
 
     return cleanedBody;
+  }
+
+  /**
+   * 마크다운 문서에서 볼드체(**, __), 기울이기(*, _), 취소선(~~), 하이라이트(==) 서식을
+   * 사용자가 선택한 옵션에 따라 선택적으로 제거합니다.
+   * - YAML 프론트매터(Frontmatter), 코드 블록(```...```), 인라인 코드(`...`),
+   *   수식($...$, $$...$$), 위키링크([[...]]), 이미지(![...]()), 수평선(---, ***)은
+   *   100% 무손실 보존·격리한 상태에서 본문 인라인 서식만을 안전하게 정제합니다.
+   */
+  static stripMarkdownDecorations(markdown: string, options: MarkdownFormatStripOptions = {}): string {
+    if (!markdown) return markdown;
+    const { stripBold, stripItalic, stripStrikethrough, stripHighlight } = options;
+    if (!stripBold && !stripItalic && !stripStrikethrough && !stripHighlight) {
+      return markdown;
+    }
+
+    // 1. YAML 프론트매터 분리
+    const { frontmatter, body } = this.extractFrontmatter(markdown);
+    let target = frontmatter ? body : markdown;
+
+    // 2. 보호 대상 요소 마스킹 (코드, 수식, 링크, 수평선)
+    const tokens = new Map<string, string>();
+    let counter = 0;
+    const mask = (val: string): string => {
+      const token = `__EMILY_FMT_PROTECT_${counter++}__`;
+      tokens.set(token, val);
+      return token;
+    };
+
+    // 2-1. 코드 블록 (```...```)
+    target = target.replace(/```[\s\S]*?```/g, mask);
+
+    // 2-2. 인라인 코드 (`...`)
+    target = target.replace(/`[^`\r\n]+?`/g, mask);
+
+    // 2-3. 블록 수식 ($$...$$) 및 인라인 수식 ($...$)
+    target = target.replace(/\$\$[\s\S]*?\$\$/g, mask);
+    target = target.replace(/(?<!\\)\$(?!\$)[^$\r\n]+?(?<!\\)\$/g, mask);
+
+    // 2-4. 마크다운 수평선 (***, ---, ___ 단독 라인)
+    target = target.replace(/^[ \t]*(?:[*_-][ \t]*){3,}[ \t]*$/gm, mask);
+
+    // 2-5. 옵시디언 위키링크 및 이미지 (![[...]], [[...]])
+    target = target.replace(/!?\[\[[^\]\r\n]+?\]\]/g, mask);
+
+    // 2-6. 마크다운 링크 URL 영역 ([text](URL))
+    target = target.replace(/\[([^\]\r\n]*?)\]\(([^)\r\n]+?)\)/g, (_match, text, url) => {
+      return `[${text}](${mask(url)})`;
+    });
+
+    // 3. 서식 제거 연산 수행
+    // 3-1. 복합 서식 (볼드+기울임: ***text*** 또는 ___text___)
+    if (stripBold || stripItalic) {
+      target = target.replace(/\*\*\*([^*\r\n]+?)\*\*\*/g, (_match, inner) => {
+        if (stripBold && stripItalic) return inner;
+        if (stripBold) return `*${inner}*`;
+        return `**${inner}**`;
+      });
+      target = target.replace(/___([^_\r\n]+?)___/g, (_match, inner) => {
+        if (stripBold && stripItalic) return inner;
+        if (stripBold) return `_${inner}_`;
+        return `__${inner}__`;
+      });
+    }
+
+    // 3-2. 볼드체 제거 (**text** 또는 __text__)
+    if (stripBold) {
+      target = target.replace(/\*\*([^*\r\n]+?)\*\*/g, '$1');
+      target = target.replace(/(?<=^|[^\w])__([^_\r\n]+?)__(?=[^\w]|$)/g, '$1');
+    }
+
+    // 3-3. 취소선 제거 (~~text~~)
+    if (stripStrikethrough) {
+      target = target.replace(/~~([^~\r\n]+?)~~/g, '$1');
+    }
+
+    // 3-4. 하이라이트 제거 (==text==)
+    if (stripHighlight) {
+      target = target.replace(/==([^=\r\n]+?)==/g, '$1');
+    }
+
+    // 3-5. 기울이기 제거 (*text* 또는 _text_)
+    // 리스트 불릿(* item)이나 곱셈 기호와 오작동하지 않도록 양끝 비공백/구분자 조건 확인
+    if (stripItalic) {
+      target = target.replace(/(?<=^|[^\*])\*([^*\r\n\s](?:[^*\r\n]*?[^*\r\n\s])?)\*(?!\*)/g, '$1');
+      target = target.replace(/(?<=^|[^\w])_([^_\r\n\s](?:[^_\r\n]*?[^_\r\n\s])?)_(?=[^\w]|$)/g, '$1');
+    }
+
+    // 4. 보호된 토큰 복원 (역순으로 안전 치환)
+    for (const [token, original] of tokens.entries()) {
+      target = target.split(token).join(original);
+    }
+
+    // 5. 프론트매터 재결합
+    if (frontmatter) {
+      const formattedFrontmatter = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return target ? `${formattedFrontmatter}${target}` : formattedFrontmatter.trimEnd();
+    }
+
+    return target;
   }
 }

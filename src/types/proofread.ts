@@ -8,7 +8,14 @@ export interface ProofreadDiffItem {
   approved?: boolean;
 }
 
+export interface ProofreadSelectionRange {
+  from: { line: number; ch: number };
+  to: { line: number; ch: number };
+  originalText: string;
+}
+
 export interface ProofreadOptions {
+  scope?: 'selection' | 'all';
   checkSpelling: boolean;
   checkGrammar: boolean;
   removeTimestamps?: boolean;

@@ -55,7 +55,8 @@ export class ProofreadingEngine {
       throw abortError;
     }
 
-    const { system, user } = PromptBuilder.buildProofreadingPrompt(markdownContent, options, customInstruction);
+    const lang = this.displayLanguage || 'ko';
+    const { system, user } = PromptBuilder.buildProofreadingPrompt(markdownContent, options, customInstruction, lang);
 
     const response = await this.client.chatCompletion(
       [
@@ -68,7 +69,6 @@ export class ProofreadingEngine {
     const allowedCategories = new Set<string>();
     if (options.checkSpelling) {
       allowedCategories.add('spelling');
-      allowedCategories.add('bold_format');
     }
     if (options.checkGrammar) {
       allowedCategories.add('grammar');
@@ -105,21 +105,6 @@ export class ProofreadingEngine {
           replacement: t.diffModal.timestampReplacement,
           category: 'timestamp',
           explanation: t.diffModal.timestampExplanation,
-          approved: true
-        });
-      }
-    }
-
-    const hasAnyOption = options.checkSpelling || options.checkGrammar || options.improveExpression || options.checkConsistency || options.searchCitation;
-    if (hasAnyOption) {
-      const boldFixed = MarkdownFormatter.fixKoreanBoldFormatting(markdownContent);
-      if (boldFixed !== markdownContent) {
-        items.unshift({
-          id: 'korean_bold_auto',
-          original: t.diffModal.boldOriginal,
-          replacement: t.diffModal.boldReplacement,
-          category: 'bold_format',
-          explanation: t.diffModal.boldExplanation,
           approved: true
         });
       }

@@ -1,5 +1,6 @@
 import { App, Editor, Modal, Notice } from 'obsidian';
-import { ProofreadDiffItem } from '../types/proofread';
+import { ProofreadDiffItem, ProofreadSelectionRange } from '../types/proofread';
+import { MarkdownFormatStripOptions } from '../types/translation';
 import { getTranslation } from '../i18n';
 import { MarkdownFormatter } from '../core/markdownFormatter';
 
@@ -7,7 +8,7 @@ import { MarkdownFormatter } from '../core/markdownFormatter';
  * 마크다운 교열 제안 대조 검토 모달 클래스
  * - AI가 제안한 맞춤법/문법 교정 항목을 목록으로 렌더링
  * - 항목별 개별 승인/거부 체크박스 및 에디터 위치 점프 기능
- * - 일괄 적용 시 마크다운 본문에 승인된 항목만 무손실 치환
+ * - 선택 영역(Selection) 또는 전체 문서(All) 무손실 치환 보장
  */
 export class ProofreadDiffModal extends Modal {
   private items: ProofreadDiffItem[];
@@ -15,6 +16,8 @@ export class ProofreadDiffModal extends Modal {
   private onApplyCallback?: (appliedItems: ProofreadDiffItem[]) => void;
   private onCancelCallback?: () => void;
   private displayLang?: string;
+  private selectionRange?: ProofreadSelectionRange;
+  private formatStripOptions?: MarkdownFormatStripOptions;
   private hasApplied: boolean = false;
   private backdropClickHandler?: (e: MouseEvent) => void;
   private backdropMouseDownHandler?: (e: MouseEvent) => void;
@@ -25,7 +28,9 @@ export class ProofreadDiffModal extends Modal {
     items: ProofreadDiffItem[],
     onApply?: (appliedItems: ProofreadDiffItem[]) => void,
     onCancel?: () => void,
-    displayLang?: string
+    displayLang?: string,
+    selectionRange?: ProofreadSelectionRange,
+    formatStripOptions?: MarkdownFormatStripOptions
   ) {
     super(app);
     this.editor = editor;
@@ -33,6 +38,8 @@ export class ProofreadDiffModal extends Modal {
     this.onApplyCallback = onApply;
     this.onCancelCallback = onCancel;
     this.displayLang = displayLang;
+    this.selectionRange = selectionRange;
+    this.formatStripOptions = formatStripOptions;
   }
 
   onOpen() {
@@ -82,7 +89,19 @@ export class ProofreadDiffModal extends Modal {
     }
 
     const summaryEl = contentEl.createDiv({ cls: 'emily-diff-summary' });
-    summaryEl.createSpan({ text: t.diffModal.summary.replace('{count}', this.items.length.toString()) });
+    if (this.selectionRange) {
+      const scopeBadge = summaryEl.createSpan({ cls: 'emily-badge is-selection mr-2' });
+      scopeBadge.setText(t.scopes.selection);
+      summaryEl.createSpan({
+        text: t.diffModal.summarySelection
+          .replace('{count}', this.items.length.toString())
+          .replace('{chars}', this.selectionRange.originalText.length.toLocaleString())
+      });
+    } else {
+      const scopeBadge = summaryEl.createSpan({ cls: 'emily-badge is-all mr-2' });
+      scopeBadge.setText(t.scopes.all);
+      summaryEl.createSpan({ text: t.diffModal.summary.replace('{count}', this.items.length.toString()) });
+    }
 
     const listEl = contentEl.createDiv({ cls: 'emily-diff-items-list' });
 
@@ -152,29 +171,74 @@ export class ProofreadDiffModal extends Modal {
   }
 
   private applyChanges(all: boolean) {
-    let doc = this.editor.getValue();
     const appliedItems: ProofreadDiffItem[] = [];
 
-    for (const item of this.items) {
-      if (all || item.approved) {
-        if (item.id === 'timestamp_clean_auto') {
-          doc = MarkdownFormatter.cleanScriptTimestamps(doc);
-          appliedItems.push(item);
-        } else if (item.id === 'korean_bold_auto') {
-          doc = MarkdownFormatter.fixKoreanBoldFormatting(doc);
-          appliedItems.push(item);
-        } else if (item.original && doc.includes(item.original)) {
-          doc = MarkdownFormatter.replaceTextInDoc(doc, item.original, item.replacement);
-          appliedItems.push(item);
+    if (this.selectionRange) {
+      // 1. Selection Scope: Apply only within the selected range
+      let targetText = this.editor.getRange(this.selectionRange.from, this.selectionRange.to);
+      if (!targetText || targetText !== this.selectionRange.originalText) {
+        targetText = this.selectionRange.originalText;
+      }
+
+      for (const item of this.items) {
+        if (all || item.approved) {
+          if (item.id === 'timestamp_clean_auto') {
+            targetText = MarkdownFormatter.cleanScriptTimestamps(targetText);
+            appliedItems.push(item);
+          } else if (item.original && targetText.includes(item.original)) {
+            targetText = MarkdownFormatter.replaceTextInDoc(targetText, item.original, item.replacement);
+            appliedItems.push(item);
+          }
         }
       }
+
+      // If format stripping was also requested, apply it directly to the selection
+      if (this.formatStripOptions && (
+        this.formatStripOptions.stripBold ||
+        this.formatStripOptions.stripItalic ||
+        this.formatStripOptions.stripStrikethrough ||
+        this.formatStripOptions.stripHighlight
+      )) {
+        targetText = MarkdownFormatter.stripMarkdownDecorations(targetText, this.formatStripOptions);
+      }
+
+      this.editor.replaceRange(targetText, this.selectionRange.from, this.selectionRange.to);
+    } else {
+      // 2. Entire Document Scope
+      let doc = this.editor.getValue();
+
+      for (const item of this.items) {
+        if (all || item.approved) {
+          if (item.id === 'timestamp_clean_auto') {
+            doc = MarkdownFormatter.cleanScriptTimestamps(doc);
+            appliedItems.push(item);
+          } else if (item.original && doc.includes(item.original)) {
+            doc = MarkdownFormatter.replaceTextInDoc(doc, item.original, item.replacement);
+            appliedItems.push(item);
+          }
+        }
+      }
+
+      // If format stripping was also requested, apply it directly to the document
+      if (this.formatStripOptions && (
+        this.formatStripOptions.stripBold ||
+        this.formatStripOptions.stripItalic ||
+        this.formatStripOptions.stripStrikethrough ||
+        this.formatStripOptions.stripHighlight
+      )) {
+        doc = MarkdownFormatter.stripMarkdownDecorations(doc, this.formatStripOptions);
+      }
+
+      this.editor.setValue(doc);
     }
 
-    this.editor.setValue(doc);
     this.hasApplied = true;
     this.onCancelCallback = undefined;
     const t = getTranslation(this.displayLang);
-    new Notice(t.diffModal.appliedNotice.replace('{count}', appliedItems.length.toString()));
+    const noticeText = this.selectionRange
+      ? t.diffModal.appliedSelectionNotice.replace('{count}', appliedItems.length.toString())
+      : t.diffModal.appliedNotice.replace('{count}', appliedItems.length.toString());
+    new Notice(noticeText);
     if (this.onApplyCallback) {
       this.onApplyCallback(appliedItems);
       this.onApplyCallback = undefined;

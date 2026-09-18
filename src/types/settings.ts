@@ -79,6 +79,16 @@ export interface EmilySettings {
   defaultTranslationStyle: TranslationStyle;
   /** 코드 블록 내부 주석만 번역하고 코드는 보존할지 여부 */
   defaultTranslateCodeComments: boolean;
+
+  // 편집 및 서식 제거 기본 설정 (Editing & Format Removal Preferences)
+  /** 볼드체(**, __) 서식 제거 기본 선택 여부 */
+  defaultStripBold: boolean;
+  /** 기울이기(*, _) 서식 제거 기본 선택 여부 */
+  defaultStripItalic: boolean;
+  /** 취소선(~~) 서식 제거 기본 선택 여부 */
+  defaultStripStrikethrough: boolean;
+  /** 하이라이트(==) 서식 제거 기본 선택 여부 */
+  defaultStripHighlight: boolean;
 }
 
 /**
@@ -114,5 +124,11 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   defaultPreservationStrategy: 'new_file',
   defaultTranslationTone: 'academic',
   defaultTranslationStyle: 'balanced',
-  defaultTranslateCodeComments: false
+  defaultTranslateCodeComments: false,
+
+  // 편집 및 서식 제거 기본값
+  defaultStripBold: false,
+  defaultStripItalic: false,
+  defaultStripStrikethrough: false,
+  defaultStripHighlight: false
 };

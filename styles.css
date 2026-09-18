@@ -261,6 +261,18 @@
   color: var(--emily-error);
 }
 
+.emily-badge.is-selection {
+  background-color: rgba(123, 108, 217, 0.2);
+  color: var(--interactive-accent);
+  font-weight: 600;
+}
+
+.emily-badge.is-all {
+  background-color: var(--background-modifier-border);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 .emily-count-badge {
   display: inline-flex;
   align-items: center;
@@ -696,7 +708,8 @@ select.emily-select-input {
 .emily-prompt-target-file {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   padding: 4px 8px;
   background-color: var(--background-secondary-alt);
   border: 1px solid var(--divider-color);
@@ -708,6 +721,36 @@ select.emily-select-input {
   transition: all 0.15s ease;
   min-width: 0;
   width: 100%;
+}
+
+.emily-prompt-file-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.emily-prompt-scope-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+
+.emily-prompt-scope-badge.is-selection {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.emily-prompt-scope-badge.is-all {
+  background: var(--background-modifier-border);
+  color: var(--text-muted);
 }
 
 .emily-prompt-target-file:hover {
@@ -1820,6 +1863,30 @@ select.emily-select-input {
   color: var(--text-normal);
   padding-bottom: 4px;
   border-bottom: 1px solid var(--divider-color);
+}
+
+.emily-session-empty-notice {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  padding: 4px 0 2px 0;
+}
+
+/* Utility typography & color helper classes */
+.text-xs {
+  font-size: 11px !important;
+}
+
+.text-sm {
+  font-size: 12px !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.font-semibold {
+  font-weight: 600 !important;
 }
 
 .emily-session-items-list {
@@ -3106,6 +3173,64 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   padding-top: 14px;
   border-top: 1px solid var(--background-modifier-border);
 }
+
+/* ==========================================================================
+   Format Stripping Options (4-Column Responsive Grid)
+   ========================================================================== */
+.emily-format-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.emily-format-strip-grid .emily-segmented-btn {
+  min-height: 48px;
+  padding: 6px 2px;
+}
+
+.emily-format-strip-grid .emily-segmented-btn .emily-segmented-label {
+  font-size: 10.5px;
+}
+
+/* Responsive: When sidebar narrows (< 380px or .is-narrow-sidebar / .is-compact-sidebar),
+   hide text strings and switch cleanly to compact edit icon buttons */
+.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-label,
+.is-compact-sidebar .emily-format-strip-grid .emily-segmented-label {
+  display: none;
+}
+
+.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-btn,
+.is-compact-sidebar .emily-format-strip-grid .emily-segmented-btn {
+  min-height: 38px;
+  height: 38px;
+  padding: 4px 2px;
+  gap: 0;
+}
+
+.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-icon svg,
+.is-compact-sidebar .emily-format-strip-grid .emily-segmented-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+@container emily-sidebar (max-width: 380px) {
+  .emily-format-strip-grid .emily-segmented-label {
+    display: none;
+  }
+  .emily-format-strip-grid .emily-segmented-btn {
+    min-height: 38px;
+    height: 38px;
+    padding: 4px 2px;
+    gap: 0;
+  }
+  .emily-format-strip-grid .emily-segmented-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
 
 
 
