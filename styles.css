@@ -1873,20 +1873,36 @@ select.emily-select-input {
 }
 
 /* Utility typography & color helper classes */
+.assistant-emily-container .text-xs,
+.emily-sidebar-root .text-xs,
+.emily-settings-tab .text-xs,
+.emily-session-card .text-xs,
 .text-xs {
-  font-size: 11px !important;
+  font-size: 11px;
 }
 
+.assistant-emily-container .text-sm,
+.emily-sidebar-root .text-sm,
+.emily-settings-tab .text-sm,
+.emily-session-card .text-sm,
 .text-sm {
-  font-size: 12px !important;
+  font-size: 12px;
 }
 
+.assistant-emily-container .text-muted,
+.emily-sidebar-root .text-muted,
+.emily-settings-tab .text-muted,
+.emily-session-card .text-muted,
 .text-muted {
-  color: var(--text-muted) !important;
+  color: var(--text-muted);
 }
 
+.assistant-emily-container .font-semibold,
+.emily-sidebar-root .font-semibold,
+.emily-settings-tab .font-semibold,
+.emily-session-card .font-semibold,
 .font-semibold {
-  font-weight: 600 !important;
+  font-weight: 600;
 }
 
 .emily-session-items-list {

@@ -212,23 +212,32 @@ export class MarkdownFormatter {
     target = target.replace(/!?\[\[[^\]\r\n]+?\]\]/g, mask);
 
     // 2-6. 마크다운 링크 URL 영역 ([text](URL))
-    target = target.replace(/\[([^\]\r\n]*?)\]\(([^)\r\n]+?)\)/g, (_match, text, url) => {
-      return `[${text}](${mask(url)})`;
-    });
+    target = target.replace(
+      /\[([^\]\r\n]*?)\]\(([^)\r\n]+?)\)/g,
+      (_match: string, text: string, url: string): string => {
+        return `[${text}](${mask(url)})`;
+      }
+    );
 
     // 3. 서식 제거 연산 수행
     // 3-1. 복합 서식 (볼드+기울임: ***text*** 또는 ___text___)
     if (stripBold || stripItalic) {
-      target = target.replace(/\*\*\*([^*\r\n]+?)\*\*\*/g, (_match, inner) => {
-        if (stripBold && stripItalic) return inner;
-        if (stripBold) return `*${inner}*`;
-        return `**${inner}**`;
-      });
-      target = target.replace(/___([^_\r\n]+?)___/g, (_match, inner) => {
-        if (stripBold && stripItalic) return inner;
-        if (stripBold) return `_${inner}_`;
-        return `__${inner}__`;
-      });
+      target = target.replace(
+        /\*\*\*([^*\r\n]+?)\*\*\*/g,
+        (_match: string, inner: string): string => {
+          if (stripBold && stripItalic) return inner;
+          if (stripBold) return `*${inner}*`;
+          return `**${inner}**`;
+        }
+      );
+      target = target.replace(
+        /___([^_\r\n]+?)___/g,
+        (_match: string, inner: string): string => {
+          if (stripBold && stripItalic) return inner;
+          if (stripBold) return `_${inner}_`;
+          return `__${inner}__`;
+        }
+      );
     }
 
     // 3-2. 볼드체 제거 (**text** 또는 __text__)
@@ -250,7 +259,7 @@ export class MarkdownFormatter {
     // 3-5. 기울이기 제거 (*text* 또는 _text_)
     // 리스트 불릿(* item)이나 곱셈 기호와 오작동하지 않도록 양끝 비공백/구분자 조건 확인
     if (stripItalic) {
-      target = target.replace(/(?<=^|[^\*])\*([^*\r\n\s](?:[^*\r\n]*?[^*\r\n\s])?)\*(?!\*)/g, '$1');
+      target = target.replace(/(?<=^|[^*])\*([^*\r\n\s](?:[^*\r\n]*?[^*\r\n\s])?)\*(?!\*)/g, '$1');
       target = target.replace(/(?<=^|[^\w])_([^_\r\n\s](?:[^_\r\n]*?[^_\r\n\s])?)_(?=[^\w]|$)/g, '$1');
     }
 

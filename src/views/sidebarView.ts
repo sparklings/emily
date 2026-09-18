@@ -2881,17 +2881,6 @@ export class EmilySidebarView extends ItemView {
 
     const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
     setIcon(iconSpan, icon);
-    if (!iconSpan.firstElementChild) {
-      if (icon === 'bold') {
-        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-bold"><path d="M6 12h9a4 4 0 0 0 0-8H6v8Z"/><path d="M6 12h10a4 4 0 0 1 0 8H6v-8Z"/></svg>';
-      } else if (icon === 'italic') {
-        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-italic"><line x1="19" x2="10" y1="4" y2="4"/><line x1="14" x2="5" y1="20" y2="20"/><line x1="15" x2="9" y1="4" y2="20"/></svg>';
-      } else if (icon === 'strikethrough') {
-        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-strikethrough"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" x2="20" y1="12" y2="12"/></svg>';
-      } else if (icon === 'highlighter') {
-        iconSpan.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-icon lucide-highlighter"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2.78 2.78 0 0 1-3.9 0l-4.1-4.1a2.78 2.78 0 0 1 0-3.9L14 1"/><path d="m18 6 3 3"/></svg>';
-      }
-    }
 
     this.renderSegmentedLabel(btn, label);
 
