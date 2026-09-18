@@ -85,7 +85,7 @@
           "@type": "Person",
           "name": "SUNGWON PARK"
         },
-        "softwareVersion": "1.0.17",
+        "softwareVersion": "1.0.18",
         "downloadUrl": "https://github.com/sparklings/emily/releases",
         "installUrl": "obsidian://show-plugin?id=assistant-emily",
         "offers": {
@@ -97,6 +97,9 @@
         "featureList": [
           "옵시디언 번역 시 YAML 메타데이터, [[위키링크]], LaTeX 수식 100% 무손실 보존",
           "단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode) 지원",
+          "선택적 마크다운 서식 제거 (볼드/기울이기/취소선/하이라이트 개별·전체 체크박스 제거)",
+          "선택 영역 기반 지능형 교열 분기(Selection-Scoped) 및 실시간 선택 배지",
+          "반응형 너비 감지 적응형 버튼(Responsive Adaptive Segmented Buttons)",
           "코드 블록 주석(//, #) 도착어 선택 번역 지원",
           "사용자 정의 번역 용어집(Custom Glossary) 주입 번역",
           "Needleman-Wunsch 알고리즘 기반 대화형 문자 단위 Diff 대조",
@@ -244,7 +247,7 @@
       <div class="hero-content">
         <div class="badge-version">
           <span class="dot"></span>
-          <span>공식 커뮤니티 플러그인 정식 출시 · 옵시디언 번역 &amp; 교열 v1.0.17</span>
+          <span>공식 커뮤니티 플러그인 정식 출시 · 옵시디언 번역 &amp; 교열 v1.0.18</span>
         </div>
         <h1 id="hero-title-id" class="hero-title">옵시디언 번역의 종결, 서식 깨짐 없는 무손실 AI 번역 &amp; 교열</h1>
         <p class="hero-subtitle">
@@ -328,8 +331,9 @@ updated: 2026-09-14
                 <span>✨ Assistant Emily</span>
                 <span style="font-size: 0.75rem; color: #10b981;">● Online</span>
               </div>
-              <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.6rem;">
-                📄 작업 대상: <code>Distributed Systems.md</code>
+              <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.6rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                <span>📄 작업 대상: <code>Distributed Systems.md</code></span>
+                <span style="font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; background: rgba(124, 58, 237, 0.25); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);">선택 영역 (340자)</span>
               </div>
 
               <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-top: 0.5rem;">
@@ -339,6 +343,16 @@ updated: 2026-09-14
                 <div class="sidebar-btn active">✓ 맞춤법 검사</div>
                 <div class="sidebar-btn active">✓ 문법 검사</div>
                 <div class="sidebar-btn active">✓ 타임스탬프 삭제</div>
+              </div>
+
+              <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-top: 0.8rem;">
+                🧹 마크다운 서식 제거
+              </div>
+              <div class="sidebar-options-grid" style="grid-template-columns: repeat(4, 1fr); font-size: 0.7rem;">
+                <div class="sidebar-btn active">✓ 볼드</div>
+                <div class="sidebar-btn active">✓ 기울임</div>
+                <div class="sidebar-btn active">✓ 취소선</div>
+                <div class="sidebar-btn active">✓ 하이라이트</div>
               </div>
 
               <div style="font-size: 0.78rem; font-weight: 600; color: #cbd5e1; margin-top: 0.8rem;">
@@ -424,7 +438,7 @@ updated: 2026-09-14
     <section id="features" class="features-section" aria-labelledby="features-title-id">
       <div class="section-header">
         <span class="section-tag">Core Capabilities</span>
-        <h2 id="features-title-id" class="section-title">옵시디언 맞춤형 6대 핵심 기능</h2>
+        <h2 id="features-title-id" class="section-title">옵시디언 맞춤형 8대 핵심 기능</h2>
       </div>
 
       <div class="features-grid">
@@ -457,6 +471,24 @@ updated: 2026-09-14
 
         <!-- Feature 4 -->
         <article class="feature-card">
+          <div class="feature-icon">🧹</div>
+          <h3 class="feature-title">선택적 마크다운 서식 제거 (Format Stripper)</h3>
+          <p class="feature-desc">
+            볼드(<code>**</code>), 기울임(<code>*</code>), 취소선(<code>~~</code>), 하이라이트(<code>==</code>) 서식을 체크박스로 선택하여 원클릭 일괄 제거합니다. 코드 블록, 인라인 코드, LaTeX 수식, 위키링크, YAML 프론트매터는 100% 무손실 보존됩니다.
+          </p>
+        </article>
+
+        <!-- Feature 5 -->
+        <article class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3 class="feature-title">선택 영역 교열 분기 &amp; 반응형 적응형 버튼</h3>
+          <p class="feature-desc">
+            번역 OFF 시 마우스로 드래그한 선택 문단만 한정 교열하며(실시간 배지 지원), 사이드바 너비 축소(&lt;320px) 시 텍스트가 직관적인 아이콘 모드로 자동 전환되어 좁은 분할 창에서도 UI 깨짐 없이 쾌적하게 동작합니다.
+          </p>
+        </article>
+
+        <!-- Feature 6 -->
+        <article class="feature-card">
           <div class="feature-icon">📚</div>
           <h3 class="feature-title">사용자 정의 용어집 (Glossary)</h3>
           <p class="feature-desc">
@@ -464,7 +496,7 @@ updated: 2026-09-14
           </p>
         </article>
 
-        <!-- Feature 5 -->
+        <!-- Feature 7 -->
         <article class="feature-card">
           <div class="feature-icon">💻</div>
           <h3 class="feature-title">단일 통합 대시보드 &amp; 다중 기기 독립 바인딩</h3>
@@ -473,7 +505,7 @@ updated: 2026-09-14
           </p>
         </article>
 
-        <!-- Feature 6 -->
+        <!-- Feature 8 -->
         <article class="feature-card">
           <div class="feature-icon">🔍</div>
           <h3 class="feature-title">대화형 Diff 검토 &amp; 제로 토큰 재오픈</h3>
@@ -681,6 +713,8 @@ updated: 2026-09-14
         <ul>
           <li><strong>100% Syntax Preservation:</strong> UUID token isolation keeps Obsidian wikilinks and metadata completely intact during translation.</li>
           <li><strong>Paragraph Bilingual Translation:</strong> Translates foreign articles or research papers side-by-side (1:1 sentence matching).</li>
+          <li><strong>Selective Markdown Format Stripper:</strong> Cleanly strip bold, italic, strikethrough, and highlight syntax using custom checkboxes with 100% preservation of code blocks, inline code, and LaTeX math.</li>
+          <li><strong>Selection-Scoped Proofreading &amp; Adaptive Buttons:</strong> Scopes proofreading strictly to highlighted paragraphs with live badges, paired with responsive segmented buttons that gracefully collapse into icons in narrow sidebars.</li>
           <li><strong>Interactive Character-Level Diff:</strong> Powered by the Needleman-Wunsch algorithm for granular change review and selective merging.</li>
           <li><strong>Local LLM &amp; Privacy First:</strong> Zero telemetry, direct encrypted streaming to Ollama, LM Studio, or OpenAI-compatible proxies.</li>
           <li><strong>Unified Dashboard &amp; Multi-Device Profiles:</strong> Independent local device binding eliminates OneDrive sync collisions with compact modal editing and auto-probe self-healing.</li>

@@ -12,7 +12,7 @@ Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian t
 - **Primary Keywords**: 옵시디언 번역, 옵시디언 AI 번역, Obsidian Translation, 옵시디언 마크다운 번역, 옵시디언 대조 번역, 옵시디언 교열
 - **License**: MIT (100% Free & Open Source)
 - **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.0.17
+- **Version**: 1.0.18
 
 ## 옵시디언 번역 핵심 기능 (Obsidian Translation Highlights)
 
@@ -24,22 +24,35 @@ Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian t
    - 옵시디언 번역 시 YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`, `$$...$$`), 콜아웃(`> [!note]`), 코드 블록을 고유 UUID 토큰으로 완전 격리 마스킹한 후 연산.
    - AI 번역 후 서식이 1글자도 깨지거나 누락되지 않고 100% 바이트 단위 무손실 복원.
 
-3. **코드 블록 내부 주석 번역 (`//`, `#`)**:
+3. **선택적 마크다운 서식 제거 (Selective Format Stripping)**:
+   - 볼드체(`**`), 기울이기(`*`), 취소선(`~~`), 형광펜 하이라이트(`==`) 4종 서식을 선택 제거 가능.
+   - 코드 블록, 인라인 코드, LaTeX 수식, YAML 헤더, 글머리 기호는 100% 안전 보존.
+
+4. **선택 영역 기반 지능형 교열 분기 (Selection-Scoped Proofreading)**:
+   - 번역 모드 OFF 상태에서 마우스 드래그 선택 시 선택된 문단만 한정 교열 수행 (미선택 시 전체 문서 교열).
+   - 사이드바 대상 문서 바에 실시간 `선택 영역 (N자)` / `Selection (N chars)` 보라색 액센트 배지 표기.
+   - 교열 승인 시 원자적 치환(`replaceRange`)으로 선택 외 본문 오염 0% 보장.
+
+5. **코드 블록 내부 주석 번역 (`//`, `#`)**:
    - 소스코드는 원형 그대로 보존하면서 개발 주석문만 똑똑하게 감지하여 대상 언어로 번역.
 
-4. **사용자 정의 번역 용어집 (Glossary)**:
+6. **사용자 정의 번역 용어집 (Glossary)**:
    - 도메인 특화 전문 용어나 프로젝트 기술 단어를 등록해 오역을 원천 차단하고 100% 일관된 번역 결과 도출.
 
-5. **동일 언어 번역/스타일 편집 (Same-Language Mode)**:
+7. **동일 언어 번역/스타일 편집 (Same-Language Mode)**:
    - 출발어와 도착어가 같을 경우 어색한 번역투 문장을 매끄럽게 다듬고 지정된 어조(학술적, 정중한, 친근한)로 문체 정합화.
 
-6. **대화형 Diff 검토 (Needleman-Wunsch)**:
+8. **대화형 Diff 검토 (Needleman-Wunsch)**:
    - 번역/교열 결과를 단어 및 문장 단위로 나란히 비교하고 원하는 항목만 선택 적용.
 
-7. **로컬 AI(Ollama, LM Studio) 오프라인 완전 무료 번역 & 다중 기기 독립 바인딩**:
-   - 제로 텔레메트리, 100% 로컬 직접 통신으로 인터넷 없이도 안전하고 완전 무료로 옵시디언 번역 수행.
-   - 단일 통합 AI 대시보드 및 다중 PC 로컬 독립 프로필 바인딩(클라우드 동기화 간섭 차단), 포트/키 자동 진단(Auto-Probe) 지원.
-   - 작업 상태 원클릭 새로고침(Refresh) 및 UI 클린징 지원.
+9. **반응형 적응형 버튼 & 일관된 타이포그래피 (Adaptive UI & Typography)**:
+   - 사이드바 너비 축소 시(<320px) 텍스트를 숨기고 직관적인 Lucide 아이콘 모드로 자동 전환.
+   - 세션 히스토리 카드 타이포그래피 및 빈 상태 알림 비주얼 계층 정합화.
+
+10. **로컬 AI(Ollama, LM Studio) 오프라인 완전 무료 번역 & 다중 기기 독립 바인딩**:
+    - 제로 텔레메트리, 100% 로컬 직접 통신으로 인터넷 없이도 안전하고 완전 무료로 옵시디언 번역 수행.
+    - 단일 통합 AI 대시보드 및 다중 PC 로컬 독립 프로필 바인딩(클라우드 동기화 간섭 차단), 포트/키 자동 진단(Auto-Probe) 지원.
+    - 작업 상태 원클릭 새로고침(Refresh) 및 UI 클린징 지원.
 
 ## Installation in Obsidian
 

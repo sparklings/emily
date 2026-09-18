@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.17-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.18-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-시스템-아키텍처-및-구조-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -70,6 +70,8 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 ### 1. 무손실 지능형 마크다운 교열 (Lossless Proofreading)
 * **문맥 기반 오탈자 및 문법 교정** : 단순 규칙 기반 검사를 넘어, LLM의 문맥 이해력을 활용하여 맞춤법, 띄어쓰기, 어색한 조사, 주술 호응 관계를 지능적으로 바로잡습니다.
 * **클린 3대 독립 교열 도구** : 사이드바에서 `맞춤법 검사`, `문법 검사`, `타임스탬프 삭제`를 세그먼트 그리드 버튼으로 원하는 조합만 자유롭게 다중 선택하여 실행할 수 있습니다.
+* **선택 영역 기반 지능형 교열 분기 (Selection-Scoped Proofreading)** : 번역 모드가 OFF인 상태에서 문서의 특정 단락을 마우스로 드래그 선택하면, 전체 문서 대신 **선택된 영역만 정밀 교열**을 수행합니다 (미선택 시 전체 문서 자동 Fallback). 에디터의 선택 상태를 실시간 감지하여 사이드바 대상 문서 바에 `선택 영역 (N자)` 보라색 액센트 배지를 표시하며, 교열 승인 시 선택 범위만 원자적으로 안전하게 치환(`replaceRange`)하여 선택 외 본문 오염을 100% 원천 방지합니다.
+* **다국어 교열 정책 준수 & 가짜 더미 제안 원천 차단** : UI 설정 언어(한국어 vs English)에 맞추어 교열 결과 설명문(`explanation`)의 언어를 엄격히 일치시키며, 불필요한 합성 더미 카드를 완전히 배제하여 실제 감지된 정제 교열 항목만 투명하게 제공합니다.
 * **문법 마스킹 보호** : 옵시디언 위키링크(`[[Note]]`, `[[Note|Alias]]`), 태그(`#tag`), 콜아웃 헤더(`> [!tip]`), 인라인/블록 LaTeX 수식(`$...$`, `$$...$$`), 인라인 코드 및 코드 블록 전체를 UUID 토큰으로 안전하게 보호한 뒤 교열을 수행하여 원본 서식이 절대 깨지지 않습니다.
 * **인터랙티브 Diff 모달**
   * 발견된 모든 교정 항목을 카테고리(`[맞춤법 검사]`, `[문법 검사]`, `[타임스탬프 삭제]`)별로 목록화하여 표시합니다.
@@ -91,7 +93,12 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 * **안전 스마트 청킹(Smart Chunking - 1,600자 최적화)**
   * LLM의 단일 응답 토큰 한계를 초과하는 대용량 문서는 H1~H3 헤더 및 문단 경계를 분석하여 무결성을 유지하며 1,600자 단위로 안전하게 분할 번역한 뒤 하나로 완벽하게 재조립합니다. (조기 단절 및 누락 0% 보장)
 
-### 3. 마크다운 타이포그래피 및 서식 정규화 (Typography Normalizer)
+### 3. 마크다운 타이포그래피 및 선택적 서식 제거 (Typography & Format Stripper)
+* **선택적 마크다운 서식 제거 (Selective Markdown Format Stripping)**
+  * 복사해 온 웹 아티클이나 번역 문서에서 **볼드체(`**`), 기울이기(`*`), 취소선(`~~`), 형광펜 하이라이트(`==`)** 4종 서식을 체크박스로 선택하여 본문에서 즉시 제거할 수 있습니다.
+  * 4개 항목 중 전체 또는 일부를 자유롭게 선택 적용할 수 있으며, 설정 화면(`Settings > Assistant Emily`)에서 기본 활성값을 지정할 수 있습니다.
+  * 사이드바 번역 메뉴 바로 상단에 깔끔한 독립 패널로 배치되어 작업 동선이 직관적입니다.
+  * 소스코드 블록(\`\`\`...\`\`\`), 인라인 코드(\`...\`), LaTeX 수식(`$...$`), YAML 프론트매터, 글머리 기호 목록(`-`, `*`) 등 핵심 마크다운 구조는 100% 무손실 보존됩니다.
 * **동아시아 언어 볼드 공백 자동 보정(East Asian Bold Spacing Normalizer)**
   * 한국어, 일본어, 중국어 환경에서 마크다운 볼드 구문 뒤에 조사가 바로 붙을 경우(`**중요한**것은`), 옵시디언 에디터의 렌더링 규칙에 따라 볼드 서식이 풀리거나 깨지는 현상을 방지하기 위해 표준적인 공백 규칙을 자동으로 정규화합니다.
 * **유튜브/강의 스크립트 타임스탬프 클리너**
@@ -116,7 +123,7 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
   * 상단 드롭다운에서 현재 PC에 바인딩할 프로필을 선택하는 즉시 실시간 활성 엔드포인트와 마스킹된 API Key가 표시되며, `[⚡ 현재 기기 연결 테스트]` 버튼으로 즉시 통신 및 모델을 검증할 수 있습니다.
 * **로컬 격리 바인딩 및 클라우드 동기화(OneDrive) 연쇄 장애 원천 차단**
   * 여러 대의 노트북(회사 노트북 1, 회사 노트북 2, 집 PC 등)이 동일한 `http://127.0.0.1:11434/v1`(동일 localhost 및 동일 포트)를 사용하면서도 서로 다른 API Key를 가질 때 발생하는 동기화 충돌을 완벽하게 해결하였습니다.
-  * 기기 프로필 목록(`deviceProfiles`)은 옵시디언 볼트(`data.json`)를 통해 모든 PC에 안전하게 공유(한 번만 등록하면 끝)하되, **"현재 컴퓨터가 어떤 프로필을 활성화하고 있는가"**는 각 PC 로컬 스토리지(`localStorage`)에만 독립 격리 저장됩니다.
+  * 기기 프로필 목록(`deviceProfiles`)은 옵시디언 볼트(`data.json`)를 통해 모든 PC에 안전하게 공유하되, **"현재 컴퓨터가 어떤 프로필을 활성화하고 있는가"**는 옵시디언 플러그인 공식 데이터 API(`activeDeviceMap`, `data.json`)를 통해 기기별로 안전하게 매핑 관리됩니다.
   * 이를 통해 OneDrive나 Obsidian Sync로 볼트 설정이 동기화되더라도 다른 컴퓨터의 API Key나 포트 설정을 덮어쓰는 연쇄 장애가 100% 차단됩니다.
 * **FreeLLMAPI Proxy 스타일 컴팩트 팝업 모달 (`DeviceProfileModal`)**
   * 기기 프로필 추가/수정 시 세로 공간을 낭비하던 인라인 폼 카드를 제거하고, 간결한 2컬럼 레이아웃의 독립 팝업 대화상자로 간소화하였습니다.
@@ -133,13 +140,17 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
   * DeepSeek R1, Qwen 2.5 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`) 태그 블록 및 영문 독백을 정교한 정규식으로 완벽 제거하고 순수 한국어 인사말만 정제하여 표시합니다.
 
 ### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
+* **반응형 너비 감지 적응형 버튼 (Responsive Adaptive Segmented Buttons)**
+  * 옵시디언 사이드바의 너비가 좁아질 때(<320px) 텍스트를 숨기고 직관적인 Lucide 아이콘 모드로 자동 전환되며, 중간 너비(<380px)에서는 핵심 라벨만 간결하게 표시하여 사이드바 폭을 좁게 쓰더라도 UI 레이아웃 깨짐 없이 쾌적한 조작성을 유지합니다.
 * **사이드바 원클릭 새로고침 (Work State Refresh & UI Cleansing)**
   * 사이드바 헤더 상단에 **새로고침(`refresh-cw`) 버튼**을 탑재하여, 작업 중단이나 에러 발생 시 언제든지 클릭 한 번으로 모든 진행 중인 비동기 요청을 즉시 중단(Abort)하고, 코어 서비스를 동적으로 재초기화하며, UI 상태를 플러그인이 처음 실행된 것처럼 깨끗하게 초기화합니다.
 * **실시간 즉시 작업 취소 (Immediate Task Cancel with AbortController)**
   * 긴 문서 번역이나 교열 작업 중 사용자가 언제든지 중단할 수 있도록 스트림 헤더에 **`[❌ 작업 취소]`** 버튼을 제공합니다.
   * 취소 클릭 시 `AbortController`를 통해 진행 중이던 비동기 HTTP 통신을 즉시 중단하고, 생성 중이던 미완성 임시 파일을 옵시디언 휴지통(`trashFile`)으로 자동 정리하여 볼트 오염을 원천 방지합니다.
 * **방해 없는 클린 대상 문서 표시줄**
-  * 사이드바 대상 문서 바에서 시각적 노이즈를 배제하여 활성 노트의 전체 제목을 온전하고 또렷하게 표시합니다.
+  * 사이드바 대상 문서 바에서 시각적 노이즈를 배제하여 활성 노트의 전체 제목을 온전하고 또렷하게 표시하며, 문단 선택 시 `선택 영역 (N자)` 배지를 유기적으로 연동 표시합니다.
+* **세션 히스토리 카드 타이포그래피 계층 정합성**
+  * 세션 히스토리 카드의 비주얼 계층과 빈 상태 알림 문구(`No issues detected.` 등)의 폰트 크기를 통일하여 정갈하고 세련된 타이포그래피 계층을 완성하였습니다.
 * **실시간 타임라인 및 청크 진행 상태 안내**
   * 대용량 문서 분할 번역 등 다단계 파이프라인 진행 중 실시간 타임라인에 `[1/4]`, `[2/4]`, `[3/4]`, `[4/4]` 형태로 청크별 순차 진행 상황을 투명하게 안내합니다.
   * 완료된 세션 히스토리 카드에 총 처리 시간 및 토큰 속도(tokens/sec)를 투명하게 기록합니다.
@@ -266,7 +277,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 
 <p align="center">
   <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.17-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.18-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -287,7 +298,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 3. [Detailed Features](#-detailed-features)
    - [1. Lossless Intelligent Markdown Proofreading](#1-lossless-intelligent-markdown-proofreading)
    - [2. Context-Aware Professional Translation](#2-context-aware-professional-translation)
-   - [3. Markdown Typography & Formatting Normalization](#3-markdown-typography--formatting-normalization)
+   - [3. Markdown Typography & Selective Format Stripper](#3-markdown-typography--selective-format-stripper)
    - [4. Custom Natural Instructions](#4-custom-natural-instructions)
    - [5. Interactive Diff Review](#5-interactive-diff-review)
    - [6. Device Profile-Based Provider Management & Smart Auto-Probe](#6-device-profile-based-provider-management--smart-auto-probe)
@@ -329,6 +340,8 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 ### 1. Lossless Intelligent Markdown Proofreading
 * **Context-Aware Spelling and Grammar Correction**: Transcends rigid rule-based checkers by leveraging LLM contextual comprehension to fix spelling, spacing, awkward particles, and subject-predicate agreement.
 * **Clean 3-Tool Segmented Grid**: Independently select and combine `Spelling Check`, `Grammar Check`, and `Remove Timestamps` directly from the sidebar segmented button grid.
+* **Selection-Scoped Proofreading**: When translation mode is OFF, selecting any text paragraph scopes proofreading strictly to the highlighted selection (falling back to the full document if nothing is selected). A live purple accent badge (`Selection (N chars)`) dynamically appears in the sidebar target document bar. Accepting diff corrections performs atomic string replacement (`replaceRange`), completely preserving the rest of the document.
+* **Strict Multilingual Response Guardrails & Zero Synthetic Noise**: The proofreading explanation language strictly honors the user interface setting (English vs. Korean), and synthetic dummy cards are eliminated to ensure 100% genuine, actionable feedback.
 * **Syntax Masking Protection**: Obsidian wikilinks (`[[Note]]`, `[[Note|Alias]]`), tags (`#tag`), callout headers (`> [!tip]`), inline and block LaTeX equations (`$...$`, `$$...$$`), and code blocks are securely converted into UUID placeholder tokens before LLM processing, guaranteeing zero corruption to original formatting.
 * **Interactive Diff Modal**:
   * Displays all detected corrections categorized by type (`[Spelling Check]`, `[Grammar Check]`, `[Remove Timestamps]`).
@@ -350,7 +363,12 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **Safe Smart Chunking (1,600 Characters Optimized)**:
   * For long documents exceeding single-turn LLM response token limits, the engine intelligently splits text along H1–H3 headers and paragraph boundaries at a safe 1,600-character threshold, translating sequentially and reconstructing the document seamlessly without token clipping or omissions.
 
-### 3. Markdown Typography & Formatting Normalization
+### 3. Markdown Typography & Selective Format Stripper
+* **Selective Markdown Format Stripping**:
+  * Effortlessly strip bold (`**`), italic (`*`), strikethrough (`~~`), and highlight (`==`) syntax from imported articles or translations using clean checkboxes.
+  * Select any combination or all 4 formatting types, and customize the default selection under `Settings > Assistant Emily`.
+  * Ergonomically positioned directly above the translation controls in the sidebar.
+  * Code blocks (\`\`\`...\`\`\`), inline code (\`...\`), LaTeX formulas (`$...$`), YAML frontmatter, and bullet lists (`-`, `*`) remain 100% byte-level untouched and preserved.
 * **East Asian Bold Spacing Normalizer**:
   * In Korean, Japanese, and Chinese texts, when grammatical particles immediately follow bold markup (e.g., `**word**particle`), Obsidian's renderer may fail to render bold formatting correctly. The normalizer automatically standardizes whitespace to ensure pristine visual rendering.
 * **YouTube / Lecture Script Timestamp Stripper**:
@@ -373,9 +391,9 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **Unified Provider Dashboard**
   * Replaces fragmented tab navigation with a consolidated, streamlined control panel featuring the **Active Device Card** on top, followed by the **Device Profiles Pool** and Global Fallback settings.
   * Instant machine profile selection via the active dropdown menu immediately updates live endpoint badges, masked API keys, and unlocks one-click connection diagnostics via `[⚡ Test Active Connection]`.
-* **Local Storage Isolation & Prevention of Cloud Sync (OneDrive) Race Conditions**
+* **Isolated Device Binding & Prevention of Cloud Sync (OneDrive) Race Conditions**
   * Fully resolves cascading authentication failures when multiple laptops (work laptops, home PCs) share the same `http://127.0.0.1:11434/v1` address but require distinct API keys.
-  * Machine profiles are safely pooled and synced across vaults in `data.json`, whereas each machine's active profile selection is strictly isolated inside `window.localStorage`. This prevents cloud sync services from overwriting local keys or configurations across different machines.
+  * Machine profiles are safely pooled and synced across vaults in `data.json`, whereas each machine's active profile selection is reliably isolated using the Obsidian Plugin Data API (`activeDeviceMap`, `data.json`). This prevents cloud sync services from overwriting local keys or configurations across different machines.
 * **Compact Device Profile Modal (`DeviceProfileModal`)**
   * Streamlines profile creation and editing into an elegant, FreeLLMAPI Proxy-style 2-column modal dialog instead of bloated inline cards.
   * Features clean fields for Device Name (Label), Port / Full Endpoint URL, and API Key with visibility eye toggle.
@@ -390,13 +408,17 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
   * Automatically strips internal thinking tokens (`<think>...</think>`) and internal English monologue generated by modern reasoning LLMs (such as DeepSeek R1 and Qwen 2.5), presenting only clean, formatted greetings.
 
 ### 7. Real-Time Task Cancellation & Desktop UX
+* **Responsive Adaptive Segmented Buttons**
+  * As the Obsidian sidebar width narrows (<320px), text labels automatically collapse into intuitive Lucide icons with native tooltips; at intermediate widths (<380px), essential concise labels are displayed to prevent UI clipping and maintain fluid usability.
 * **One-Click Sidebar Refresh (Work State Refresh & UI Cleansing)**
   * A dedicated **refresh button (`refresh-cw`)** in the sidebar header allows users to instantly abort ongoing asynchronous operations, dynamically reinitialize core services, and clean all selections/inputs back to initial launch state.
 * **Instant Task Cancellation (`AbortController`)**
   * An intuitive **`[❌ Cancel Task]`** button is displayed in the active streaming header during long-running tasks.
   * Clicking Cancel immediately aborts asynchronous HTTP requests and moves any partially written temporary files to Obsidian's trash (`trashFile`), keeping your vault pristine.
 * **Clutter-Free Target Document Bar**
-  * Displays the full, unobscured file name in the active note bar without visual noise or badge truncation.
+  * Displays the full, unobscured file name in the active note bar without visual noise, displaying live `Selection (N chars)` badges when text is highlighted.
+* **Consistent Typography Scale**
+  * Standardized session history empty state notice (`No issues detected.`) and card typography for clean visual rhythm and visual hierarchy.
 * **Live Timeline & Chunk Progress Indicator**
   * The multi-step execution timeline clearly reports sequential chunk progress (e.g. `[1/4]`, `[2/4]`, `[3/4]`, `[4/4]`).
   * Completed session cards record total execution time and throughput speeds (tokens/sec).
@@ -444,7 +466,7 @@ Navigate to Obsidian **Settings > Assistant Emily** to easily configure endpoint
 Manage profiles across multiple machines with different local ports or API keys:
 * **[➕ Add Device Profile]**: Opens a compact, 2-column modal to register Device Name, Port or Endpoint URL, and API Key.
 * **[📍 Apply to Current Machine]**: Instantly binds any saved profile to the local computer.
-* **Cloud Sync Isolation**: Profiles are shared across vaults, but active assignment is held in local browser storage, avoiding multi-computer configuration clobbering.
+* **Cloud Sync Isolation**: Profiles are shared across vaults, but active assignment is reliably persisted per device using the Obsidian Plugin Data API (`activeDeviceMap`), avoiding multi-computer configuration clobbering.
 * **Port / Key Auto-Probe**: Automatically diagnoses working ports and keys upon connection/401 errors, self-healing the current machine binding.
 
 #### 3. Global Default Configuration (Fallback)
