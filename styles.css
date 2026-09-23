@@ -2826,48 +2826,6 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   text-decoration: underline;
 }
 
-/* ==========================================================================
-   Multi-Device Profiles Tab (Unified P1 & P2 Management)
-   ========================================================================== */
-.emily-device-profiles-container {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  width: 100%;
-}
-
-.emily-device-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 10px 14px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-m, 6px);
-}
-
-.emily-device-card-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--emily-font-title, 14px);
-  font-weight: 600;
-  color: var(--text-normal);
-}
-
-.emily-device-card-desc {
-  font-size: var(--emily-font-desc, 12px);
-  line-height: 1.45;
-  color: var(--text-muted);
-}
-
-.emily-device-badge {
-  font-family: var(--font-monospace);
-  font-size: var(--emily-font-badge, 11px);
-}
-
 .emily-endpoint-badge {
   background-color: var(--background-modifier-form-field);
   color: var(--text-normal);
@@ -3083,16 +3041,6 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   border-top: 1px dashed var(--background-modifier-border);
 }
 
-/* Compact Device Profile Modal (Inspired by FreeLLMAPI Proxy) */
-.modal.emily-device-modal {
-  max-width: 520px;
-  width: 90vw;
-  padding: 24px;
-  border-radius: 14px;
-  background: var(--background-primary);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-}
-
 .emily-modal-header {
   display: flex;
   align-items: center;
@@ -3246,6 +3194,558 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
     height: 17px;
   }
 }
+
+/* ==========================================================================
+   YOLO 스타일 AI 프로바이더 및 모델 아코디언 UI
+   ========================================================================== */
+.emily-btn-green {
+  background-color: var(--color-green, #10b981) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  transition: opacity 0.15s ease;
+}
+
+.emily-btn-green:hover {
+  opacity: 0.9;
+}
+
+.emily-providers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.emily-provider-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 8px);
+  background-color: var(--background-secondary);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emily-provider-card.is-active-provider {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.emily-provider-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-accordion-chevron {
+  font-size: 11px;
+  color: var(--text-muted);
+  width: 16px;
+  text-align: center;
+}
+
+.emily-provider-title-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.emily-provider-name {
+  font-size: 13.5px;
+  color: var(--text-normal);
+}
+
+.emily-provider-url {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.emily-provider-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.emily-provider-accordion-body {
+  padding: 12px 16px;
+  border-top: 1px solid var(--background-modifier-border);
+  background-color: var(--background-primary);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emily-provider-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.emily-models-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 4px);
+}
+
+.emily-models-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  text-align: left;
+}
+
+.emily-models-table th {
+  padding: 7px 10px;
+  background-color: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.emily-models-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  vertical-align: middle;
+}
+
+.emily-models-table tr:last-child td {
+  border-bottom: none;
+}
+
+.emily-model-actions-td {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* 프로바이더 & 모델 모달 스타일 (Compact Layout) */
+.emily-provider-modal,
+.emily-model-modal {
+  max-width: 530px;
+  padding: 16px 20px;
+}
+
+.emily-compact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.emily-form-row-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.emily-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.emily-form-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.emily-form-label-hint {
+  font-size: 10.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.emily-form-input,
+.emily-form-select {
+  width: 100%;
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--background-modifier-border);
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-normal);
+  box-sizing: border-box;
+}
+
+.emily-form-input.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.emily-form-input:focus,
+.emily-form-select:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+  outline: none;
+}
+
+.emily-input-with-action {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.emily-input-with-action input {
+  padding-right: 32px;
+}
+
+.emily-input-action-btn {
+  position: absolute;
+  right: 4px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emily-input-action-btn:hover {
+  color: var(--text-normal);
+}
+
+/* Collapsible Advanced Options Bar & Panel */
+.emily-advanced-toggle-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  margin-top: 4px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s, 5px);
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.emily-advanced-toggle-bar:hover {
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.emily-advanced-toggle-bar.is-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: transparent;
+  background-color: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.emily-advanced-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background-color: var(--background-secondary-alt, var(--background-secondary));
+  border: 1px solid var(--background-modifier-border);
+  border-top: none;
+  border-bottom-left-radius: var(--radius-s, 5px);
+  border-bottom-right-radius: var(--radius-s, 5px);
+}
+
+.emily-advanced-panel.is-hidden {
+  display: none !important;
+}
+
+.emily-inline-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 11.5px;
+  color: var(--text-normal);
+}
+
+.emily-custom-headers-section {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.emily-custom-headers-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.emily-headers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.emily-header-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.emily-modal-footer {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Chat Models Table & Toggle Switch Styling */
+.emily-models-table-wrapper {
+  margin-top: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  overflow: hidden;
+  background-color: var(--background-primary);
+}
+
+.emily-models-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.emily-models-table thead {
+  background-color: var(--background-secondary);
+}
+
+.emily-models-table th {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.emily-models-table th:nth-child(3) {
+  text-align: center;
+  width: 70px;
+}
+
+.emily-models-table th:nth-child(4) {
+  text-align: right;
+  width: 70px;
+}
+
+.emily-models-table td {
+  padding: 6px 10px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--background-modifier-border-focus, rgba(255, 255, 255, 0.04));
+  color: var(--text-normal);
+}
+
+.emily-models-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.emily-models-table tbody tr:hover td {
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-model-enable-td {
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.emily-model-enable-td .checkbox-container {
+  margin: 0 auto;
+  display: inline-flex;
+  vertical-align: middle;
+}
+
+.emily-model-actions-td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.emily-icon-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
+  border-radius: var(--radius-s, 4px);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.emily-icon-btn:hover {
+  color: var(--text-normal);
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-icon-btn.is-danger:hover {
+  color: var(--text-error, #f87171);
+}
+
+/* YOLO Style Provider Accordion List & Cards */
+.emily-providers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 22px;
+}
+
+.emily-provider-card {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m, 6px);
+  background-color: var(--background-secondary);
+  overflow: hidden;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.emily-provider-card:hover {
+  border-color: var(--background-modifier-border-hover, var(--interactive-accent));
+}
+
+.emily-provider-card.is-active-provider {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1.5px var(--interactive-accent);
+}
+
+.emily-provider-card.is-active-provider .emily-provider-header {
+  background-color: rgba(var(--interactive-accent-rgb, 120, 80, 220), 0.08);
+}
+
+.emily-provider-card.is-active-provider .emily-provider-name {
+  color: var(--interactive-accent);
+}
+
+/* Badges & Status Pills */
+.emily-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 12px;
+  background-color: var(--background-modifier-form-field);
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.emily-badge.is-done,
+.emily-badge.is-success {
+  background-color: rgba(46, 160, 67, 0.15);
+  color: var(--text-success, #2ea043);
+  border-color: rgba(46, 160, 67, 0.35);
+  font-weight: 600;
+}
+
+.emily-badge.is-active {
+  background-color: rgba(var(--interactive-accent-rgb, 120, 80, 220), 0.15);
+  color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  font-weight: 600;
+}
+
+.emily-badge.is-warning {
+  background-color: rgba(219, 109, 40, 0.15);
+  color: var(--text-warning, #db6d28);
+  border-color: rgba(219, 109, 40, 0.35);
+}
+
+.emily-badge.is-error {
+  background-color: rgba(235, 87, 87, 0.15);
+  color: var(--text-error, #eb5757);
+  border-color: rgba(235, 87, 87, 0.35);
+}
+
+.emily-provider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+  background-color: var(--background-secondary);
+  transition: background-color 0.15s ease;
+  gap: 12px;
+}
+
+.emily-provider-header:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-accordion-chevron {
+  color: var(--text-muted);
+  font-size: 11px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.emily-provider-title-col {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.emily-provider-name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-normal);
+}
+
+.emily-provider-url {
+  font-family: var(--font-monospace);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.emily-provider-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.emily-provider-accordion-body {
+  padding: 12px 14px;
+  background-color: var(--background-primary);
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.emily-provider-action-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+
 
 
 

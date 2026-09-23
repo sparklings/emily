@@ -1,6 +1,4 @@
-import { ConsistencyIssue } from '../types/proofread';
 import { MarkdownFormatStripOptions } from '../types/translation';
-import { getTranslation } from '../i18n';
 
 export class MarkdownFormatter {
   /**
@@ -69,30 +67,6 @@ export class MarkdownFormatter {
       return `${frontmatter}${processedBody}`;
     }
     return processedBody;
-  }
-
-  /**
-   * 한국어 굵은 글씨 조사 서식 보정 (별칭)
-   */
-  static fixKoreanBoldFormatting(markdown: string): string {
-    return this.fixEastAsianBoldSpacing(markdown);
-  }
-
-  /**
-   * 내부 일관성 불일치 Callout 블록 생성
-   */
-  static createConsistencyCallout(issue: ConsistencyIssue, displayLang?: string): string {
-    const t = getTranslation(displayLang);
-    const lines = [
-      `> [!warning] ${t.common.consistencyCalloutTitle}`,
-      `> **${t.common.consistencySourceLinked}**: [[${issue.sourceFile}]]`,
-      `> ${t.common.consistencyCurrentContent}: \`${issue.originalText}\``,
-      `> ${t.common.consistencySourceContent}: \`${issue.sourceText}\``,
-      `> ${t.common.consistencyExplanation}: ${issue.explanation}`,
-      issue.suggestedReplacement ? `> **${t.common.consistencySuggestion}**: \`${issue.suggestedReplacement}\`` : ''
-    ].filter(Boolean);
-
-    return '\n' + lines.join('\n') + '\n';
   }
 
   /**

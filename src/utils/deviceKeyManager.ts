@@ -1,4 +1,200 @@
-import { EmilySettings, DeviceKeyProfile } from '../types/settings';
+import { EmilySettings, DeviceKeyProfile, AIProviderConfig, DeviceBinding, ProviderModelConfig } from '../types/settings';
+
+/**
+ * 등록된 전체 AI 프로바이더 목록을 반환합니다.
+ */
+export function getRegisteredProviders(settings: EmilySettings): AIProviderConfig[] {
+  return settings.providers || [];
+}
+
+/**
+ * 특정 기기(호스트명)에 유효하게 바인딩된 AI 프로바이더를 선출합니다. (OneDrive 다중 PC 동기화 충돌 방지 핵심)
+ * 1순위: settings.deviceMappings[hostname]?.providerId
+ * 2순위: settings.defaultProviderId
+ * 3순위: settings.providers[0]
+ */
+export function getEffectiveProviderForDevice(
+  settings: EmilySettings,
+  customHost?: string
+): AIProviderConfig | null {
+  const providers = settings.providers || [];
+  if (providers.length === 0) return null;
+
+  const currentHost = (customHost || getDeviceHostname(settings) || 'default').toLowerCase().trim();
+  const mappings = settings.deviceMappings || {};
+
+  // 1. 해당 기기의 독립 바인딩 맵 확인
+  if (currentHost && mappings[currentHost]?.providerId) {
+    const boundId = mappings[currentHost].providerId;
+    if (boundId === '__global__') {
+      return null;
+    }
+    const found = providers.find((p) => p.id === boundId);
+    if (found) return found;
+  }
+
+  // 2. 'default' 바인딩 맵 확인
+  if (mappings['default']?.providerId) {
+    const boundId = mappings['default'].providerId;
+    if (boundId !== '__global__') {
+      const found = providers.find((p) => p.id === boundId);
+      if (found) return found;
+    }
+  }
+
+  // 3. 기본 프로바이더 ID 확인
+  if (settings.defaultProviderId && settings.defaultProviderId !== '__global__') {
+    const defaultProv = providers.find((p) => p.id === settings.defaultProviderId);
+    if (defaultProv) return defaultProv;
+  }
+
+  // 4. 첫 번째 프로바이더 Fallback
+  return providers[0];
+}
+
+/**
+ * 특정 기기(호스트명)에 유효하게 바인딩된 기본 모델 ID를 선출합니다.
+ */
+export function getEffectiveModelForDevice(
+  settings: EmilySettings,
+  customHost?: string
+): string {
+  const currentHost = (customHost || getDeviceHostname(settings) || 'default').toLowerCase().trim();
+  const mappings = settings.deviceMappings || {};
+
+  // 1. 기기 바인딩에 명시된 모델 ID
+  if (currentHost && mappings[currentHost]?.modelId) {
+    return mappings[currentHost].modelId!;
+  }
+  if (mappings['default']?.modelId) {
+    return mappings['default'].modelId!;
+  }
+
+  // 2. 활성 프로바이더에서 첫 번째 활성화된(enabled) 모델 ID
+  const activeProv = getEffectiveProviderForDevice(settings, customHost);
+  if (activeProv && activeProv.models && activeProv.models.length > 0) {
+    const enabledModel = activeProv.models.find((m) => m.enabled);
+    if (enabledModel) return enabledModel.id;
+    return activeProv.models[0].id;
+  }
+
+  // 3. 전역 기본 모델명
+  return settings.modelName || 'auto';
+}
+
+/**
+ * 현재 기기(또는 지정된 호스트명)에 활성화할 프로바이더 및 모델을 독립적으로 바인딩합니다.
+ * (원드라이브로 다른 PC와 data.json을 공유해도 각 PC의 호스트 키가 독립 보존됨)
+ */
+export function setDeviceProviderBinding(
+  settings: EmilySettings,
+  providerId: string,
+  modelId?: string,
+  customHost?: string
+): void {
+  const currentHost = (customHost || getDeviceHostname(settings) || 'default').toLowerCase().trim();
+  if (!settings.deviceMappings) {
+    settings.deviceMappings = {};
+  }
+  const existing = settings.deviceMappings[currentHost] || { providerId };
+  settings.deviceMappings[currentHost] = {
+    providerId: providerId.trim(),
+    modelId: modelId !== undefined ? modelId : existing.modelId
+  };
+
+  // 전역 기본 프로바이더 및 모델 동기화
+  settings.defaultProviderId = providerId.trim();
+  const prov = (settings.providers || []).find((p) => p.id === providerId.trim());
+  if (prov) {
+    if (modelId) {
+      settings.modelName = modelId;
+    } else if (prov.models && prov.models.length > 0) {
+      const enabledModel = prov.models.find((m) => m.enabled);
+      if (enabledModel) {
+        settings.modelName = enabledModel.id;
+        settings.deviceMappings[currentHost].modelId = enabledModel.id;
+      } else {
+        settings.modelName = prov.models[0].id;
+        settings.deviceMappings[currentHost].modelId = prov.models[0].id;
+      }
+    }
+  }
+}
+
+/**
+ * 기존 단일 설정 및 레거시 deviceProfiles를 신규 YOLO 스타일 providers 및 deviceMappings 구조로 마이그레이션합니다.
+ */
+export function migrateLegacySettingsToProviders(settings: EmilySettings): boolean {
+  let modified = false;
+
+  if (!settings.providers) {
+    settings.providers = [];
+  }
+
+  // 1. 등록된 프로바이더가 전혀 없는 경우 기존 단일 설정을 Default Provider로 승격
+  if (settings.providers.length === 0) {
+    const defaultProv: AIProviderConfig = {
+      id: 'default-provider',
+      name: 'Default Provider',
+      preset: 'custom',
+      apiType: 'openai-compatible',
+      baseUrl: settings.apiBaseUrl || 'https://api.openai.com/v1',
+      apiKey: settings.apiKey || '',
+      models: [
+        {
+          id: settings.modelName || 'auto',
+          displayName: settings.modelName && settings.modelName !== 'auto' ? settings.modelName : 'Default Model',
+          enabled: true
+        }
+      ]
+    };
+    settings.providers.push(defaultProv);
+    settings.defaultProviderId = defaultProv.id;
+    modified = true;
+  }
+
+  // 2. 기존 deviceProfiles가 있는 경우 프로바이더 풀 및 기기 바인딩으로 통합 마이그레이션
+  if (settings.deviceProfiles && settings.deviceProfiles.length > 0) {
+    if (!settings.deviceMappings) {
+      settings.deviceMappings = {};
+    }
+    for (const prof of settings.deviceProfiles) {
+      const existingProv = settings.providers.find((p) => p.id === prof.id);
+      if (!existingProv) {
+        const prov: AIProviderConfig = {
+          id: prof.id,
+          name: prof.name,
+          preset: 'custom',
+          apiType: 'openai-compatible',
+          baseUrl: prof.url || settings.apiBaseUrl || 'https://api.openai.com/v1',
+          apiKey: prof.apiKey || settings.apiKey || '',
+          models: [
+            {
+              id: prof.modelName || settings.modelName || 'auto',
+              displayName: prof.modelName || settings.modelName || 'Default Model',
+              enabled: true
+            }
+          ]
+        };
+        settings.providers.push(prov);
+        modified = true;
+      }
+
+      if (prof.hostname) {
+        const h = prof.hostname.toLowerCase().trim();
+        if (!settings.deviceMappings[h]) {
+          settings.deviceMappings[h] = {
+            providerId: prof.id,
+            modelId: prof.modelName
+          };
+          modified = true;
+        }
+      }
+    }
+  }
+
+  return modified;
+}
 
 /**
  * 현재 기기의 활성 프로필 ID를 플러그인 설정(Obsidian Plugin Data API)에서 조회합니다.
@@ -57,15 +253,6 @@ export function getDeviceHostname(settings?: EmilySettings): string {
   return '';
 }
 
-/**
- * 현재 기기의 사용자 지정 식별자(호스트명)를 플러그인 설정에 저장합니다.
- */
-export function setDeviceHostname(hostname: string, settings?: EmilySettings): void {
-  const trimmed = hostname.trim();
-  if (settings) {
-    settings.currentDeviceHostname = trimmed;
-  }
-}
 
 /**
  * 현재 기기의 대표 식별자 이름 반환 (설정된 식별자 > 'Local Device')
@@ -181,6 +368,42 @@ export function resolveEffectiveApiKey(
     return { key: globalKey, source: 'global' };
   }
 
+  const currentHost = (customHost || getDeviceHostname(settings) || 'default').toLowerCase().trim();
+  const mappings = settings.deviceMappings || {};
+  const providers = settings.providers || [];
+
+  // 0순위: 신규 YOLO 프로바이더 독립 매핑 (deviceMappings) 확인 (OneDrive 다중 PC 격리)
+  if (providers.length > 0 && currentHost && mappings[currentHost]?.providerId) {
+    const boundId = mappings[currentHost].providerId;
+    if (boundId === '__global__') {
+      return { key: globalKey, source: 'global' };
+    }
+    const found = providers.find((p) => p.id === boundId);
+    if (found && found.apiKey !== undefined) {
+      return {
+        key: found.apiKey.trim(),
+        source: 'profile',
+        profileName: found.name,
+        hostnameMatched: currentHost
+      };
+    }
+  }
+
+  if (providers.length > 0 && mappings['default']?.providerId) {
+    const boundId = mappings['default'].providerId;
+    if (boundId !== '__global__') {
+      const found = providers.find((p) => p.id === boundId);
+      if (found && found.apiKey !== undefined) {
+        return {
+          key: found.apiKey.trim(),
+          source: 'profile',
+          profileName: found.name,
+          hostnameMatched: 'default'
+        };
+      }
+    }
+  }
+
   const profiles = settings.deviceProfiles || [];
 
   // 1순위: 활성 프로필 ID (명시적 customHost가 없을 때 최우선)
@@ -206,8 +429,6 @@ export function resolveEffectiveApiKey(
   }
 
   // 2순위: 기기 프로필 목록에서 호스트명 매칭 확인
-  const currentHost = (customHost || getDeviceHostname(settings)).toLowerCase().trim();
-
   if (profiles.length > 0 && currentHost) {
     const matchedProfile = profiles.find((p) => {
       const pHost = (p.hostname || '').trim().toLowerCase();
@@ -227,7 +448,21 @@ export function resolveEffectiveApiKey(
     }
   }
 
-  // 3순위: 기본 전역 동기화 키 반환
+  // 3순위: 신규 프로바이더 기본값 (defaultProviderId)
+  if (providers.length > 0) {
+    if (settings.defaultProviderId && settings.defaultProviderId !== '__global__') {
+      const defProv = providers.find((p) => p.id === settings.defaultProviderId);
+      if (defProv && defProv.apiKey !== undefined) {
+        return {
+          key: defProv.apiKey.trim(),
+          source: 'profile',
+          profileName: defProv.name
+        };
+      }
+    }
+  }
+
+  // 4순위: 기본 전역 동기화 키 반환
   return { key: globalKey, source: 'global' };
 }
 
@@ -256,7 +491,14 @@ export function getCandidateKeys(
     }
   };
 
-  // 1. 등록된 모든 기기 프로필의 키
+  // 1. 신규 YOLO 프로바이더의 키들
+  for (const prov of settings.providers || []) {
+    if (prov.apiKey) {
+      addKey(prov.apiKey, `${prov.name} (Provider)`, 'profile', prov.id);
+    }
+  }
+
+  // 2. 등록된 모든 기기 프로필의 키 (하위 호환)
   const profiles = settings.deviceProfiles || [];
   for (const prof of profiles) {
     const k = prof.apiKey || prof.provider1Key;
@@ -265,7 +507,7 @@ export function getCandidateKeys(
     }
   }
 
-  // 2. 전역 기본 키
+  // 3. 전역 기본 키
   const globalKey = settings.apiKey;
   if (globalKey) {
     addKey(globalKey, '기본 공용 키 (Global Synced)', 'global');
@@ -285,8 +527,10 @@ export interface EffectiveEndpointResult {
 
 /**
  * 2-Tier 분기 전략에 따라 현재 환경에서 최우선으로 유효한 엔드포인트 URL/포트를 판별합니다.
+ * 0순위: 기기 식별자(호스트명)와 독립 매핑된 신규 프로바이더 URL (OneDrive 다중 PC 격리)
  * 1순위: 기기 식별자(호스트명)와 일치하는 기기 프로필의 URL/포트 (data.json 동기화)
- * 2순위: data.json에 동기화된 전역 기본 URL
+ * 2순위: 신규 프로바이더 기본값 (defaultProviderId)
+ * 3순위: data.json에 동기화된 전역 기본 URL
  */
 export function resolveEffectiveEndpoint(
   settings: EmilySettings,
@@ -302,6 +546,50 @@ export function resolveEffectiveEndpoint(
       source: 'global',
       port: extractPort(cleanGlobalUrl) || undefined
     };
+  }
+
+  const currentHost = (customHost || getDeviceHostname(settings) || 'default').toLowerCase().trim();
+  const mappings = settings.deviceMappings || {};
+  const providers = settings.providers || [];
+
+  // 0순위: 신규 YOLO 프로바이더 독립 매핑 (deviceMappings) 확인 (OneDrive 다중 PC 격리)
+  if (providers.length > 0 && currentHost && mappings[currentHost]?.providerId) {
+    const boundId = mappings[currentHost].providerId;
+    if (boundId === '__global__') {
+      return {
+        url: cleanGlobalUrl,
+        source: 'global',
+        port: extractPort(cleanGlobalUrl) || undefined
+      };
+    }
+    const found = providers.find((p) => p.id === boundId);
+    if (found && found.baseUrl) {
+      const cleanUrl = found.baseUrl.trim().replace(/\/+$/, '');
+      return {
+        url: cleanUrl,
+        source: 'profile',
+        profileName: found.name,
+        hostnameMatched: currentHost,
+        port: extractPort(cleanUrl) || undefined
+      };
+    }
+  }
+
+  if (providers.length > 0 && mappings['default']?.providerId) {
+    const boundId = mappings['default'].providerId;
+    if (boundId !== '__global__') {
+      const found = providers.find((p) => p.id === boundId);
+      if (found && found.baseUrl) {
+        const cleanUrl = found.baseUrl.trim().replace(/\/+$/, '');
+        return {
+          url: cleanUrl,
+          source: 'profile',
+          profileName: found.name,
+          hostnameMatched: 'default',
+          port: extractPort(cleanUrl) || undefined
+        };
+      }
+    }
   }
 
   const profiles = settings.deviceProfiles || [];
@@ -337,8 +625,6 @@ export function resolveEffectiveEndpoint(
   }
 
   // 2순위: 기기 프로필 목록에서 호스트명 매칭 확인
-  const currentHost = (customHost || getDeviceHostname(settings)).toLowerCase().trim();
-
   if (profiles.length > 0 && currentHost) {
     const matchedProfile = profiles.find((p) => {
       const pHost = (p.hostname || '').trim().toLowerCase();
@@ -362,7 +648,23 @@ export function resolveEffectiveEndpoint(
     }
   }
 
-  // 3순위: 기본 전역 동기화 URL 반환
+  // 3순위: 신규 프로바이더 기본값 (defaultProviderId)
+  if (providers.length > 0) {
+    if (settings.defaultProviderId && settings.defaultProviderId !== '__global__') {
+      const defProv = providers.find((p) => p.id === settings.defaultProviderId);
+      if (defProv && defProv.baseUrl) {
+        const cleanUrl = defProv.baseUrl.trim().replace(/\/+$/, '');
+        return {
+          url: cleanUrl,
+          source: 'profile',
+          profileName: defProv.name,
+          port: extractPort(cleanUrl) || undefined
+        };
+      }
+    }
+  }
+
+  // 4순위: 기본 전역 동기화 URL 반환
   return {
     url: cleanGlobalUrl,
     source: 'global',
@@ -386,7 +688,15 @@ export function getCandidatePorts(settings: EmilySettings, currentUrl?: string):
     if (currentPort) portsSet.add(parseInt(currentPort, 10));
   }
 
-  // 프로필에 등록된 포트/URL에서 추출
+  // 신규 프로바이더 목록에서 추출
+  for (const prov of settings.providers || []) {
+    if (prov.baseUrl) {
+      const p = extractPort(prov.baseUrl);
+      if (p) portsSet.add(parseInt(p, 10));
+    }
+  }
+
+  // 프로필에 등록된 포트/URL에서 추출 (하위 호환)
   for (const prof of settings.deviceProfiles || []) {
     for (const u of [prof.url, prof.provider1Url, prof.provider2Url]) {
       if (u && u.trim()) {

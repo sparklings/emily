@@ -15,8 +15,6 @@ export interface TranslationOptions {
   sourceLanguage: string;
   targetLanguage: string;
   scope: TranslationScope;
-  preserveNewFile?: boolean;
-  preserveAppend?: boolean;
   preservation: PreservationStrategy;
   tone?: TranslationTone;
   style?: TranslationStyle;
@@ -25,6 +23,8 @@ export interface TranslationOptions {
   isSameLangEdit?: boolean;
   /** 볼드체, 기울이기, 취소선, 하이라이트 서식 제거 옵션 */
   formatStripOptions?: MarkdownFormatStripOptions;
+  /** 한글/동아시아 마크다운 볼드(**) 공백 규칙 자동 교정 적용 여부 */
+  autoProofreadKoreanBold?: boolean;
 }
 
 export interface TranslationResult {

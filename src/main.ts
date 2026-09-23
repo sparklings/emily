@@ -6,9 +6,8 @@ import { EmilySidebarView } from './views/sidebarView';
 import { LLMProxyClient } from './api/llmClient';
 import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
-import { ConsistencyEngine } from './core/consistencyEngine';
 import { getTranslation } from './i18n';
-import { migrateDeviceProfiles } from './utils/deviceKeyManager';
+import { migrateDeviceProfiles, migrateLegacySettingsToProviders } from './utils/deviceKeyManager';
 
 /**
  * Assistant Emily - 옵시디언 마크다운 지능형 교열 및 번역 전문 플러그인 메인 클래스
@@ -24,8 +23,6 @@ export default class EmilyPlugin extends Plugin {
   private proofreadingEngine: ProofreadingEngine;
   /** 대용량 청킹 및 1:1 대조 번역 엔진 */
   private translationEngine: TranslationEngine;
-  /** 볼트 내부 문서 간 상호 일관성 검증 엔진 */
-  private consistencyEngine: ConsistencyEngine;
 
   /**
    * 옵시디언 플러그인 로드 시 호출되는 라이프사이클 메서드
@@ -182,7 +179,6 @@ export default class EmilyPlugin extends Plugin {
     this.llmClient.updateMultiConfig(this.settings);
     this.proofreadingEngine = new ProofreadingEngine(this.llmClient, this.settings.language);
     this.translationEngine = new TranslationEngine(this.llmClient, this.app, this.settings.language);
-    this.consistencyEngine = new ConsistencyEngine(this.llmClient, this.app);
   }
 
   /**
@@ -208,6 +204,11 @@ export default class EmilyPlugin extends Plugin {
 
       // 기기 프로필 레거시(provider1Url/Key) 자동 1회성 마이그레이션
       if (migrateDeviceProfiles(this.settings)) {
+        await this.saveData(this.settings);
+      }
+
+      // YOLO 스타일 프로바이더 및 기기 독립 매핑 자동 마이그레이션
+      if (migrateLegacySettingsToProviders(this.settings)) {
         await this.saveData(this.settings);
       }
     } catch (err) {
@@ -253,11 +254,6 @@ export default class EmilyPlugin extends Plugin {
   /** 마크다운 번역 엔진 인스턴스 반환 */
   getTranslationEngine(): TranslationEngine {
     return this.translationEngine;
-  }
-
-  /** 볼트 일관성 검증 엔진 인스턴스 반환 */
-  getConsistencyEngine(): ConsistencyEngine {
-    return this.consistencyEngine;
   }
 
   /**

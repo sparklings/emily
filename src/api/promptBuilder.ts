@@ -278,42 +278,6 @@ ${codeCommentInstruction}
   }
 
   /**
-   * 두 문서(현재 문서 vs 참조 소스 문서) 간 사실/수치/명칭 일관성을 검증하는 프롬프트를 생성합니다.
-   * @param currentDocContent 검토할 현재 문서 본문
-   * @param sourceDocContent 비교 기준이 되는 참조 소스 문서 본문
-   * @param sourceDocName 참조 소스 파일명
-   * @returns 시스템 프롬프트(system) 및 사용자 프롬프트(user) 객체
-   */
-  static buildConsistencyPrompt(
-    currentDocContent: string,
-    sourceDocContent: string,
-    sourceDocName: string
-  ): { system: string; user: string } {
-    const system = `당신은 지식 볼트(Vault) 내부 일관성 검증 전문가 "Assistant Emily"입니다.
-참조 소스 문서의 사실, 수치, 명칭, 논리적 기준과 비교하여 현재 문서에서 상충되거나 불일치하는 부분을 찾아내십시오.
-
-반드시 다음 JSON 규격으로만 응답하십시오:
-\`\`\`json
-{
-  "issues": [
-    {
-      "originalText": "현재 문서에서 상충되는 문장/수치",
-      "sourceText": "참조 소스 문서에 기록된 올바른 내용/수치",
-      "sourceFile": "${sourceDocName}",
-      "discrepancyType": "contradiction" | "number_mismatch" | "terminology",
-      "explanation": "어떤 불일치나 모순이 존재하는지에 대한 명확한 설명",
-      "suggestedReplacement": "수정 제안 텍스트"
-    }
-  ]
-}
-\`\`\``;
-
-    const user = `[참조 소스 문서: ${sourceDocName}]\n${sourceDocContent}\n\n[현재 검토 대상 문서]\n${currentDocContent}`;
-
-    return { system, user };
-  }
-
-  /**
    * 사용자 선택 서식 제거(볼드, 기울이기, 취소선, 하이라이트) 지침 문자열을 생성합니다.
    */
   private static buildFormatStripInstruction(stripOpts?: MarkdownFormatStripOptions): string {

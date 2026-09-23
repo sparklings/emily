@@ -97,7 +97,6 @@ export class EmilySidebarView extends ItemView {
   };
 
   private customPromptText: string = '';
-  private selectedSourceFileName: string = '';
   private lastCreatedTempPath: string | null = null;
   private isExecuting: boolean = false;
   private lockedTargetFile: TFile | null = null;
@@ -113,7 +112,6 @@ export class EmilySidebarView extends ItemView {
   private sessionsContainerEl: HTMLElement | null = null;
   private activeFormContainerEl: HTMLElement | null = null;
   private promptTargetFileEl: HTMLElement | null = null;
-  private sourcePathBadgeEl: HTMLElement | null = null;
   private sidebarNavigatorEl: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: EmilyPlugin) {
@@ -185,7 +183,6 @@ export class EmilySidebarView extends ItemView {
       this.lockedTargetFile = null;
       this.lockedTargetView = null;
       this.customPromptText = '';
-      this.selectedSourceFileName = '';
       this.lastCreatedTempPath = null;
       this.sessions = [];
       this.sessionCounter = 0;
@@ -433,11 +430,6 @@ export class EmilySidebarView extends ItemView {
     }
   }
 
-  // Backward compatibility alias
-  public updateDocBar() {
-    this.updateTargetDocument();
-  }
-
   private renderActiveForm(parent: HTMLElement, t: TranslationKeys) {
     parent.empty();
     parent.removeClass('is-form-executing');
@@ -624,68 +616,6 @@ export class EmilySidebarView extends ItemView {
         updateProofCountBadge();
       }
     );
-
-    /*
-     * ============================================================================
-     * [추후 개발 예정 기능 - 현재 숨김 및 주석 처리]
-     * 아래 기능들(표현 개선, 내부 일관성 검증, 인용 근거 검색)은 향후 고도화 단계에서 개발될 예정입니다.
-     * ============================================================================
-     *
-     * // 3. 표현 개선 (추후 개발 예정)
-     * this.createCheckboxItem(
-     *   optionsList,
-     *   t.sidebar.expression,
-     *   t.sidebar.expressionDesc,
-     *   this.proofreadOptions.improveExpression,
-     *   (val) => { this.proofreadOptions.improveExpression = val; }
-     * );
-     *
-     * // 4. 내부 일관성 검증 + 소스 선택 버튼 (추후 개발 예정)
-     * const consistencyItem = optionsList.createDiv({ cls: 'emily-option-item' });
-     * const consistencyCheck = consistencyItem.createEl('input', { type: 'checkbox' });
-     * consistencyCheck.checked = this.proofreadOptions.checkConsistency;
-     * consistencyCheck.addEventListener('change', () => {
-     *   this.proofreadOptions.checkConsistency = consistencyCheck.checked;
-     * });
-     *
-     * const consistencyInfo = consistencyItem.createDiv({ cls: 'emily-option-text flex-1' });
-     * const topRow = consistencyInfo.createDiv({ cls: 'flex items-center justify-between w-full' });
-     * topRow.createSpan({ text: t.sidebar.consistency, cls: 'emily-option-label' });
-     *
-     * const sourceBtn = topRow.createEl('button', {
-     *   text: t.sidebar.selectSource,
-     *   cls: 'emily-btn-secondary'
-     * });
-     * sourceBtn.addEventListener('click', (e) => {
-     *   e.stopPropagation();
-     *   new VaultSourceSelectModal(this.app, (file: TFile) => {
-     *     this.proofreadOptions.vaultSourcePath = file.path;
-     *     this.selectedSourceFileName = file.name;
-     *     if (this.sourcePathBadgeEl) {
-     *       this.sourcePathBadgeEl.setText(`소스: ${file.name}`);
-     *       this.sourcePathBadgeEl.style.display = 'inline-block';
-     *     }
-     *     new Notice(`참조 소스 문서 [${file.name}] 가 연결되었습니다.`);
-     *   }).open();
-     * });
-     *
-     * consistencyInfo.createSpan({ text: t.sidebar.consistencyDesc, cls: 'emily-option-desc' });
-     * this.sourcePathBadgeEl = consistencyInfo.createSpan({
-     *   text: this.selectedSourceFileName ? `소스: ${this.selectedSourceFileName}` : '',
-     *   cls: 'emily-badge is-warning'
-     * });
-     * this.sourcePathBadgeEl.style.display = this.selectedSourceFileName ? 'inline-block' : 'none';
-     * this.sourcePathBadgeEl.style.marginTop = '4px';
-     *
-     * // 5. 인용 근거 검색 (추후 개발 예정)
-     * this.createCheckboxItem(
-     *   optionsList,
-     *   t.sidebar.citation,
-     *   t.sidebar.citationDesc,
-     *   this.proofreadOptions.searchCitation,
-     *   (val) => { this.proofreadOptions.searchCitation = val; }
-     * );
-     */
   }
 
   private renderTranslationSection(parent: HTMLElement, t: TranslationKeys) {
@@ -1311,7 +1241,8 @@ export class EmilySidebarView extends ItemView {
           tone: this.translationOptions.tone || this.plugin.settings.defaultTranslationTone,
           style: this.translationOptions.style || this.plugin.settings.defaultTranslationStyle,
           translateCodeComments: this.translationOptions.translateCodeComments ?? this.plugin.settings.defaultTranslateCodeComments,
-          formatStripOptions: { ...this.formatStripOptions }
+          formatStripOptions: { ...this.formatStripOptions },
+          autoProofreadKoreanBold: this.plugin.settings.autoProofreadKoreanBold !== false
         };
 
         const transResult = await transEngine.runTranslation(
@@ -1627,7 +1558,9 @@ export class EmilySidebarView extends ItemView {
           );
           const startTime = Date.now();
           editedDoc = MarkdownFormatter.stripMarkdownDecorations(currentDoc, this.formatStripOptions);
-          editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+          if (this.plugin.settings.autoProofreadKoreanBold !== false) {
+            editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+          }
           totalTimeMs = Date.now() - startTime;
           modelUsed = 'Plain Markdown Clean (Local)';
 
@@ -1669,7 +1602,9 @@ export class EmilySidebarView extends ItemView {
           }
 
           // Apply East Asian bold spacing rule (**단어** 조사 -> **단어** 조사)
-          editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+          if (this.plugin.settings.autoProofreadKoreanBold !== false) {
+            editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
+          }
 
           totalTimeMs = Date.now() - startTime;
           tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));

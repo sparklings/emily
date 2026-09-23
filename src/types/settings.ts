@@ -1,6 +1,56 @@
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from './translation';
 
 /**
+ * YOLO 스타일 AI 프로바이더 등록 모델 항목
+ */
+export interface ProviderModelConfig {
+  /** 모델 식별자 (calling ID, 예: 'qwen2.5:32b', 'gpt-4o', 'gemini-2.5-flash') */
+  id: string;
+  /** 사용자 친화적 표시 이름 (예: 'Qwen 2.5 32B') */
+  displayName: string;
+  /** 해당 모델 활성화 여부 */
+  enabled: boolean;
+}
+
+/**
+ * YOLO 스타일 등록된 AI 서비스 프로바이더 구성 인터페이스
+ */
+export interface AIProviderConfig {
+  /** 고유 프로바이더 ID (예: 'goodus-primary', 'Home', 'Gemini') */
+  id: string;
+  /** 표시 이름 */
+  name: string;
+  /** 프로바이더 프리셋 ('openai' | 'gemini' | 'ollama' | 'anthropic' | 'vllm' | 'custom' 등) */
+  preset: string;
+  /** API 타입 ('openai-compatible' 등) */
+  apiType: string;
+  /** Base URL (예: 'http://10.201.21.65:8000/v1') */
+  baseUrl: string;
+  /** 인증용 API Key (로컬 LLM인 경우 빈 값 허용) */
+  apiKey?: string;
+  /** 이 프로바이더에 등록된 모델 목록 */
+  models: ProviderModelConfig[];
+  /** 사용자 정의 HTTP 헤더 목록 */
+  customHeaders?: Record<string, string>;
+  /** Stainless 라이브러리 전용 헤더 억제 여부 */
+  noStainlessHeaders?: boolean;
+  /** 네트워크 요청 방식 ('requestUrl' | 'fetch') */
+  requestMethod?: 'requestUrl' | 'fetch';
+  /** 응답 스트리밍 모드 ('sse' | 'chunk') */
+  streamingMode?: 'sse' | 'chunk';
+}
+
+/**
+ * 기기 식별자별 프로바이더 및 모델 바인딩 정보 (OneDrive 동기화 충돌 방지용)
+ */
+export interface DeviceBinding {
+  /** 해당 기기에서 활성화할 프로바이더 ID */
+  providerId: string;
+  /** 해당 기기에서 기본으로 선택된 모델 ID (선택 사항) */
+  modelId?: string;
+}
+
+/**
  * 다중 기기(집/회사 노트북) 로컬 LLM Proxy API Key 프로필
  */
 export interface DeviceKeyProfile {
@@ -35,7 +85,15 @@ export interface EmilySettings {
   /** 사용할 LLM 모델 식별자 (auto, gpt-4o, gemini-3.6-flash 등) */
   modelName: string;
 
-  // 다중 기기 환경설정 (Multi-Device Localhost Proxy Support)
+  // YOLO 스타일 AI 서비스 프로바이더 및 모델 관리 풀
+  /** 등록된 AI 서비스 프로바이더 목록 (OneDrive 클라우드 동기화 풀) */
+  providers?: AIProviderConfig[];
+  /** 기기별(호스트명 키) 독립 프로바이더 및 모델 바인딩 맵 (다중 PC 동기화 충돌 방지 핵심) */
+  deviceMappings?: Record<string, DeviceBinding>;
+  /** 프로바이더 전역 기본값 ID */
+  defaultProviderId?: string;
+
+  // 다중 기기 환경설정 (Multi-Device Localhost Proxy Support - 하위 호환성 유지)
   /** 기기별 API Key 매핑 프로필 목록 (클라우드 동기화됨) */
   deviceProfiles?: DeviceKeyProfile[];
   /** 기기별 키 분기 기능 활성화 여부 */
@@ -100,7 +158,12 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   apiKey: '',
   modelName: 'auto',
 
-  // 다중 기기 환경 기본값
+  // YOLO 스타일 프로바이더 및 기기 매핑 기본값
+  providers: [],
+  deviceMappings: {},
+  defaultProviderId: '',
+
+  // 다중 기기 환경 기본값 (하위 호환)
   deviceProfiles: [],
   useDeviceKeyOverride: true,
   autoProbeCandidateKeys: true,

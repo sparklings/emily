@@ -153,7 +153,9 @@ export class TranslationEngine {
     }
 
     // 2. 동아시아 볼드 닫는 태그 뒤 조사 공백 자동 보정 (**단어**는 -> **단어** 는)
-    let finalTranslatedMarkdown = MarkdownFormatter.fixEastAsianBoldSpacing(accumulatedTranslatedMarkdown);
+    let finalTranslatedMarkdown = options.autoProofreadKoreanBold !== false
+      ? MarkdownFormatter.fixEastAsianBoldSpacing(accumulatedTranslatedMarkdown)
+      : accumulatedTranslatedMarkdown;
 
     // 2-1. 사용자 선택 서식 제거 (볼드체, 기울이기, 취소선, 하이라이트)
     if (options.formatStripOptions) {

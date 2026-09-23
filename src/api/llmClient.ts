@@ -4,6 +4,7 @@ import { PromptBuilder } from './promptBuilder';
 import {
   resolveEffectiveApiKey,
   resolveEffectiveEndpoint,
+  getEffectiveModelForDevice,
   applyPortOrUrl,
   isLocalEndpoint
 } from '../utils/deviceKeyManager';
@@ -78,11 +79,6 @@ export interface ProviderTestResult {
   isLocalhost?: boolean;
 }
 
-export interface MultiProviderTestSummary {
-  primary: ProviderTestResult;
-  secondary?: ProviderTestResult;
-  recommended: ProviderId;
-}
 
 interface ChatCompletionPayload {
   model: string;
@@ -134,64 +130,22 @@ export class LLMProxyClient {
     };
   }
 
-  get primaryConfig(): ProviderConfig {
-    return this.config;
-  }
-
-  /**
-   * 단일 설정 갱신 (하위 호환성 유지)
-   */
-  updateConfig(baseUrl: string, apiKey: string, defaultModel: string) {
-    this.config = {
-      baseUrl: baseUrl.replace(/\/+$/, ''),
-      apiKey,
-      model: defaultModel
-    };
-  }
-
   /**
    * 전체 플러그인 설정을 반영하여 기기 프로필 기반 구성을 일괄 갱신합니다.
    */
   updateMultiConfig(settings: EmilySettings) {
     const keyEffective = resolveEffectiveApiKey(settings);
     const urlEffective = resolveEffectiveEndpoint(settings);
+    const effectiveModel = getEffectiveModelForDevice(settings);
     this.config = {
       baseUrl: urlEffective.url,
       apiKey: keyEffective.key,
-      model: settings.modelName || 'auto',
+      model: effectiveModel || settings.modelName || 'auto',
       keySource: keyEffective.source,
       urlSource: urlEffective.source,
       profileName: keyEffective.profileName || urlEffective.profileName,
       port: urlEffective.port
     };
-  }
-
-  /**
-   * 보조 프로바이더 가용 여부 (하위 호환성: 항상 false 반환)
-   */
-  isMultiProviderAvailable(): boolean {
-    return false;
-  }
-
-  /**
-   * 청크 분산 처리 가용 여부 (하위 호환성: 항상 false 반환)
-   */
-  isChunkDistributionEnabled(): boolean {
-    return false;
-  }
-
-  /**
-   * 현재 활성화된 기본 프로바이더 (하위 호환성: 'primary')
-   */
-  getEffectiveProvider(): ProviderId {
-    return 'primary';
-  }
-
-  /**
-   * 현재 프로바이더 설정 정보 조회
-   */
-  getProviderConfig(_providerId?: ProviderId): ProviderConfig {
-    return this.config;
   }
 
   getConfig(): ProviderConfig {
@@ -486,32 +440,6 @@ export class LLMProxyClient {
   }
 
   /**
-   * 단일 연결 테스트 요약 반환 (하위 호환성)
-   */
-  async testAllProviders(locale: string, timePeriod: string): Promise<MultiProviderTestSummary> {
-    const primaryResult = await this.testProvider(locale, timePeriod);
-    return {
-      primary: primaryResult,
-      recommended: 'primary'
-    };
-  }
-
-  /**
-   * 하위 호환성을 위한 단일 연결 테스트 메서드
-   */
-  async testSayHello(locale: string, timePeriod: string): Promise<{ message: string; latencyMs: number; model: string }> {
-    const result = await this.testProvider(locale, timePeriod);
-    if (!result.success) {
-      throw new Error(result.error || 'Connection failed');
-    }
-    return {
-      message: result.message,
-      latencyMs: result.latencyMs,
-      model: result.model
-    };
-  }
-
-  /**
    * OpenAI 호환 엔드포인트(/chat/completions)로 챗 완성 요청을 전송합니다.
    */
   async chatCompletion(
@@ -539,34 +467,6 @@ export class LLMProxyClient {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[Assistant Emily] LLM request failed:', err);
       throw new Error(`LLM 통신 실패: ${errMsg}`);
-    }
-  }
-
-  /**
-   * API 엔드포인트(/models)에서 사용 가능한 LLM 모델 목록을 조회합니다.
-   */
-  async getModels(_providerId: ProviderId = 'primary'): Promise<Array<{ id: string; name?: string }>> {
-    const config = this.config;
-    const endpoint = `${config.baseUrl}/models`;
-    const headers: Record<string, string> = {};
-    if (config.apiKey) {
-      headers['Authorization'] = `Bearer ${config.apiKey}`;
-    }
-
-    try {
-      const response = await requestUrl({
-        url: endpoint,
-        method: 'GET',
-        headers
-      });
-      const data = response.json as ChatCompletionApiResponse;
-      if (Array.isArray(data?.data)) {
-        return data.data;
-      }
-      return [];
-    } catch (err) {
-      console.warn('[Assistant Emily] Could not fetch models from endpoint:', err);
-      return [];
     }
   }
 }
