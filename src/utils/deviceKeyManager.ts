@@ -193,6 +193,18 @@ export function migrateLegacySettingsToProviders(settings: EmilySettings): boole
     }
   }
 
+  // 3. 프로바이더 이름 점검 및 단일 한글 자모(IME 오타 등) 자동 복구
+  if (settings.providers && settings.providers.length > 0) {
+    for (const prov of settings.providers) {
+      if (!prov.name || /^[ㄱ-ㅣ]$/.test(prov.name.trim())) {
+        if (prov.id && !/^[ㄱ-ㅣ]$/.test(prov.id.trim())) {
+          prov.name = prov.id;
+          modified = true;
+        }
+      }
+    }
+  }
+
   return modified;
 }
 

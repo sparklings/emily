@@ -43,7 +43,11 @@ export class ProviderModal extends Modal {
 
     // Initial values
     let id = this.provider ? this.provider.id : '';
-    let name = this.provider ? this.provider.name : '';
+    let name = this.provider ? (
+      (this.provider.name && !/^[ㄱ-ㅣ]$/.test(this.provider.name.trim()))
+        ? this.provider.name
+        : (this.provider.id || '')
+    ) : '';
     let preset = this.provider ? this.provider.preset : 'custom';
     let apiType = this.provider ? this.provider.apiType : 'OpenAI-compatible';
     let apiKey = this.provider ? (this.provider.apiKey || '') : '';
@@ -63,12 +67,12 @@ export class ProviderModal extends Modal {
     const headerEl = contentEl.createDiv({ cls: 'emily-modal-header' });
     headerEl.createEl('h3', {
       cls: 'emily-modal-title',
-      text: isEdit ? `프로바이더 수정: ${this.provider?.name || id}` : 'Add custom provider'
+      text: isEdit ? `프로바이더 수정: ${name || id}` : 'Add custom provider'
     });
 
     const formEl = contentEl.createDiv({ cls: 'emily-compact-form' });
 
-    // 2. Row 1: ID * & Provider Preset * (2-Column Grid)
+    // 2. Row 1: ID * & Display Name * (2-Column Grid)
     const row1 = formEl.createDiv({ cls: 'emily-form-row-2col' });
 
     // ID Field
@@ -78,20 +82,44 @@ export class ProviderModal extends Modal {
       type: 'text',
       cls: 'emily-form-input font-mono',
       value: id,
-      attr: { placeholder: '예: goodus-primary, Home, Gemini' }
+      attr: { placeholder: '예: goodus-primary, HOME, Gemini' }
     });
+
+    // Display Name Field
+    const nameGroup = row1.createDiv({ cls: 'emily-form-group' });
+    nameGroup.createEl('label', { text: 'Display name (표시 이름) *', cls: 'emily-form-label' });
+    const nameInput = nameGroup.createEl('input', {
+      type: 'text',
+      cls: 'emily-form-input',
+      value: name,
+      attr: { placeholder: '예: HOME, 집 서재 PC, Gemini' }
+    });
+
+    let isNameManuallyEdited = isEdit && Boolean(name && name !== id);
+
     if (isEdit) {
       idInput.disabled = true;
       idInput.addClass('is-disabled');
     } else {
       idInput.addEventListener('input', (e) => {
         id = (e.target as HTMLInputElement).value.trim();
-        if (!name) name = id;
+        if (!isNameManuallyEdited) {
+          name = (e.target as HTMLInputElement).value;
+          nameInput.value = name;
+        }
       });
     }
 
+    nameInput.addEventListener('input', (e) => {
+      name = (e.target as HTMLInputElement).value;
+      isNameManuallyEdited = true;
+    });
+
+    // 3. Row 2: Provider Preset * & API Type * (2-Column Grid)
+    const row2 = formEl.createDiv({ cls: 'emily-form-row-2col' });
+
     // Preset Field
-    const presetGroup = row1.createDiv({ cls: 'emily-form-group' });
+    const presetGroup = row2.createDiv({ cls: 'emily-form-group' });
     presetGroup.createEl('label', { text: 'Provider preset *', cls: 'emily-form-label' });
     const presetSelect = presetGroup.createEl('select', { cls: 'emily-form-select dropdown' });
     const presetOptions = [
@@ -122,22 +150,6 @@ export class ProviderModal extends Modal {
       }
     });
 
-    // 3. Row 2: Base URL * & API Type * (2-Column Grid)
-    const row2 = formEl.createDiv({ cls: 'emily-form-row-2col' });
-
-    // Base URL
-    const urlGroup = row2.createDiv({ cls: 'emily-form-group' });
-    urlGroup.createEl('label', { text: 'Base URL *', cls: 'emily-form-label' });
-    const baseUrlInput = urlGroup.createEl('input', {
-      type: 'text',
-      cls: 'emily-form-input font-mono',
-      value: baseUrl,
-      attr: { placeholder: 'http://localhost:11434/v1' }
-    });
-    baseUrlInput.addEventListener('input', (e) => {
-      baseUrl = (e.target as HTMLInputElement).value.trim();
-    });
-
     // API Type
     const typeGroup = row2.createDiv({ cls: 'emily-form-group' });
     typeGroup.createEl('label', { text: 'API type *', cls: 'emily-form-label' });
@@ -149,6 +161,19 @@ export class ProviderModal extends Modal {
     });
     typeInput.addEventListener('input', (e) => {
       apiType = (e.target as HTMLInputElement).value.trim();
+    });
+
+    // 4. Row 3: Base URL * (Full Width)
+    const urlGroup = formEl.createDiv({ cls: 'emily-form-group' });
+    urlGroup.createEl('label', { text: 'Base URL *', cls: 'emily-form-label' });
+    const baseUrlInput = urlGroup.createEl('input', {
+      type: 'text',
+      cls: 'emily-form-input font-mono',
+      value: baseUrl,
+      attr: { placeholder: 'http://localhost:11434/v1' }
+    });
+    baseUrlInput.addEventListener('input', (e) => {
+      baseUrl = (e.target as HTMLInputElement).value.trim();
     });
 
     // 4. Row 3: API Key (Full Width with compact eye toggle)
