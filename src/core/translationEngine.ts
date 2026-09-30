@@ -17,7 +17,7 @@ export class TranslationEngine {
   private client: LLMProxyClient;
   private app: App;
   private displayLanguage?: string;
-  private readonly CHUNK_SIZE_THRESHOLD = 1600;
+  private readonly CHUNK_SIZE_THRESHOLD = 2500;
 
   constructor(client: LLMProxyClient, app: App, displayLanguage?: string) {
     this.client = client;
@@ -84,11 +84,12 @@ export class TranslationEngine {
         throw abortError;
       }
 
+      const chunk = chunks[i];
+      if (!chunk || !chunk.trim()) continue;
+
       if (onProgress) {
         onProgress(i + 1, totalChunks);
       }
-
-      const chunk = chunks[i];
 
       // 마크다운 고유 문법 및 보호 요소 마스킹 (위키링크, 태그, 콜아웃, 수식, 코드블록 등)
       const maskResult = MarkdownMasker.mask(chunk, {
@@ -127,7 +128,7 @@ export class TranslationEngine {
         totalTokens += response.usage.total_tokens || 0;
       }
 
-      let chunkTranslated = response.content.trim();
+      let chunkTranslated = MarkdownFormatter.stripThinkingProcess(response.content.trim());
 
       // 마크다운 코드블록 래핑 언래핑
       if (chunkTranslated.startsWith('```markdown') && chunkTranslated.endsWith('```')) {
@@ -136,12 +137,78 @@ export class TranslationEngine {
         chunkTranslated = chunkTranslated.replace(/^```\w*\n/, '').replace(/\n```$/, '');
       }
 
+      // 코드블록 내부 잔여 thinking 태그/블록 2차 정제
+      chunkTranslated = MarkdownFormatter.stripThinkingProcess(chunkTranslated);
+
       // 마스킹 토큰 원본 복원 & 프론트매터 보존
-      const restoredChunk = MarkdownMasker.restore(
+      let restoredChunk = MarkdownMasker.restore(
         chunkTranslated,
         maskResult.maskMap,
         maskResult.frontmatter
       );
+
+      // 한국어 번역인데 한글이 없거나 번역 본문이 비어있는 경우 (독백만 뱉고 잘린 경우)
+      const isTargetKorean = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
+      let isValidTranslation = isTargetKorean ? (/[가-힣]/.test(restoredChunk) && restoredChunk.trim().length > 0) : restoredChunk.trim().length > 0;
+
+      // 번역 실패 감지 시 1회 엄격한 다이렉트 프롬프트로 자가 치유(Self-Healing) 재시도
+      if (!isValidTranslation && chunk.trim().length > 30) {
+        console.warn(`[Assistant Emily] Model '${lastModel}' produced CoT monologue without translation. Initiating self-healing retry...`);
+        const retryUserPrompt = `[CRITICAL - TRANSLATE DIRECTLY NOW]\nTranslate the following text into ${options.targetLanguage} immediately.\nOutput ONLY the final translated markdown without ANY thinking process, thoughts, notes, or preamble.\n\n[Source Text]\n${maskResult.maskedText}`;
+        const retryResponse = await this.client.chatCompletion(
+          [
+            { role: 'system', content: `You are an exact markdown translator. Output ONLY the translated markdown text in ${options.targetLanguage}. Do NOT write any thoughts, notes, or explanations.` },
+            { role: 'user', content: retryUserPrompt }
+          ],
+          {
+            temperature: 0.1,
+            max_tokens: 4096,
+            signal
+          }
+        );
+
+        lastResponse = retryResponse;
+        lastModel = retryResponse.model || lastModel;
+        totalTimeMs += retryResponse.totalTimeMs || 0;
+        if (retryResponse.usage) {
+          totalPromptTokens += retryResponse.usage.prompt_tokens || 0;
+          totalCompletionTokens += retryResponse.usage.completion_tokens || 0;
+          totalTokens += retryResponse.usage.total_tokens || 0;
+        }
+
+        let retryTranslated = MarkdownFormatter.stripThinkingProcess(retryResponse.content.trim());
+        if (retryTranslated.startsWith('```markdown') && retryTranslated.endsWith('```')) {
+          retryTranslated = retryTranslated.replace(/^```markdown\n/, '').replace(/\n```$/, '');
+        } else if (retryTranslated.startsWith('```') && retryTranslated.endsWith('```')) {
+          retryTranslated = retryTranslated.replace(/^```\w*\n/, '').replace(/\n```$/, '');
+        }
+        retryTranslated = MarkdownFormatter.stripThinkingProcess(retryTranslated);
+        const retryRestored = MarkdownMasker.restore(
+          retryTranslated,
+          maskResult.maskMap,
+          maskResult.frontmatter
+        );
+
+        if (isTargetKorean ? /[가-힣]/.test(retryRestored) : retryRestored.trim().length > 0) {
+          restoredChunk = retryRestored;
+          isValidTranslation = true;
+          console.log(`[Assistant Emily] Self-healing retry succeeded for chunk ${i + 1}/${totalChunks}.`);
+        }
+      }
+
+      if (!isValidTranslation && chunk.trim().length > 30) {
+        const clientConfig = this.client.getConfig();
+        const isAutoModel = !clientConfig.model || clientConfig.model === 'auto';
+        if (isAutoModel) {
+          throw new Error(
+            `현재 'auto' 설정으로 자동 할당된 AI 모델(${lastModel})이 번역 본문 대신 내부 추론(Reasoning) 독백만 출력하여 번역을 완료하지 못했습니다 (자동 재시도 실패). 안정적인 번역을 위해 설정 화면에서 구체적인 모델(예: Claude 3.5 Sonnet, GPT-4o, Gemini 2.5 Flash 등)을 프로바이더 모델 목록에서 활성화하여 지정해 주십시오.`
+          );
+        } else {
+          throw new Error(
+            `지정된 AI 모델(${lastModel})이 번역 본문 대신 내부 추론(Reasoning) 독백만 출력하여 번역을 완료하지 못했습니다 (자동 재시도 실패). 다른 모델을 선택하거나 모델 설정을 확인해 주십시오.`
+          );
+        }
+      }
 
       accumulatedTranslatedMarkdown += (accumulatedTranslatedMarkdown ? '\n\n' : '') + restoredChunk.trim();
     }
@@ -205,14 +272,14 @@ export class TranslationEngine {
   /**
    * 대용량 마크다운 문서를 헤딩(##, ###) 및 문단 단위로 스마트 청킹합니다.
    */
-  splitIntoSmartChunks(markdown: string, maxChunkLength: number = 1600): string[] {
+  splitIntoSmartChunks(markdown: string, maxChunkLength: number = 2500): string[] {
     if (!markdown || markdown.length <= maxChunkLength) {
       return [markdown];
     }
 
     const { frontmatter, body } = MarkdownFormatter.extractFrontmatter(markdown);
     const lines = body.split(/\r?\n/);
-    const chunks: string[] = [];
+    const rawChunks: string[] = [];
     let currentChunkLines: string[] = [];
     let currentLength = 0;
 
@@ -221,9 +288,9 @@ export class TranslationEngine {
       const isHeader = /^#{1,6}\s+/.test(line);
 
       // 청크 임계 크기 초과 & 헤딩 또는 빈 줄(문단) 경계에서 분할
-      if (currentLength + line.length > maxChunkLength && (isHeader || line.trim() === '' || currentChunkLines.length > 30)) {
+      if (currentLength + line.length > maxChunkLength && (isHeader || line.trim() === '' || currentChunkLines.length > 50)) {
         if (currentChunkLines.length > 0) {
-          chunks.push(currentChunkLines.join('\n'));
+          rawChunks.push(currentChunkLines.join('\n'));
           currentChunkLines = [];
           currentLength = 0;
         }
@@ -234,15 +301,18 @@ export class TranslationEngine {
     }
 
     if (currentChunkLines.length > 0) {
-      chunks.push(currentChunkLines.join('\n'));
+      rawChunks.push(currentChunkLines.join('\n'));
     }
+
+    // 공백/개행만 있는 빈 청크 원천 배제
+    const validChunks = rawChunks.map(c => c.trim()).filter(c => c.length > 0);
 
     // 첫 번째 청크에 원본 프론트매터 결합
-    if (frontmatter && chunks.length > 0) {
-      chunks[0] = `${frontmatter}${chunks[0].trimStart()}`;
+    if (frontmatter && validChunks.length > 0) {
+      validChunks[0] = `${frontmatter}\n${validChunks[0]}`;
     }
 
-    return chunks.length > 0 ? chunks : [markdown];
+    return validChunks.length > 0 ? validChunks : [markdown];
   }
 
   /**

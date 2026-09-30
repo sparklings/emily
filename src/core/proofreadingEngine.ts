@@ -127,7 +127,7 @@ export class ProofreadingEngine {
 
   private parseResponseItems(content: string): ProofreadDiffItem[] {
     try {
-      let jsonStr = content.trim();
+      let jsonStr = MarkdownFormatter.stripThinkingProcess(content.trim());
       const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
       if (codeBlockMatch) {
         jsonStr = codeBlockMatch[1];

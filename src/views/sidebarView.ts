@@ -1586,7 +1586,7 @@ export class EmilySidebarView extends ItemView {
             { role: 'user', content: promptPayload.user }
           ], { signal });
 
-          editedDoc = response.content.trim();
+          editedDoc = MarkdownFormatter.stripThinkingProcess(response.content.trim());
           // Remove markdown block wrapper if LLM wrapped entire output in ```markdown ... ```
           if (editedDoc.startsWith('```markdown') && editedDoc.endsWith('```')) {
             editedDoc = editedDoc.slice(11, -3).trim();
@@ -1595,6 +1595,7 @@ export class EmilySidebarView extends ItemView {
           } else if (editedDoc.startsWith('```') && editedDoc.endsWith('```')) {
             editedDoc = editedDoc.slice(3, -3).trim();
           }
+          editedDoc = MarkdownFormatter.stripThinkingProcess(editedDoc);
 
           // Apply format stripping if requested
           if (hasFormatStrip) {

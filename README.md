@@ -90,8 +90,10 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
   * **예외 구역 완벽 보존 가드레일**: 인용문(`> ...`, `"..."`), 코드 블록(\`\`\`...\`\`\`), 인라인 코드(\`...\`), 수식(`$...$`), YAML 프론트매터 및 헤딩 제목(#)은 화자의 원래 발언이나 코드 형태를 유지해야 하므로 문체 교정 대상에서 엄격히 제외되어 원형 그대로 안전하게 보존됩니다.
 * **코드 블록 주석 전용 번역 스위치**
   * 프로그래밍 코드 블록(`python`, `typescript`, `cpp` 등) 내부의 코드 로직, 변수명, 함수명은 100% 보존하면서 오직 주석(`//`, `#`, `/* ... */`)만 자연스럽게 번역할 수 있습니다.
-* **안전 스마트 청킹(Smart Chunking - 1,600자 최적화)**
-  * LLM의 단일 응답 토큰 한계를 초과하는 대용량 문서는 H1~H3 헤더 및 문단 경계를 분석하여 무결성을 유지하며 1,600자 단위로 안전하게 분할 번역한 뒤 하나로 완벽하게 재조립합니다. (조기 단절 및 누락 0% 보장)
+* **안전 스마트 청킹 및 무결성 보존 (Smart Chunking - 2,500자 최적화)**
+  * LLM의 단일 응답 토큰 한계(4,096 토큰)를 초과하는 대용량 문서는 H1~H3 헤더 및 문단 경계를 분석하여 무결성을 유지하며 2,500자 단위로 안전하게 분할 번역한 뒤 하나로 완벽하게 재조립합니다. (출력 절단 및 누락 0% 보장)
+  * 빈 줄이나 공백만 남은 불완전 청크 생성을 원천 차단하고 루프 안전 가드를 적용하여 안정적인 1:1 대조 정합성을 제공합니다.
+  * 한국어 번역 시 한글 누락이나 모델 추론 독백으로 인한 비정상 절단을 감지하는 안전 가드를 탑재하여 볼트 파일 오염을 방지합니다.
 
 ### 3. 마크다운 타이포그래피 및 선택적 서식 제거 (Typography & Format Stripper)
 * **선택적 마크다운 서식 제거 (Selective Markdown Format Stripping)**
@@ -118,26 +120,20 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 * **데스크톱 편의성**: `Ctrl+Enter` / `Cmd+Enter` 글로벌 단축키 실행, 한글 IME 조합 중복 방지, 실수로 인한 모달 닫힘 방지(Shake 효과)가 적용되어 있습니다.
 
 ### 6. 기기 프로필 기반 스마트 엔드포인트 관리 (Device Profile-Based Provider Management)
-* **단일 통합 대시보드 (Unified Provider Dashboard)**
-  * 기존의 복잡했던 2-Tab 분열 구조를 폐기하고, 상단의 **현재 컴퓨터 활성 기기 카드**와 하단의 **등록된 기기 프로필 풀** 및 전역 기본(Fallback) 설정을 하나의 대시보드에서 직관적으로 관리할 수 있도록 전면 개편하였습니다.
-  * 상단 드롭다운에서 현재 PC에 바인딩할 프로필을 선택하는 즉시 실시간 활성 엔드포인트와 마스킹된 API Key가 표시되며, `[⚡ 현재 기기 연결 테스트]` 버튼으로 즉시 통신 및 모델을 검증할 수 있습니다.
-* **로컬 격리 바인딩 및 클라우드 동기화(OneDrive) 연쇄 장애 원천 차단**
-  * 여러 대의 노트북(회사 노트북 1, 회사 노트북 2, 집 PC 등)이 동일한 `http://127.0.0.1:11434/v1`(동일 localhost 및 동일 포트)를 사용하면서도 서로 다른 API Key를 가질 때 발생하는 동기화 충돌을 완벽하게 해결하였습니다.
-  * 기기 프로필 목록(`deviceProfiles`)은 옵시디언 볼트(`data.json`)를 통해 모든 PC에 안전하게 공유하되, **"현재 컴퓨터가 어떤 프로필을 활성화하고 있는가"**는 옵시디언 플러그인 공식 데이터 API(`activeDeviceMap`, `data.json`)를 통해 기기별로 안전하게 매핑 관리됩니다.
-  * 이를 통해 OneDrive나 Obsidian Sync로 볼트 설정이 동기화되더라도 다른 컴퓨터의 API Key나 포트 설정을 덮어쓰는 연쇄 장애가 100% 차단됩니다.
-* **FreeLLMAPI Proxy 스타일 컴팩트 팝업 모달 (`DeviceProfileModal`)**
-  * 기기 프로필 추가/수정 시 세로 공간을 낭비하던 인라인 폼 카드를 제거하고, 간결한 2컬럼 레이아웃의 독립 팝업 대화상자로 간소화하였습니다.
-  * 기기 이름, 포트 또는 엔드포인트 URL, 비밀번호 가시성 토글(eye 아이콘)이 탑재된 API Key 입력창을 제공합니다.
-* **옵시디언 커뮤니티 플러그인 심사 규정 준수 & 프라이버시 원칙**
-  * 사용자 OS 내부 식별자나 호스트명을 무단 조회하는 방식 대신, 사용자가 직접 정의한 친숙한 기기 이름(예: `회사 노트북 1`, `집 노트북`)을 기반으로 안전하게 동작합니다.
+* **YOLO 스타일 전역 AI 프로바이더 풀 & 기기별 독립 바인딩**
+  * OpenAI, OpenRouter, Google Gemini, Ollama, LM Studio 등 다양한 AI 엔드포인트를 전역 프로바이더 풀(`providers`)에 무제한 등록하고 관리할 수 있습니다.
+  * 한글 IME 조합 및 특수문자가 깨지지 않는 독립 모달(`ProviderModal`, `ProviderModelModal`)을 통해 엔드포인트와 모델을 손쉽게 설정합니다.
+  * **`[📍 이 기기에 적용]`** 클릭 시 실시간 시각적 피드백(활성 배지 및 강조 스타일)과 함께 현재 PC의 활성 프로필로 즉시 바인딩되며, OneDrive나 Obsidian Sync 환경에서도 기기 간 설정 충돌이 100% 방지됩니다.
 * **스마트 포트 치환 및 전체 URL 유연 지원 (`applyPortOrUrl`)**
   * 기기 프로필에 숫자 포트(예: `11434` 또는 `:8000`)만 입력하면 기존 기본 엔드포인트의 호스트와 경로(`http://127.0.0.1:11434/v1`)를 온전히 유지하며 포트만 똑똑하게 치환합니다.
   * 다른 호스트의 전체 URL(예: `http://192.168.0.20:8000/v1`)을 입력하면 전체 URL로 안전하게 전환됩니다.
 * **포트 및 후보 키 자동 진단(Auto-Probe)과 자가 치유(Self-Healing)**
   * 로컬 엔드포인트 연결 오류(Connection Refused) 또는 인증 실패(401) 감지 시, 등록된 후보 키와 포트를 자동으로 진단(Auto-Probe)하여 유효한 연결을 찾아내고 현재 기기 프로필을 즉시 자가 치유(Self-Healing)합니다.
-* **연결 테스트 프롬프트 가드레일 및 추론 독백(`<think>`) 정제**
-  * 현재 시간대(아침/오후/저녁/밤) 및 로케일 언어에 맞춘 자연스러운 인사말을 생성합니다.
-  * DeepSeek R1, Qwen 2.5 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`) 태그 블록 및 영문 독백을 정교한 정규식으로 완벽 제거하고 순수 한국어 인사말만 정제하여 표시합니다.
+* **LLM 생각 과정(Reasoning/CoT) 및 초안 독백 누출 원천 차단**
+  * DeepSeek R1, Qwen 2.5, Dots3-Note 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`, `<thought>...</thought>`, \`\`\`thought\`\`\`) 태그 블록을 완벽히 제거합니다.
+  * `Thinking Process:` / `Thought Process:` 블록 감지 및 분리뿐만 아니라, `The user wants me to...`, `Let's review the guidelines:`, `Original text:`, `Let's write: "..."` 등 모델이 출력하는 영문 분석 독백과 초안 루프를 다중 계층으로 정밀 필터링합니다.
+  * OpenRouter 및 추론 모델 호출 시 `reasoning: { effort: 'none', exclude: true }` 파라미터를 자동 적용하여 불필요한 reasoning trace 출력을 사전에 차단합니다.
+  * 프롬프트 말미 Recency-bias 출력 절대 원칙 가드레일 및 군더더기 없는 경량화 프롬프트를 적용하여 모델의 과잉 추론(Over-reasoning)을 원천 예방합니다.
 
 ### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
 * **반응형 너비 감지 적응형 버튼 (Responsive Adaptive Segmented Buttons)**
@@ -360,8 +356,10 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
   * **Strict Exception Preservation Guardrails**: Quotations (`> ...`, `"..."`), code blocks (\`\`\`...\`\`\`), inline code (\`...\`), LaTeX math (`$...$`), YAML frontmatter, and heading titles are strictly excluded from tone alteration, keeping original code and quotes intact.
 * **Code Block Comments Only Translation Switch**:
   * Safely translates comments (`//`, `#`, `/* ... */`) while maintaining 100% integrity of code syntax, variable names, and function identifiers across programming languages (`python`, `typescript`, `cpp`, etc.).
-* **Safe Smart Chunking (1,600 Characters Optimized)**:
-  * For long documents exceeding single-turn LLM response token limits, the engine intelligently splits text along H1–H3 headers and paragraph boundaries at a safe 1,600-character threshold, translating sequentially and reconstructing the document seamlessly without token clipping or omissions.
+* **Safe Smart Chunking & Integrity Protection (2,500 Characters Optimized)**:
+  * For long documents exceeding single-turn LLM response token limits (4,096 tokens), the engine intelligently splits text along H1–H3 headers and paragraph boundaries at an optimized 2,500-character threshold, translating sequentially and reconstructing the document seamlessly without token clipping or omissions.
+  * Completely prevents the generation of blank or incomplete chunks, ensuring robust 1:1 bilingual contrast alignment.
+  * Equipped with an integrity safety guard that detects missing target language text or unclosed reasoning monologues, preventing corrupt files from polluting your vault.
 
 ### 3. Markdown Typography & Selective Format Stripper
 * **Selective Markdown Format Stripping**:
@@ -388,24 +386,20 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **Desktop Productivity**: Features `Ctrl+Enter` / `Cmd+Enter` global shortcuts, IME composition protection for Korean/CJK input, and modal shake effects to prevent accidental dismissal.
 
 ### 6. Device Profile-Based Provider Management & Smart Auto-Probe
-* **Unified Provider Dashboard**
-  * Replaces fragmented tab navigation with a consolidated, streamlined control panel featuring the **Active Device Card** on top, followed by the **Device Profiles Pool** and Global Fallback settings.
-  * Instant machine profile selection via the active dropdown menu immediately updates live endpoint badges, masked API keys, and unlocks one-click connection diagnostics via `[⚡ Test Active Connection]`.
-* **Isolated Device Binding & Prevention of Cloud Sync (OneDrive) Race Conditions**
-  * Fully resolves cascading authentication failures when multiple laptops (work laptops, home PCs) share the same `http://127.0.0.1:11434/v1` address but require distinct API keys.
-  * Machine profiles are safely pooled and synced across vaults in `data.json`, whereas each machine's active profile selection is reliably isolated using the Obsidian Plugin Data API (`activeDeviceMap`, `data.json`). This prevents cloud sync services from overwriting local keys or configurations across different machines.
-* **Compact Device Profile Modal (`DeviceProfileModal`)**
-  * Streamlines profile creation and editing into an elegant, FreeLLMAPI Proxy-style 2-column modal dialog instead of bloated inline cards.
-  * Features clean fields for Device Name (Label), Port / Full Endpoint URL, and API Key with visibility eye toggle.
-* **Strict Obsidian Review Guideline & Privacy Compliance**
-  * Eliminates intrusive OS hostname querying (`os.hostname()`) and auto-detection buttons, operating transparently based on user-defined device names (e.g., `Work Laptop 1`, `Home PC`).
+* **YOLO-Style AI Provider Pool & Isolated Device Binding**
+  * Seamlessly register unlimited AI endpoints (OpenAI, OpenRouter, Google Gemini, Ollama, LM Studio, etc.) in a global provider pool (`providers`).
+  * Features dedicated modal dialogs (`ProviderModal`, `ProviderModelModal`) supporting full Korean IME character composition and special characters without corruption.
+  * Clicking **`[📍 Apply to this Device]`** provides instant live visual feedback (active badge and highlight borders) and binds the selection to the local machine, preventing configuration overwrites across OneDrive or Obsidian Sync.
 * **Smart Port Replacement & Full URL Support (`applyPortOrUrl`)**
   * Specifying a numeric port (e.g. `11434` or `:8000`) neatly swaps the port while preserving the base host and route path (`http://127.0.0.1:11434/v1`).
   * Specifying a full URL (e.g. `http://192.168.0.20:8000/v1`) seamlessly switches to the designated target host.
 * **Port & Candidate Key Auto-Probe with Self-Healing**
   * When connection refused or HTTP 401 errors are detected, Emily systematically tests candidate ports and keys (Auto-Probe), automatically healing and persisting the active endpoint to the current profile.
-* **Reasoning Monologue (`<think>`) Sanitization**
-  * Automatically strips internal thinking tokens (`<think>...</think>`) and internal English monologue generated by modern reasoning LLMs (such as DeepSeek R1 and Qwen 2.5), presenting only clean, formatted greetings.
+* **LLM Reasoning (CoT) & Draft Monologue Zero-Leakage Filter**
+  * Completely strips internal thinking tokens (`<think>...</think>`, `<thought>...</thought>`, \`\`\`thought\`\`\`) from cutting-edge reasoning LLMs (DeepSeek R1, Qwen 2.5, Dots3-Note, etc.).
+  * Multi-layer filter detects and removes English thought monologues and drafting loops (`The user wants me to...`, `Let's review the guidelines:`, `Original text:`, `Let's write: "..."`).
+  * Injects `reasoning: { effort: 'none', exclude: true }` parameters for OpenRouter and reasoning models to proactively suppress raw reasoning traces.
+  * Enforces recency-bias output guardrails and streamlined prompt instructions to prevent models from over-reasoning or summarizing prompt rules.
 
 ### 7. Real-Time Task Cancellation & Desktop UX
 * **Responsive Adaptive Segmented Buttons**

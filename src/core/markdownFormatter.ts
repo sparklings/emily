@@ -250,4 +250,268 @@ export class MarkdownFormatter {
 
     return target;
   }
+
+  /**
+   * 주어진 라인이 LLM의 내부 추론(Chain-of-Thought), 프롬프트 지침 복기,
+   * 번역 초안 매핑(A -> B), 또는 메타 독백 라인인지 판정합니다.
+   */
+  private static isCoTOrMetaLine(line: string): boolean {
+    const trimmed = line.trim();
+    if (!trimmed) return true; // 빈 줄은 CoT 스캔 단계에서 공백으로 취급
+
+    // 1. 영어/한국어 추론 독백 시작 패턴
+    // "The user wants me to...", "I need to...", "Let's review...", "Wait, ...", "Okay, ...", "So, ...", "In this chunk..."
+    if (/^(?:The user (?:wants|asked|provides|needs|requested|is asking)|I (?:need to|must|should|will|have to|can|am asked to|'ll)|We (?:need to|must|are asked to|should|can)|Let's (?:review|analyze|examine|check|first|start|proceed|write|look|translate|double check|use|keep|render|say|go with|do|make|refine)|Let us\b|Okay,|So,|Wait,|Looking at\b|First,|Second,|Third,|Finally,|Note that\b|In this (?:chunk|document|text|section)|My task|As instructed|According to the|The instruction says\b|This means do not\b|This means\b)\b/i.test(trimmed)) {
+      return true;
+    }
+
+    // 2. 가이드라인 / 설정 / 프롬프트 항목 복기 (영어 또는 한국어)
+    // 예: "Target language: Korean", "도착어: 한국어", "Tone: ...", "- 문체(Tone): ...", "Translate all: ...", "출발어: ...", "번역 범위: ...", "Code comment: ..."
+    if (/^(?:[-*•]\s*)?(?:Target language|Source language|Tone|Style|Translation scope|Scope|Code comment(?:s)?|Translate(?:\s+all|\s+the|\s+each|\s+comments)?|Preserve|Formatting|Guidelines|Requirements|Correct example|Incorrect example|도착어|출발어|문체|스타일|번역 범위|주의사항|필수 지침|출력 절대 원칙)\b[:：]/i.test(trimmed)) {
+      return true;
+    }
+
+    // 3. 지침 불릿 복기 라인
+    // 예: "- Output ONLY ...", "- Translate all ...", "- Do not use ...", "- Keep ...", "- Preserve ..."
+    if (/^[-*•]\s*(?:Output|Translate|The tone|Do not|Note|Let's|Preserve|Keep|Target language|Tone|Style|Check|Ensure|Avoid)\b/i.test(trimmed)) {
+      return true;
+    }
+
+    // 4. 번역 매핑 초안 또는 검토 메모 라인
+    // 예: "[Module 1: Introduction] -> [모듈 1: 소개]", "NetBox overview -> NetBox 개요 (good)", "A => B", "A → B"
+    if (/^\[?[^\]\n]+\]?\s*(?:->|=>|→)\s*\[?[^\]\n]+\]?(?:\s*\([^)]*\))?$/.test(trimmed)) {
+      return true;
+    }
+    // 예: "(good)", "(ok)", "(keep)"으로 끝나는 번역 메모
+    if (/\((?:good|ok|keep|check|refined)\)\s*$/i.test(trimmed) && /(?:->|=>|→|translate|개요|소개)/i.test(trimmed)) {
+      return true;
+    }
+    // 예: "(no bold)", "(no bold, just a link)" 등 모델의 서식 독백 라인
+    if (/^[-*•]?\s*.*?\((?:no bold|just a link|no italics?|only link|plain text)[^)]*\)\s*$/i.test(trimmed) && !/[가-힣]/.test(trimmed)) {
+      return true;
+    }
+
+    // 5. 초안/스텝/메타 섹션 헤더
+    // 예: "### 3. Draft the Translation (Segment by Segment):", "**Drafting:**", "Draft the Translation"
+    if (/^(?:#{1,6}\s*|\*\*|\[)?(?:\d+\.\s*)?(?:Draft(?:ing)?(?:\s+(?:the\s+)?Translation)?|Thought Process|Thinking Process|Analysis|Original text)(?:\s*\([^)]*\))?(?:\s*#*|\*\*|\])?:?$/i.test(trimmed)) {
+      return true;
+    }
+
+    // 6. 단독 백틱 토큰 나열 또는 메타 단어 ("`word`", "etc.", "and so on.")
+    if (/^`[^`\r\n]+`$/.test(trimmed) || /^(?:etc\.|etc|and so on\.?)$/i.test(trimmed)) {
+      return true;
+    }
+
+    // 7. 안내 멘트 라벨 단독 라인
+    if (/^(?:Here is the (?:translation|translated document|Korean translation|final translation)|최종\s*번역(?:\s*결과)?|번역\s*결과):?$/i.test(trimmed)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * LLM 응답에 포함될 수 있는 <think> 태그, 영문 추론 독백(Chain-of-thought),
+   * 프롬프트 복기("The user wants me to..."), "Thinking Process:" 블록,
+   * 초안 매핑("A -> B"), reasoning 코드블록 등을 안전하게 제거하여 순수 본문만 추출합니다.
+   */
+  static stripThinkingProcess(rawContent: string): string {
+    if (!rawContent) return '';
+    let text = rawContent.trim();
+
+    // 1. <think>...</think> 및 <thought>...</thought> 태그 제거 (DeepSeek-R1, QwQ 등)
+    text = text.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, '').trim();
+    text = text.replace(/<thought\b[^>]*>[\s\S]*?<\/thought>/gi, '').trim();
+
+    // 2. 미완결 <think> 태그 처리 (출력 토큰 제한으로 닫는 태그가 잘린 경우)
+    if (/<think\b[^>]*>/i.test(text) && !/<\/think>/i.test(text)) {
+      text = text.replace(/<think\b[^>]*>[\s\S]*$/gi, '').trim();
+    }
+    if (/<thought\b[^>]*>/i.test(text) && !/<\/thought>/i.test(text)) {
+      text = text.replace(/<thought\b[^>]*>[\s\S]*$/gi, '').trim();
+    }
+
+    // 3. ```thought ... ``` 또는 ```reasoning ... ``` 코드블록 제거
+    text = text.replace(/```(?:thought|reasoning)[\s\S]*?```/gi, '').trim();
+
+    // 4. 빈 입력 등으로 인한 LLM의 메타 거절/독백 안내문 제거
+    text = text.replace(/^(?:We need to translate a markdown document, but the user hasn't provided|Please provide the (?:markdown|text|content)|It looks like you didn't provide|As an AI language model, I need)[\s\S]*$/i, '').trim();
+
+    // 5. 시작부 CoT 독백 ("The user wants me to...", "Let's review the guidelines:", "Target language:...") 감지 및 정제
+    const cotStartRegex = /^(?:The user (?:wants|asked|provides|needs|requested|is asking)|I (?:need to|must|should|will|am asked to)|Let's (?:review|analyze|examine|first|check|start)|Okay, (?:I will|let's)|We (?:need to|are asked to)|Target language:|도착어:)/i;
+    const initialLines = text.split('\n');
+    const firstNonEmptyLine = initialLines.find(l => l.trim().length > 0) || '';
+    const hasInitialCoT = cotStartRegex.test(text) || this.isCoTOrMetaLine(firstNonEmptyLine);
+
+    if (hasInitialCoT) {
+      // 5-1. 코드블록 (```markdown ... ```) 형태로 최종 본문이 뒤에 감싸여 있는 경우 우선 추출
+      const codeBlockMatch = text.match(/```(?:markdown|md)?\s*\n([\s\S]*?)\n```/);
+      if (codeBlockMatch && codeBlockMatch[1]?.trim()) {
+        text = codeBlockMatch[1].trim();
+      } else {
+        // 5-2. 구분자(---, ===, ***)가 있는 경우 그 이후를 본문으로 취함
+        const dividerMatch = text.match(/\n+(?:---|===|\*\*\*)\s*\n+([\s\S]*)$/);
+        if (dividerMatch && dividerMatch[1]?.trim()) {
+          text = dividerMatch[1].trim();
+        } else {
+          // 5-3. 최종 번역 라벨이 있는 경우
+          const labelMatch = text.match(/\n+(?:#{1,6}\s*)?(?:Final (?:Translation|Output|Response|Markdown)|Translated (?:Markdown|Text|Document)|Here is the (?:translation|translated|final)|최종\s*번역|번역\s*결과|최종\s*결과):?\s*\n+([\s\S]*)$/i);
+          if (labelMatch && labelMatch[1]?.trim()) {
+            text = labelMatch[1].trim();
+          } else {
+            // 5-4. "Original text:" 블록이 있고 그 뒤에 실제 번역문이 이어지는 경우
+            const originalTextSplit = text.split(/\n+Original text:\s*\n+/i);
+            if (originalTextSplit.length > 1) {
+              const afterOriginal = originalTextSplit.slice(1).join('\n');
+              const linesAfter = afterOriginal.split('\n');
+              let foundIndex = -1;
+              for (let i = 0; i < linesAfter.length; i++) {
+                if (!this.isCoTOrMetaLine(linesAfter[i])) {
+                  foundIndex = i;
+                  break;
+                }
+              }
+              if (foundIndex !== -1) {
+                text = linesAfter.slice(foundIndex).join('\n').trim();
+              } else {
+                text = '';
+              }
+            } else {
+              // 5-5. 라인 단위 완전 탐색: CoT / 메타 라인이 모두 끝난 첫 번째 실제 본문 시작점 탐색
+              const lines = text.split('\n');
+              let contentStartIndex = -1;
+              for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                if (!this.isCoTOrMetaLine(line)) {
+                  contentStartIndex = i;
+                  break;
+                }
+              }
+              if (contentStartIndex !== -1) {
+                text = lines.slice(contentStartIndex).join('\n').trim();
+              } else {
+                text = '';
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 6. "Thinking Process:" 또는 "Thought Process:" 헤더가 시작 부분에 있는 경우
+    const thinkingHeaderRegex = /^(?:#{1,6}\s*|\*\*|\[)?(?:Thinking|Thought)\s*Process(?:\s*#*|\*\*|\])?:?\s*\n+/i;
+    if (thinkingHeaderRegex.test(text)) {
+      const dividerMatch = text.match(/\n+(?:---|===|\*\*\*)\s*\n+([\s\S]*)$/);
+      if (dividerMatch && dividerMatch[1]?.trim()) {
+        text = dividerMatch[1].trim();
+      } else {
+        const labelMatch = text.match(/\n+(?:#{1,6}\s*)?(?:Final (?:Translation|Output|Response|Markdown)|Translated (?:Markdown|Text|Document)|Here is the (?:translation|translated|final)|최종\s*번역|번역\s*결과|최종\s*결과):?\s*\n+([\s\S]*)$/i);
+        if (labelMatch && labelMatch[1]?.trim()) {
+          text = labelMatch[1].trim();
+        } else {
+          const codeBlockMatch = text.match(/```(?:markdown|md)?\s*\n([\s\S]*?)\n```/);
+          if (codeBlockMatch && codeBlockMatch[1]?.trim()) {
+            text = codeBlockMatch[1].trim();
+          } else {
+            const lines = text.split('\n');
+            let contentStartIndex = -1;
+            for (let i = 1; i < lines.length; i++) {
+              if (!this.isCoTOrMetaLine(lines[i])) {
+                contentStartIndex = i;
+                break;
+              }
+              if (/^(?:---|===|\*\*\*)$/.test(lines[i].trim())) {
+                contentStartIndex = i + 1;
+                break;
+              }
+            }
+            if (contentStartIndex !== -1 && contentStartIndex < lines.length) {
+              text = lines.slice(contentStartIndex).join('\n').trim();
+            }
+          }
+        }
+      }
+    }
+
+    // 7. 본문 중간 또는 후반에 LLM이 "Draft the Translation" 또는 "Drafting" 섹션을 생성한 경우
+    const draftSectionRegex = /\n+(?:#{1,6}\s*|\*\*|\[)?(?:\d+\.\s*)?Draft(?:ing)?(?:\s+the\s+Translation)?(?:\s*\([^)]*\))?(?:\s*#*|\*\*|\])?:?\s*\n+/i;
+    if (draftSectionRegex.test(text)) {
+      const postDraftLabelMatch = text.match(/\n+(?:---|===|\*\*\*|#{1,6}\s*(?:Final|최종|Translated)|Here is the (?:translation|translated|final))\b[\s\S]*?\n+([\s\S]*)$/i);
+      if (postDraftLabelMatch && postDraftLabelMatch[1]?.trim()) {
+        text = postDraftLabelMatch[1].trim();
+      } else {
+        const splitParts = text.split(draftSectionRegex);
+        if (splitParts[0]?.trim()) {
+          text = splitParts[0].trim();
+        }
+      }
+    }
+
+    // 8. 본문 사이사이의 독백 단락 및 `원문 -> 번역문` 화살표 초안 매핑 정제
+    const rawLines = text.split('\n');
+    const processedLines: string[] = [];
+
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      const trimmed = line.trim();
+
+      if (!trimmed) {
+        processedLines.push('');
+        continue;
+      }
+
+      // 8-1. CoT 독백 라인 및 서식 독백 판정
+      if (this.isCoTOrMetaLine(line)) {
+        continue;
+      }
+      if (/^Wait,\s+(?:there is|I will|no bold)/i.test(trimmed) || /The instruction says\b/i.test(trimmed)) {
+        continue;
+      }
+
+      // 8-2. 만약 다음 비어있지 않은 라인이 `-> 번역문` 또는 `→ 번역문` 화살표 매핑인 경우:
+      // 현재 라인이 영어 원문이고 다음 라인이 그 번역문인 초안 쌍인지 확인하여 번역문만 채택
+      let nextNonEmptyIndex = -1;
+      for (let j = i + 1; j < rawLines.length; j++) {
+        if (rawLines[j].trim().length > 0) {
+          nextNonEmptyIndex = j;
+          break;
+        }
+      }
+
+      if (nextNonEmptyIndex !== -1) {
+        const nextLine = rawLines[nextNonEmptyIndex].trim();
+        const arrowMatch = nextLine.match(/^(?:->|=>|→)\s*(.+)$/);
+        if (arrowMatch) {
+          const isCurrentEng = !/[가-힣]/.test(line);
+          const isNextKor = /[가-힣]/.test(arrowMatch[1]);
+          if (isCurrentEng && isNextKor) {
+            const isBullet = /^\s*[-*•]\s+/.test(line);
+            const indent = line.match(/^(\s*)/)?.[1] || '';
+            const translatedContent = arrowMatch[1].trim();
+            processedLines.push(isBullet ? `${indent}- ${translatedContent}` : `${indent}${translatedContent}`);
+            i = nextNonEmptyIndex; // 다음 라인까지 소비
+            continue;
+          }
+        }
+      }
+
+      // 8-3. 만약 단독으로 `-> 번역문` 또는 `→ 번역문` 형태로 남아있는 라인인 경우 화살표 제거 후 채택
+      const singleArrowMatch = trimmed.match(/^(?:->|=>|→)\s*(.+)$/);
+      if (singleArrowMatch) {
+        const isBullet = /^\s*[-*•]\s+/.test(line);
+        const indent = line.match(/^(\s*)/)?.[1] || '';
+        processedLines.push(isBullet ? `${indent}- ${singleArrowMatch[1].trim()}` : `${indent}${singleArrowMatch[1].trim()}`);
+        continue;
+      }
+
+      // 8-4. 라인 끝에 붙은 불필요한 메타 주석(예: `(no bold)`, `(no bold, just a link)`) 정리
+      let cleanedLine = line.replace(/\s*\((?:no bold|just a link|no italics?|only link|plain text)[^)]*\)\s*$/i, '');
+
+      processedLines.push(cleanedLine);
+    }
+
+    text = processedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+    return text;
+  }
 }

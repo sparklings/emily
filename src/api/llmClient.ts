@@ -87,6 +87,11 @@ interface ChatCompletionPayload {
   max_tokens?: number;
   response_format?: { type: string };
   stream?: boolean;
+  reasoning?: {
+    effort?: string;
+    exclude?: boolean;
+    max_tokens?: number;
+  };
 }
 
 interface ChatCompletionChoice {
@@ -196,6 +201,16 @@ export class LLMProxyClient {
 
     if (options?.response_format) {
       payload.response_format = options.response_format;
+    }
+
+    // OpenRouter 또는 reasoning/thinking 지원 모델의 reasoning 토큰 누출 방지
+    const isReasoningOrOpenRouter = config.baseUrl.includes('openrouter.ai') ||
+      /(?:note|r1|reasoning|thinking|qwq)/i.test(model);
+    if (isReasoningOrOpenRouter) {
+      payload.reasoning = {
+        effort: 'none',
+        exclude: true
+      };
     }
 
     let requestPromise: Promise<RequestUrlResponse> = requestUrl({
