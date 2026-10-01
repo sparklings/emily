@@ -1,5 +1,37 @@
-const PROXY_URL = process.env.EMILY_PROXY_URL || 'http://127.0.0.1:31415/v1';
+import fs from 'fs';
+import path from 'path';
+
+// Load .env file if present
+function loadEnv() {
+  const envPath = path.resolve('.env');
+  if (fs.existsSync(envPath)) {
+    try {
+      const content = fs.readFileSync(envPath, 'utf8');
+      for (const line of content.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx !== -1) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (key && !(key in process.env)) {
+            process.env[key] = val;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+}
+loadEnv();
+
+const PROXY_URL = process.env.EMILY_PROXY_URL || 'http://localhost:11434/v1';
 const API_KEY = process.env.EMILY_API_KEY || '';
+const MODEL = process.env.EMILY_MODEL || 'auto';
 
 class MarkdownFormatter {
   static extractFrontmatter(markdown) {
@@ -536,7 +568,7 @@ async function runTests() {
 
   // [TC-03] LLM Proxy 번역 실행 (all + 한국어 볼드 서식 규칙)
   console.log('\n▶ [TC-03] LLM Proxy 번역 연산 (Scope: all, Target: 한국어)...');
-  const client = new LLMProxyClient(PROXY_URL, API_KEY, 'auto');
+  const client = new LLMProxyClient(PROXY_URL, API_KEY, MODEL);
   const sampleDoc = `## 3 Explaining Message Queues
 Consumers receive messages and take actions. Publishers send messages to the broker.`;
 
