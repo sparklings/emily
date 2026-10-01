@@ -42,7 +42,8 @@
    - [계정 및 요금 정책 (Account & Monetization)](#계정-및-요금-정책-account--monetization)
    - [원격 분석 및 광고 배제 (Telemetry & Advertisements)](#원격-분석-및-광고-배제-telemetry--advertisements)
 6. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
-7. [라이선스 (License)](#-라이선스-license)
+7. [개발 및 배포 브랜치 전략 (Branching & Release Workflow)](#-개발-및-배포-브랜치-전략-branching--release-workflow)
+8. [라이선스 (License)](#-라이선스-license)
 
 ---
 
@@ -119,37 +120,37 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 * 과거 세션 결과를 다시 열 때는 **추가 LLM API 호출이나 토큰 소모가 전혀 발생하지 않으며(Zero-Token)**, 좌우 분할 스크롤(Synchronized Split View) 화면에서 원본과 수정본을 안전하게 비교 검토한 뒤 원하는 방식으로 문서에 적용할 수 있습니다.
 * **데스크톱 편의성**: `Ctrl+Enter` / `Cmd+Enter` 글로벌 단축키 실행, 한글 IME 조합 중복 방지, 실수로 인한 모달 닫힘 방지(Shake 효과)가 적용되어 있습니다.
 
-### 6. 기기 프로필 기반 스마트 엔드포인트 관리 (Device Profile-Based Provider Management)
-* **YOLO 스타일 전역 AI 프로바이더 풀 & 기기별 독립 바인딩**
-  * OpenAI, OpenRouter, Google Gemini, Ollama, LM Studio 등 다양한 AI 엔드포인트를 전역 프로바이더 풀(`providers`)에 무제한 등록하고 관리할 수 있습니다.
-  * 한글 IME 조합 및 특수문자가 깨지지 않는 독립 모달(`ProviderModal`, `ProviderModelModal`)을 통해 엔드포인트와 모델을 손쉽게 설정합니다.
-  * **`[📍 이 기기에 적용]`** 클릭 시 실시간 시각적 피드백(활성 배지 및 강조 스타일)과 함께 현재 PC의 활성 프로필로 즉시 바인딩되며, OneDrive나 Obsidian Sync 환경에서도 기기 간 설정 충돌이 100% 방지됩니다.
-* **스마트 포트 치환 및 전체 URL 유연 지원 (`applyPortOrUrl`)**
-  * 기기 프로필에 숫자 포트(예: `11434` 또는 `:8000`)만 입력하면 기존 기본 엔드포인트의 호스트와 경로(`http://127.0.0.1:11434/v1`)를 온전히 유지하며 포트만 똑똑하게 치환합니다.
-  * 다른 호스트의 전체 URL(예: `http://192.168.0.20:8000/v1`)을 입력하면 전체 URL로 안전하게 전환됩니다.
+### 6. 직관적인 설정 환경 및 AI 프로바이더 관리 (Settings & Provider Management)
+* **4대 서브탭 구조 (`AI 프로바이더`, `번역 설정`, `교열 & 서식`, `일반 & UI`)**
+  * 단일 스크롤 방식의 복잡한 설정을 4개 목적별 독립 서브탭으로 분리하여 필요한 설정을 즉시 탐색하고 변경할 수 있습니다.
+* **원클릭 프로바이더 프리셋 자동완성 (Provider Presets)**
+  * 신규 프로바이더 등록 시 **Ollama, LM Studio, OpenAI, Google Gemini, OpenRouter, DeepSeek, Groq** 프리셋을 선택하면 Base URL, 표시 이름, 추천 모델 목록이 자동으로 완성됩니다.
+* **프로바이더 상태 뱃지 및 실시간 헬스체크 (Status Badges & Health Check)**
+  * 각 프로바이더 아코디언 카드 헤더에 `⚪ 미확인`, `🟢 정상 (OOms)`, `🔴 연결 실패` 뱃지와 등록된 모델 개수가 표시됩니다.
+  * 아코디언 내부의 **[연결 테스트]** 버튼 클릭 시 해당 카드의 상태 뱃지가 실시간으로 즉시 갱신됩니다.
+* **옵시디언 1.13+ 선언형 설정 검색 지원 (`getSettingDefinitions`)**
+  * 옵시디언 1.13 이상 버전의 전역 설정 검색창에서 탭 이동 없이 `AI Provider`, `OpenAI`, `Ollama`, `번역`, `교열`, `맞춤법`, `볼드 제거` 등 20개 이상의 키워드 및 다국어 별칭으로 원하는 설정을 바로 검색할 수 있습니다.
+* **전역 AI 프로바이더 풀 & 기기별 독립 바인딩 (Multi-Device Binding)**
+  * 여러 AI 엔드포인트를 전역 프로바이더 풀(`providers`)에 등록하고 관리할 수 있습니다.
+  * **`[📍 이 기기에 적용]`** 버튼을 통해 현재 기기 식별자(`hostname`)에 특정 프로바이더를 독립 바인딩하여, OneDrive나 옵시디언 동기화 환경에서도 기기 간 설정 덮어쓰기 없이 독립적으로 동작합니다.
 * **포트 및 후보 키 자동 진단(Auto-Probe)과 자가 치유(Self-Healing)**
-  * 로컬 엔드포인트 연결 오류(Connection Refused) 또는 인증 실패(401) 감지 시, 등록된 후보 키와 포트를 자동으로 진단(Auto-Probe)하여 유효한 연결을 찾아내고 현재 기기 프로필을 즉시 자가 치유(Self-Healing)합니다.
-* **LLM 생각 과정(Reasoning/CoT) 및 초안 독백 누출 원천 차단**
-  * DeepSeek R1, Qwen 2.5, Dots3-Note 등 최신 오픈소스 추론형 LLM의 내부 생각 과정(`<think>...</think>`, `<thought>...</thought>`, \`\`\`thought\`\`\`) 태그 블록을 완벽히 제거합니다.
-  * `Thinking Process:` / `Thought Process:` 블록 감지 및 분리뿐만 아니라, `The user wants me to...`, `Let's review the guidelines:`, `Original text:`, `Let's write: "..."` 등 모델이 출력하는 영문 분석 독백과 초안 루프를 다중 계층으로 정밀 필터링합니다.
-  * OpenRouter 및 추론 모델 호출 시 `reasoning: { effort: 'none', exclude: true }` 파라미터를 자동 적용하여 불필요한 reasoning trace 출력을 사전에 차단합니다.
-  * 프롬프트 말미 Recency-bias 출력 절대 원칙 가드레일 및 군더더기 없는 경량화 프롬프트를 적용하여 모델의 과잉 추론(Over-reasoning)을 원천 예방합니다.
+  * 로컬 엔드포인트 연결 오류(Connection Refused) 또는 인증 실패(401) 감지 시, 등록된 후보 키와 포트를 자동으로 진단(Auto-Probe)하여 유효한 연결을 찾아내고 현재 기기 설정을 자가 치유(Self-Healing)합니다.
+* **LLM 생각 과정(Reasoning/CoT) 및 초안 독백 누출 차단**
+  * DeepSeek R1 등 추론형 LLM의 `<think>...</think>` 태그 블록을 제거하고, 영문 독백 및 초안 루프를 필터링합니다. OpenRouter 호출 시 reasoning 파라미터를 억제합니다.
 
 ### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
 * **반응형 너비 감지 적응형 버튼 (Responsive Adaptive Segmented Buttons)**
-  * 옵시디언 사이드바의 너비가 좁아질 때(<320px) 텍스트를 숨기고 직관적인 Lucide 아이콘 모드로 자동 전환되며, 중간 너비(<380px)에서는 핵심 라벨만 간결하게 표시하여 사이드바 폭을 좁게 쓰더라도 UI 레이아웃 깨짐 없이 쾌적한 조작성을 유지합니다.
+  * 옵시디언 사이드바의 너비가 좁아질 때(<320px) 텍스트를 숨기고 아이콘 모드로 자동 전환되며, 중간 너비(<380px)에서는 핵심 라벨만 간결하게 표시하여 좁은 패널에서도 조작성을 유지합니다.
 * **사이드바 원클릭 새로고침 (Work State Refresh & UI Cleansing)**
-  * 사이드바 헤더 상단에 **새로고침(`refresh-cw`) 버튼**을 탑재하여, 작업 중단이나 에러 발생 시 언제든지 클릭 한 번으로 모든 진행 중인 비동기 요청을 즉시 중단(Abort)하고, 코어 서비스를 동적으로 재초기화하며, UI 상태를 플러그인이 처음 실행된 것처럼 깨끗하게 초기화합니다.
+  * 사이드바 헤더 상단의 **새로고침(`refresh-cw`) 버튼**으로 진행 중인 비동기 요청을 중단하고 UI 상태와 코어 서비스를 초기화할 수 있습니다.
 * **실시간 즉시 작업 취소 (Immediate Task Cancel with AbortController)**
-  * 긴 문서 번역이나 교열 작업 중 사용자가 언제든지 중단할 수 있도록 스트림 헤더에 **`[❌ 작업 취소]`** 버튼을 제공합니다.
-  * 취소 클릭 시 `AbortController`를 통해 진행 중이던 비동기 HTTP 통신을 즉시 중단하고, 생성 중이던 미완성 임시 파일을 옵시디언 휴지통(`trashFile`)으로 자동 정리하여 볼트 오염을 원천 방지합니다.
+  * 작업 진행 중 **`[❌ 작업 취소]`** 버튼을 누르면 HTTP 통신을 즉시 중단하고 미완성 임시 파일을 휴지통으로 정리합니다.
 * **방해 없는 클린 대상 문서 표시줄**
-  * 사이드바 대상 문서 바에서 시각적 노이즈를 배제하여 활성 노트의 전체 제목을 온전하고 또렷하게 표시하며, 문단 선택 시 `선택 영역 (N자)` 배지를 유기적으로 연동 표시합니다.
+  * 활성 노트의 전체 제목을 표시하며, 문단 선택 시 `선택 영역 (N자)` 배지를 연동 표시합니다.
 * **세션 히스토리 카드 타이포그래피 계층 정합성**
-  * 세션 히스토리 카드의 비주얼 계층과 빈 상태 알림 문구(`No issues detected.` 등)의 폰트 크기를 통일하여 정갈하고 세련된 타이포그래피 계층을 완성하였습니다.
+  * 세션 히스토리 카드와 빈 상태 알림 문구의 폰트 크기를 통일하여 정합성을 유지합니다.
 * **실시간 타임라인 및 청크 진행 상태 안내**
-  * 대용량 문서 분할 번역 등 다단계 파이프라인 진행 중 실시간 타임라인에 `[1/4]`, `[2/4]`, `[3/4]`, `[4/4]` 형태로 청크별 순차 진행 상황을 투명하게 안내합니다.
-  * 완료된 세션 히스토리 카드에 총 처리 시간 및 토큰 속도(tokens/sec)를 투명하게 기록합니다.
+  * 분할 번역 진행 중 `[1/4]`, `[2/4]` 형태로 순차 진행 상황을 표시하며, 완료 카드에 처리 시간과 속도를 기록합니다.
 
 ---
 
@@ -181,25 +182,27 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 
 ---
 
-### AI 서비스 엔드포인트 및 기기 프로필 설정 가이드
+### 환경 설정 가이드 (4대 서브탭 안내)
 
-옵시디언 **설정 > Assistant Emily** 탭에서 단일 통합 대시보드를 통해 엔드포인트 및 기기 프로필을 손쉽게 설정하십시오:
+옵시디언 **설정 > Assistant Emily** 탭에서 4개 서브탭을 통해 플러그인을 설정할 수 있습니다:
 
-#### 1. 현재 컴퓨터 활성 기기 관리
-* 상단 드롭다운에서 현재 컴퓨터에 적용할 프로필을 선택하면 즉시 로컬에 바인딩됩니다.
-* 실시간으로 활성 프로필, 적용 중인 엔드포인트 URL, 마스킹된 API Key 배지가 표시됩니다.
-* **[⚡ 현재 기기 연결 테스트]**: 현재 PC에 적용된 설정으로 통신 상태와 모델 정상 작동을 즉시 진단합니다.
+#### 1. [🤖 AI 프로바이더]
+* **프로바이더 등록**: **`[+ Add provider]`** 버튼을 누르고 프리셋(OpenAI, Ollama, LM Studio 등)을 선택하여 엔드포인트 URL, API 키, 모델 목록을 추가합니다.
+* **기기 바인딩**: 등록된 카드에서 **`[📍 이 기기에 적용]`** 버튼을 눌러 현재 PC에서 사용할 프로바이더를 선택합니다.
+* **상태 확인**: 아코디언을 펼쳐 **[연결 테스트]**를 실행하면 실시간 응답 속도와 상태 뱃지(`🟢 정상` / `🔴 연결 실패`)가 갱신됩니다.
 
-#### 2. 등록된 기기 프로필 풀 (OneDrive 동기화)
-집, 회사, 연구실 등 다중 PC 환경에서 기기별로 서로 다른 로컬 프록시 포트나 API 키를 사용할 때 기기별 프로필을 등록합니다.
-* **[➕ 새 기기 프로필 추가]**: FreeLLMAPI Proxy 스타일의 컴팩트 팝업 모달이 열리며 기기 이름, 포트 또는 엔드포인트 URL, API Key를 직관적으로 등록할 수 있습니다.
-* **[📍 이 컴퓨터에 적용]**: 프로필 풀의 원하는 기기 카드를 클릭 한 번으로 현재 컴퓨터의 활성 프로필로 즉시 바인딩합니다.
-* **클라우드 동기화 격리**: 프로필 목록은 볼트 동기화로 모든 PC에서 공유되지만, 활성 상태는 각 PC의 `localStorage`에만 저장되어 다른 컴퓨터의 설정을 덮어쓰지 않습니다.
-* **후보 키/포트 자동 진단 (Auto-Probe)**: 로컬 프록시 연결 오류 또는 401 오류 시 유효한 포트나 키를 자동 탐색하여 현재 기기 프로필에 즉시 자가 치유(Self-Healing) 저장합니다.
+#### 2. [🌐 번역 설정]
+* 번역 기능 기본 활성화 여부, 기본 출발어/도착어를 지정합니다.
+* 기본 번역 범위(선택 영역, 전체 문서, 단락별 1:1 대조) 및 원문 보존 방식(새 파일 생성, 덧붙이기, 덮어쓰기)을 설정합니다.
+* 기본 문체(학술체, 경어체, 친근체) 및 스타일(균형, 직역, 의역), 소스코드 주석 번역 여부를 구성합니다.
 
-#### 3. 전역 기본 설정 (Fallback)
-프로필을 지정하지 않은 새로운 기기에서 안전하게 기본으로 적용될 엔드포인트(URL, 공용 API Key, 모델명)를 설정합니다.
-* 📖 더 자세한 백엔드별 연동 안내와 설정법은 **[공식 웹사이트](https://sparklings.github.io/emily/)**를 참고하십시오.
+#### 3. [✏️ 교열 & 서식]
+* 사이드바 실행 시 기본 활성화할 교열 항목(맞춤법 검사, 문법 검사, 타임스탬프 삭제)을 지정합니다.
+* 마크다운 서식 제거 기본값(볼드, 기울임, 취소선, 하이라이트)을 선택합니다.
+
+#### 4. [⚙️ 일반 & UI]
+* 플러그인 표시 언어(자동 감지, 한국어, English)를 변경합니다.
+* 한글 볼드 뒤 조사 공백 자동 보정 여부 및 플로팅 상/하단 스크롤 버튼 표시 여부를 설정합니다.
 
 ---
 
@@ -254,6 +257,18 @@ Assistant Emily의 코드베이스는 외부 대형 에이전트 라이브러리
 
 ---
 
+## 🌿 개발 및 배포 브랜치 전략 (Branching & Release Workflow)
+
+Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 규정 준수 및 안정적인 릴리즈를 위해 체계적인 2단계 브랜치 전략을 운용합니다:
+* **`develop` 브랜치**:
+  * 신규 기능 구현, UI 개선 및 설정 화면 개편(개선안 A~D) 작업이 진행되는 개발 전용 브랜치입니다.
+  * 커뮤니티 플러그인 심사 과정의 사전 프리뷰(Review Branch) 검토 및 린트/테스트 검증을 통과하는 기준점이 됩니다.
+* **`master` 브랜치**:
+  * `develop` 브랜치에서 프리뷰 심사 및 전체 테스트(58개 TC) 통과가 확인된 후 버전 업그레이드와 함께 최종 병합되는 공식 배포 브랜치입니다.
+  * 공식 GitHub Release 및 버전 태그(`v1.0.x`) 발행의 기반이 됩니다.
+
+---
+
 ## 📄 라이선스 
 
 Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, 수정, 배포할 수 있는 오픈소스 소프트웨어입니다.
@@ -297,18 +312,19 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
    - [3. Markdown Typography & Selective Format Stripper](#3-markdown-typography--selective-format-stripper)
    - [4. Custom Natural Instructions](#4-custom-natural-instructions)
    - [5. Interactive Diff Review](#5-interactive-diff-review)
-   - [6. Device Profile-Based Provider Management & Smart Auto-Probe](#6-device-profile-based-provider-management--smart-auto-probe)
+   - [6. Settings & AI Provider Management](#6-settings--ai-provider-management)
    - [7. Real-Time Task Cancellation & Desktop UX](#7-real-time-task-cancellation--desktop-ux)
 4. [Installation & Setup](#-installation--setup)
    - [Plugin Installation Methods](#plugin-installation-methods)
-   - [AI Service Endpoint & Device Profiles Setup Guide](#ai-service-endpoint--device-profiles-setup-guide)
+   - [Configuration Guide (4 Subtabs)](#configuration-guide-4-subtabs)
 5. [Security, Privacy & Disclosures](#-security-privacy--disclosures)
    - [External Network Communication Notice (Network Usage)](#external-network-communication-notice)
    - [Vault File Access & Permissions (Vault File Access)](#vault-file-access--permissions)
    - [Account & Monetization Policy (Account & Monetization)](#account--monetization-policy)
    - [Zero Telemetry & Ad-Free Policy (Telemetry & Advertisements)](#zero-telemetry--ad-free-policy)
 6. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
-7. [License](#-license)
+7. [Branching & Release Workflow](#-branching--release-workflow)
+8. [License](#-license)
 
 ---
 
@@ -385,37 +401,34 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **Zero-Token Re-review**: Reopening prior results consumes **zero additional LLM API calls or tokens**, letting you safely compare original and modified documents in a synchronized split-scroll view before applying changes.
 * **Desktop Productivity**: Features `Ctrl+Enter` / `Cmd+Enter` global shortcuts, IME composition protection for Korean/CJK input, and modal shake effects to prevent accidental dismissal.
 
-### 6. Device Profile-Based Provider Management & Smart Auto-Probe
-* **YOLO-Style AI Provider Pool & Isolated Device Binding**
-  * Seamlessly register unlimited AI endpoints (OpenAI, OpenRouter, Google Gemini, Ollama, LM Studio, etc.) in a global provider pool (`providers`).
-  * Features dedicated modal dialogs (`ProviderModal`, `ProviderModelModal`) supporting full Korean IME character composition and special characters without corruption.
-  * Clicking **`[📍 Apply to this Device]`** provides instant live visual feedback (active badge and highlight borders) and binds the selection to the local machine, preventing configuration overwrites across OneDrive or Obsidian Sync.
-* **Smart Port Replacement & Full URL Support (`applyPortOrUrl`)**
-  * Specifying a numeric port (e.g. `11434` or `:8000`) neatly swaps the port while preserving the base host and route path (`http://127.0.0.1:11434/v1`).
-  * Specifying a full URL (e.g. `http://192.168.0.20:8000/v1`) seamlessly switches to the designated target host.
-* **Port & Candidate Key Auto-Probe with Self-Healing**
-  * When connection refused or HTTP 401 errors are detected, Emily systematically tests candidate ports and keys (Auto-Probe), automatically healing and persisting the active endpoint to the current profile.
-* **LLM Reasoning (CoT) & Draft Monologue Zero-Leakage Filter**
-  * Completely strips internal thinking tokens (`<think>...</think>`, `<thought>...</thought>`, \`\`\`thought\`\`\`) from cutting-edge reasoning LLMs (DeepSeek R1, Qwen 2.5, Dots3-Note, etc.).
-  * Multi-layer filter detects and removes English thought monologues and drafting loops (`The user wants me to...`, `Let's review the guidelines:`, `Original text:`, `Let's write: "..."`).
-  * Injects `reasoning: { effort: 'none', exclude: true }` parameters for OpenRouter and reasoning models to proactively suppress raw reasoning traces.
-  * Enforces recency-bias output guardrails and streamlined prompt instructions to prevent models from over-reasoning or summarizing prompt rules.
+### 6. Settings & AI Provider Management
+* **4-Subtab Layout (`AI Providers`, `Translation`, `Proofreading & Formatting`, `General & UI`)**
+  * Divides complex settings into 4 dedicated, focused subtabs, minimizing scroll length and maximizing accessibility.
+* **One-Click Provider Presets**
+  * Auto-fills Base URL, provider display name, and recommended model lists with presets for **Ollama, LM Studio, OpenAI, Google Gemini, OpenRouter, DeepSeek, and Groq**.
+* **Status Badges & Live Health Check**
+  * Provider card headers feature live status indicators (`⚪ Untested`, `🟢 Online (OOms)`, `🔴 Offline`) alongside model count tags.
+  * Clicking the **[Connectivity Test]** button inside the accordion immediately updates the header status badge in real time.
+* **Declarative Obsidian 1.13+ Settings Search (`getSettingDefinitions`)**
+  * Registers over 20 setting definitions and multilingual aliases (`AI Provider`, `OpenAI`, `Ollama`, `Translation`, `Proofreading`, `Strip Bold`, etc.) for seamless integration with Obsidian's global settings search bar.
+* **Global AI Provider Pool & Isolated Device Binding**
+  * Register unlimited endpoints and bind specific providers to your active machine via **`[📍 Apply to this Device]`**, completely preventing OneDrive or Obsidian Sync collisions across devices.
+* **Port & Key Auto-Probe with Self-Healing**
+  * Automatically detects candidate ports and API keys upon connection refused or 401 unauthorized errors, self-healing the current machine binding.
+* **LLM Reasoning (CoT) & Draft Monologue Filter**
+  * Strips internal `<think>...</think>` traces and draft monologues from reasoning models, applying `reasoning: { effort: 'none', exclude: true }` parameters for OpenRouter.
 
 ### 7. Real-Time Task Cancellation & Desktop UX
 * **Responsive Adaptive Segmented Buttons**
-  * As the Obsidian sidebar width narrows (<320px), text labels automatically collapse into intuitive Lucide icons with native tooltips; at intermediate widths (<380px), essential concise labels are displayed to prevent UI clipping and maintain fluid usability.
-* **One-Click Sidebar Refresh (Work State Refresh & UI Cleansing)**
-  * A dedicated **refresh button (`refresh-cw`)** in the sidebar header allows users to instantly abort ongoing asynchronous operations, dynamically reinitialize core services, and clean all selections/inputs back to initial launch state.
+  * Automatically collapses labels into intuitive Lucide icons when sidebar width is narrow (<320px).
+* **One-Click Sidebar Refresh (`refresh-cw`)**
+  * Aborts pending requests and cleanly resets work states and core services.
 * **Instant Task Cancellation (`AbortController`)**
-  * An intuitive **`[❌ Cancel Task]`** button is displayed in the active streaming header during long-running tasks.
-  * Clicking Cancel immediately aborts asynchronous HTTP requests and moves any partially written temporary files to Obsidian's trash (`trashFile`), keeping your vault pristine.
-* **Clutter-Free Target Document Bar**
-  * Displays the full, unobscured file name in the active note bar without visual noise, displaying live `Selection (N chars)` badges when text is highlighted.
-* **Consistent Typography Scale**
-  * Standardized session history empty state notice (`No issues detected.`) and card typography for clean visual rhythm and visual hierarchy.
-* **Live Timeline & Chunk Progress Indicator**
-  * The multi-step execution timeline clearly reports sequential chunk progress (e.g. `[1/4]`, `[2/4]`, `[3/4]`, `[4/4]`).
-  * Completed session cards record total execution time and throughput speeds (tokens/sec).
+  * Halts asynchronous requests and cleans partial temporary files to Obsidian trash.
+* **Clean Document Header Bar & Typography Hierarchy**
+  * Displays note titles cleanly and ensures uniform font sizing across session history cards.
+* **Live Chunk Progress Reporting**
+  * Sequentially displays chunk progress (e.g., `[1/4]`, `[2/4]`) during long-form document translations.
 
 ---
 
@@ -447,25 +460,27 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 
 ---
 
-### AI Service Endpoint & Device Profiles Setup Guide
+### Configuration Guide (4 Subtabs)
 
-Navigate to Obsidian **Settings > Assistant Emily** to easily configure endpoints and multi-device profiles via the Unified Dashboard:
+Navigate to Obsidian **Settings > Assistant Emily** to configure preferences across 4 focused subtabs:
 
-#### 1. Active Machine Configuration
-* Select the active machine profile from the header dropdown to immediately bind it locally.
-* Real-time badges display the active profile name, effective URL, and masked API key.
-* **[⚡ Test Active Connection]**: Verifies live connection status, response latency, and model availability.
+#### 1. [🤖 AI Providers]
+* **Add Provider**: Click **`[+ Add provider]`** and pick a preset (OpenAI, Ollama, LM Studio, etc.) to configure the Base URL, API key, and chat models.
+* **Device Binding**: Click **`[📍 Apply to this Device]`** on any card to bind it to your active computer.
+* **Connectivity Test**: Expand the accordion and run tests to inspect response latency and status badges (`🟢 Online` / `🔴 Offline`).
 
-#### 2. Registered Device Profiles Pool (Cloud Synchronized)
-Manage profiles across multiple machines with different local ports or API keys:
-* **[➕ Add Device Profile]**: Opens a compact, 2-column modal to register Device Name, Port or Endpoint URL, and API Key.
-* **[📍 Apply to Current Machine]**: Instantly binds any saved profile to the local computer.
-* **Cloud Sync Isolation**: Profiles are shared across vaults, but active assignment is reliably persisted per device using the Obsidian Plugin Data API (`activeDeviceMap`), avoiding multi-computer configuration clobbering.
-* **Port / Key Auto-Probe**: Automatically diagnoses working ports and keys upon connection/401 errors, self-healing the current machine binding.
+#### 2. [🌐 Translation]
+* Configure default translation state, source and target languages.
+* Select default scope (Selection, Full Document, Paragraph Bilingual) and preservation strategy (New File, Append, Overwrite).
+* Choose default tone, style, and code block comments translation toggle.
 
-#### 3. Global Default Configuration (Fallback)
-Set fallback defaults (Base URL, Global API Key, Model Name) for newly added computers without an explicit profile.
-* 📖 For more documentation and feature overviews, refer to the **[Assistant Emily Official Website](https://sparklings.github.io/emily/)**.
+#### 3. [✏️ Proofreading & Formatting]
+* Configure default proofreading modules (Spelling Check, Grammar Check, Remove Timestamps).
+* Set default markdown format stripping options (Bold, Italic, Strikethrough, Highlight).
+
+#### 4. [⚙️ General & UI]
+* Select display language (Auto-detect, Korean, English).
+* Toggle East Asian bold spacing normalization and floating scroll buttons.
 
 ---
 
@@ -517,6 +532,18 @@ Assistant Emily's codebase is implemented directly with an **independent custom 
 * **[TypeScript](https://www.typescriptlang.org/)** ([GitHub: microsoft/TypeScript](https://github.com/microsoft/TypeScript)): The premier language that keeps complex asynchronous document processing and Markdown AST pipelines robust, strictly typed, and reliable.
 * **[esbuild](https://esbuild.github.io/)** ([GitHub: evanw/esbuild](https://github.com/evanw/esbuild)): High-performance builder delivering instantaneous builds, fast bundling, and efficient tree-shaking for release distributions.
 * **[builtin-modules](https://github.com/sindresorhus/builtin-modules)** ([GitHub: sindresorhus/builtin-modules](https://github.com/sindresorhus/builtin-modules)): Contributed to cleanly harmonizing Node.js runtime dependencies within Obsidian's desktop Electron environment.
+
+---
+
+## 🌿 Branching & Release Workflow
+
+Assistant Emily follows a two-tier branch workflow to maintain plugin review compliance and safe releases:
+* **`develop` Branch**:
+  * Dedicated to active feature development, UI refactoring, and settings restructuring (Improvements A–D).
+  * Serves as the Review Branch for Obsidian Community Plugin validation and comprehensive automated testing.
+* **`master` Branch**:
+  * Stable production release branch. Merged from `develop` upon passing review validation and all 58 test cases.
+  * Serves as the source of truth for official GitHub Release tags (`v1.0.x`).
 
 ---
 

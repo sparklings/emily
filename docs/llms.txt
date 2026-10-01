@@ -53,9 +53,11 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
     - DeepSeek R1 등 추론 모델의 `<think>` 태그 및 초안 텍스트를 결과물에서 제거.
     - OpenRouter 추론 모델 대상 `reasoning: { effort: 'none', exclude: true }` 옵션 적용.
 
-12. **AI 프로바이더 풀 및 기기별 독립 바인딩**:
-    - OpenAI, OpenRouter, Gemini, Ollama, LM Studio 등 복수 프로바이더 등록 및 관리.
-    - 볼트 동기화 환경에서 기기 식별자를 기반으로 기기별 활성 프로바이더를 독립 설정.
+12. **설정 화면 4대 서브탭 및 AI 프로바이더 관리**:
+    - 4대 독립 서브탭(AI 프로바이더, 번역 설정, 교열 & 서식, 일반 & UI) 구조.
+    - Ollama, OpenAI, Gemini 등 원클릭 프리셋 자동완성 및 실시간 헬스체크 뱃지(온라인/오프라인) 지원.
+    - 옵시디언 1.13+ 선언형 설정 검색(`getSettingDefinitions`) 지원.
+    - 기기 식별자 기반의 독립 프로바이더 바인딩을 통한 OneDrive/클라우드 설정 충돌 방지.
     - 외부 분석(Telemetry) 전송 없이 로컬 또는 지정된 API와 직접 통신.
 
 ## 설치 방법 (Installation)

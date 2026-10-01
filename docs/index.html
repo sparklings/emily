@@ -99,6 +99,8 @@
           "단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode) 지원",
           "2,500자 분할 청킹 및 청크 누락 방지 가드",
           "추론 과정 태그(<think>) 및 초안 텍스트 필터링",
+          "설정 화면 4대 서브탭 구조 및 프로바이더 프리셋 자동완성",
+          "실시간 헬스체크 상태 뱃지 및 옵시디언 1.13+ 설정 검색 지원",
           "다중 AI 프로바이더 풀 및 기기별 독립 설정 바인딩",
           "선택적 마크다운 서식 제거 (볼드/기울이기/취소선/하이라이트 선택 제거)",
           "선택 영역 기반 교열 분기 및 실시간 글자 수 배지",
@@ -500,10 +502,10 @@ updated: 2026-09-14
 
         <!-- Feature 7 -->
         <article class="feature-card">
-          <div class="feature-icon">💻</div>
-          <h3 class="feature-title">다중 AI 프로바이더 풀 및 기기별 독립 설정</h3>
+          <div class="feature-icon">⚙️</div>
+          <h3 class="feature-title">4대 서브탭 설정 및 프로바이더 관리</h3>
           <p class="feature-desc">
-            OpenAI, OpenRouter, Gemini, Ollama 등 다양한 프로바이더를 풀에 등록해 사용할 수 있습니다. 로컬 저장소를 활용하여 OneDrive 동기화 환경에서도 기기별 설정을 분리 관리합니다.
+            설정 화면을 4대 서브탭(AI 프로바이더, 번역 설정, 교열 &amp; 서식, 일반 &amp; UI)으로 분리 구성하였습니다. Ollama, OpenAI 등 원클릭 프리셋 자동완성, 실시간 헬스체크 뱃지(정상/실패), 옵시디언 1.13+ 전역 검색(<code>getSettingDefinitions</code>)을 지원합니다.
           </p>
         </article>
 
@@ -745,7 +747,7 @@ updated: 2026-09-14
           <li><strong>Paragraph Bilingual Translation:</strong> Places translated paragraphs directly below each original paragraph (1:1 matching).</li>
           <li><strong>2,500-Character Chunking:</strong> Splits long documents to handle single-turn token limits and verifies chunk completion.</li>
           <li><strong>Reasoning Filtering:</strong> Strips <code>&lt;think&gt;</code> tags and suppresses OpenRouter reasoning parameters (<code>effort: none</code>).</li>
-          <li><strong>Multi-Provider Pool &amp; Local Binding:</strong> Configure OpenAI, OpenRouter, Gemini, and local models with device-isolated storage.</li>
+          <li><strong>Settings &amp; Multi-Provider Management:</strong> 4-subtab layout, one-click presets (Ollama, OpenAI, Gemini, etc.), live health status badges, Obsidian 1.13+ search, and device-isolated binding.</li>
           <li><strong>Selective Markdown Format Stripper:</strong> Checkboxes to remove bold, italic, strikethrough, or highlight formatting while preserving code blocks and math formulas.</li>
           <li><strong>Selection-Scoped Proofreading &amp; Adaptive UI:</strong> Restricts proofreading to highlighted text with live character count badges, and switches segmented buttons to icons in narrow sidebars.</li>
           <li><strong>Interactive Diff View:</strong> Review and selectively apply changes using the Needleman-Wunsch algorithm.</li>
