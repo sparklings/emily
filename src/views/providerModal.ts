@@ -118,17 +118,128 @@ export class ProviderModal extends Modal {
     // 3. Row 2: Provider Preset * & API Type * (2-Column Grid)
     const row2 = formEl.createDiv({ cls: 'emily-form-row-2col' });
 
+    // Preset metadata definitions for 1-click auto-fill
+    const PRESET_CONFIGS: Record<string, {
+      defaultId: string;
+      defaultName: string;
+      baseUrl: string;
+      apiType: string;
+      keyPlaceholder: string;
+      defaultModels: Array<{ id: string; displayName: string; enabled: boolean }>;
+    }> = {
+      ollama: {
+        defaultId: 'ollama-local',
+        defaultName: 'Ollama (Local)',
+        baseUrl: 'http://localhost:11434/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: '로컬 구동이므로 공백 허용 (선택 사항)',
+        defaultModels: [
+          { id: 'llama3.2', displayName: 'Llama 3.2', enabled: true },
+          { id: 'qwen2.5:32b', displayName: 'Qwen 2.5 32B', enabled: true },
+          { id: 'mistral', displayName: 'Mistral', enabled: true }
+        ]
+      },
+      lmstudio: {
+        defaultId: 'lmstudio-local',
+        defaultName: 'LM Studio (Local)',
+        baseUrl: 'http://localhost:1234/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: '로컬 구동이므로 공백 허용 (선택 사항)',
+        defaultModels: [
+          { id: 'local-model', displayName: 'Loaded Local Model', enabled: true }
+        ]
+      },
+      openai: {
+        defaultId: 'openai-official',
+        defaultName: 'OpenAI Official',
+        baseUrl: 'https://api.openai.com/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'sk-proj-...',
+        defaultModels: [
+          { id: 'gpt-4o', displayName: 'GPT-4o', enabled: true },
+          { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini', enabled: true }
+        ]
+      },
+      gemini: {
+        defaultId: 'gemini-google',
+        defaultName: 'Google Gemini',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'AIzaSy...',
+        defaultModels: [
+          { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', enabled: true },
+          { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', enabled: true }
+        ]
+      },
+      openrouter: {
+        defaultId: 'openrouter',
+        defaultName: 'OpenRouter AI',
+        baseUrl: 'https://openrouter.ai/api/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'sk-or-v1-...',
+        defaultModels: [
+          { id: 'anthropic/claude-3.5-sonnet', displayName: 'Claude 3.5 Sonnet', enabled: true },
+          { id: 'deepseek/deepseek-chat', displayName: 'DeepSeek V3', enabled: true }
+        ]
+      },
+      deepseek: {
+        defaultId: 'deepseek-official',
+        defaultName: 'DeepSeek Official',
+        baseUrl: 'https://api.deepseek.com/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'sk-...',
+        defaultModels: [
+          { id: 'deepseek-chat', displayName: 'DeepSeek-V3', enabled: true },
+          { id: 'deepseek-reasoner', displayName: 'DeepSeek-R1 (Reasoner)', enabled: true }
+        ]
+      },
+      groq: {
+        defaultId: 'groq-cloud',
+        defaultName: 'Groq Cloud',
+        baseUrl: 'https://api.groq.com/openai/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'gsk_...',
+        defaultModels: [
+          { id: 'llama-3.3-70b-versatile', displayName: 'Llama 3.3 70B', enabled: true }
+        ]
+      },
+      vllm: {
+        defaultId: 'vllm-proxy',
+        defaultName: 'vLLM Local Proxy',
+        baseUrl: 'http://localhost:8000/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: '로컬 환경 키 (선택 사항)',
+        defaultModels: [
+          { id: 'default', displayName: 'Default vLLM Model', enabled: true }
+        ]
+      },
+      anthropic: {
+        defaultId: 'anthropic-proxy',
+        defaultName: 'Anthropic Proxy',
+        baseUrl: 'https://api.anthropic.com/v1',
+        apiType: 'OpenAI-compatible',
+        keyPlaceholder: 'sk-ant-...',
+        defaultModels: [
+          { id: 'claude-3-5-sonnet-latest', displayName: 'Claude 3.5 Sonnet', enabled: true }
+        ]
+      }
+    };
+
     // Preset Field
     const presetGroup = row2.createDiv({ cls: 'emily-form-group' });
-    presetGroup.createEl('label', { text: 'Provider preset *', cls: 'emily-form-label' });
+    presetGroup.createEl('label', { text: 'Provider preset (원클릭 자동완성) *', cls: 'emily-form-label' });
     const presetSelect = presetGroup.createEl('select', { cls: 'emily-form-select dropdown' });
     const presetOptions = [
-      { val: 'custom', label: 'Custom' },
-      { val: 'openai', label: 'OpenAI' },
-      { val: 'gemini', label: 'Google Gemini' },
-      { val: 'ollama', label: 'Ollama (Localhost)' },
-      { val: 'vllm', label: 'vLLM / Local Proxy' },
-      { val: 'anthropic', label: 'Anthropic Claude' }
+      { val: 'custom', label: 'Custom (직접 설정)' },
+      { val: 'ollama', label: '⚡ Ollama (Localhost:11434)' },
+      { val: 'lmstudio', label: '⚡ LM Studio (Localhost:1234)' },
+      { val: 'openai', label: '🌐 OpenAI (Official)' },
+      { val: 'gemini', label: '🌐 Google Gemini' },
+      { val: 'openrouter', label: '🌐 OpenRouter (Multi-Model)' },
+      { val: 'deepseek', label: '🌐 DeepSeek' },
+      { val: 'groq', label: '⚡ Groq (Ultra Fast)' },
+      { val: 'vllm', label: '💻 vLLM / Local Server' },
+      { val: 'anthropic', label: '🌐 Anthropic Proxy' }
     ];
     for (const opt of presetOptions) {
       const optionEl = presetSelect.createEl('option', { value: opt.val, text: opt.label });
@@ -136,17 +247,24 @@ export class ProviderModal extends Modal {
     }
     presetSelect.addEventListener('change', (e) => {
       preset = (e.target as HTMLSelectElement).value;
-      if (!isEdit) {
-        if (preset === 'gemini') {
-          baseUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/';
-        } else if (preset === 'ollama') {
-          baseUrl = 'http://localhost:11434/v1';
-        } else if (preset === 'vllm') {
-          baseUrl = 'http://localhost:8000/v1';
-        } else if (preset === 'openai') {
-          baseUrl = 'https://api.openai.com/v1';
-        }
+      const cfg = PRESET_CONFIGS[preset];
+      if (cfg) {
+        baseUrl = cfg.baseUrl;
         baseUrlInput.value = baseUrl;
+        apiType = cfg.apiType;
+        typeInput.value = apiType;
+        keyInput.placeholder = cfg.keyPlaceholder;
+
+        if (!isEdit) {
+          if (!id || id === 'new-provider' || Object.values(PRESET_CONFIGS).some(c => c.defaultId === id)) {
+            id = cfg.defaultId;
+            idInput.value = id;
+          }
+          if (!name || Object.values(PRESET_CONFIGS).some(c => c.defaultName === name)) {
+            name = cfg.defaultName;
+            nameInput.value = name;
+          }
+        }
       }
     });
 
@@ -376,6 +494,12 @@ export class ProviderModal extends Modal {
           }
         }
 
+        const initialModels = this.provider?.models || (
+          PRESET_CONFIGS[preset]?.defaultModels?.length
+            ? PRESET_CONFIGS[preset].defaultModels
+            : [{ id: 'auto', displayName: 'Default Auto', enabled: true }]
+        );
+
         const updatedProvider: AIProviderConfig = {
           id: cleanId,
           name: name.trim() || cleanId,
@@ -383,9 +507,7 @@ export class ProviderModal extends Modal {
           apiType: apiType || 'OpenAI-compatible',
           baseUrl: cleanBaseUrl,
           apiKey: apiKey.trim() || undefined,
-          models: this.provider?.models || [
-            { id: 'auto', displayName: 'Default Auto', enabled: true }
-          ],
+          models: initialModels,
           customHeaders: Object.keys(headersObj).length > 0 ? headersObj : undefined,
           noStainlessHeaders,
           requestMethod,

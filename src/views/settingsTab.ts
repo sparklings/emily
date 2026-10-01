@@ -28,6 +28,9 @@ export class EmilySettingTab extends PluginSettingTab {
   plugin: EmilyPlugin;
   private expandedProviderIds: Set<string> = new Set();
 
+  private activeTab: 'providers' | 'translation' | 'proofreading' | 'general' = 'providers';
+  private providerTestResults: Map<string, { success: boolean; latencyMs: number; time: number }> = new Map();
+
   constructor(app: App, plugin: EmilyPlugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -37,7 +40,131 @@ export class EmilySettingTab extends PluginSettingTab {
    * Declarative setting definitions for Obsidian 1.13+ settings search compatibility.
    */
   getSettingDefinitions(): SettingDefinitionItem[] {
-    return [];
+    const t = getTranslation(this.plugin.settings.language);
+    return [
+      // 1. AI 프로바이더 관련 검색
+      {
+        name: t.settings.providerSectionHeading,
+        desc: t.settings.providerSectionDesc,
+        aliases: ['AI Provider', 'LLM', 'OpenAI', 'Ollama', 'LM Studio', 'Gemini', 'OpenRouter', 'DeepSeek', 'Groq', 'Claude', 'vLLM']
+      },
+      {
+        name: t.settings.addProviderBtn,
+        desc: 'OpenAI, Ollama, LM Studio 등 신규 AI 서비스 프로바이더 추가',
+        aliases: ['Add provider', '엔드포인트 등록', 'Base URL', 'API Key']
+      },
+      {
+        name: t.settings.connectivityTestBtn,
+        desc: t.settings.sayHelloDesc,
+        aliases: ['Ping', 'Connection Test', '지연 시간', 'Latency', '헬스체크']
+      },
+
+      // 2. 번역 관련 검색
+      {
+        name: t.settings.translationSectionTitle,
+        desc: t.settings.translationSectionDesc,
+        aliases: ['번역', 'Translation', '다국어', 'Bilingual']
+      },
+      {
+        name: t.settings.transEnabledTitle,
+        desc: t.settings.transEnabledDesc,
+        aliases: ['번역 켜기', 'Enable Translation']
+      },
+      {
+        name: t.settings.transSourceTitle,
+        desc: t.settings.transSourceDesc,
+        aliases: ['출발어', 'Source Language', '원문 언어']
+      },
+      {
+        name: t.settings.transTargetTitle,
+        desc: t.settings.transTargetDesc,
+        aliases: ['도착어', 'Target Language', '번역 언어']
+      },
+      {
+        name: t.settings.transScopeTitle,
+        desc: t.settings.transScopeDesc,
+        aliases: ['번역 범위', 'Translation Scope', '단락별 대조', '선택 영역', '전체 문서']
+      },
+      {
+        name: t.settings.transPreserveTitle,
+        desc: t.settings.transPreserveDesc,
+        aliases: ['원문 보존', 'Preservation Strategy', '새 파일', '덧붙이기', '덮어쓰기']
+      },
+      {
+        name: t.settings.transToneTitle,
+        desc: t.settings.transToneDesc,
+        aliases: ['문체', 'Tone', '학술적', '경어체', '친근체']
+      },
+      {
+        name: t.settings.transStyleTitle,
+        desc: t.settings.transStyleDesc,
+        aliases: ['스타일', 'Style', '직역', '의역', '균형']
+      },
+      {
+        name: t.settings.transCodeCommentsTitle,
+        desc: t.settings.transCodeCommentsDesc,
+        aliases: ['코드 주석 번역', 'Code Comments', '//', '#', '/*']
+      },
+
+      // 3. 교열 및 서식 제거 검색
+      {
+        name: t.settings.proofreadSectionTitle,
+        desc: t.settings.proofreadSectionDesc,
+        aliases: ['교열', 'Proofreading', '맞춤법', '문법', '서식 교정']
+      },
+      {
+        name: t.settings.proofreadSpellingTitle,
+        desc: t.settings.proofreadSpellingDesc,
+        aliases: ['맞춤법 검사', 'Spelling Check', '오탈자', '띄어쓰기']
+      },
+      {
+        name: t.settings.proofreadGrammarTitle,
+        desc: t.settings.proofreadGrammarDesc,
+        aliases: ['문법 검사', 'Grammar Check', '어색한 문장']
+      },
+      {
+        name: t.settings.proofreadTimestampTitle,
+        desc: t.settings.proofreadTimestampDesc,
+        aliases: ['타임스탬프 삭제', 'Timestamp Clean', '유튜브 스크립트']
+      },
+      {
+        name: t.settings.stripBoldTitle,
+        desc: t.settings.stripBoldDesc,
+        aliases: ['볼드 제거', '볼드체', '**', '굵게', 'Strip Bold']
+      },
+      {
+        name: t.settings.stripItalicTitle,
+        desc: t.settings.stripItalicDesc,
+        aliases: ['기울임 제거', '이탤릭', '*', '기울이기', 'Strip Italic']
+      },
+      {
+        name: t.settings.stripStrikethroughTitle,
+        desc: t.settings.stripStrikethroughDesc,
+        aliases: ['취소선 제거', '~~', '취소선', 'Strip Strikethrough']
+      },
+      {
+        name: t.settings.stripHighlightTitle,
+        desc: t.settings.stripHighlightDesc,
+        aliases: ['하이라이트 제거', '==', '형광펜', 'Strip Highlight']
+      },
+
+      // 4. 일반 및 UI 검색
+      {
+        name: t.settings.languageTitle,
+        desc: t.settings.languageDesc,
+        aliases: ['언어', 'Interface Language', '한국어', 'English']
+      },
+      {
+        name: t.settings.koreanBoldTitle,
+        desc: t.settings.koreanBoldDesc,
+        aliases: ['한글 볼드 공백', '조사 띄어쓰기', '조사 보정', 'Korean Bold Spacing']
+      },
+      {
+        name: t.settings.floatingScrollTitle,
+        desc: t.settings.floatingScrollDesc,
+        aliases: ['플로팅 스크롤 버튼', '위로 이동', '아래로 이동', 'Floating Scroll']
+      }
+    ];
   }
 
   /**
@@ -54,328 +181,373 @@ export class EmilySettingTab extends PluginSettingTab {
     new Setting(containerEl).setName(t.settings.title).setDesc(t.settings.description).setHeading();
 
     // =========================================================================
-    // Section 1: AI 서비스 프로바이더 (AI Service Providers)
+    // 4-Subtab Navigation Bar
     // =========================================================================
-    const providerHeader = new Setting(containerEl)
-      .setName(t.settings.providerSectionHeading)
-      .setDesc(t.settings.providerSectionDesc)
-      .setHeading();
+    const navBar = containerEl.createDiv({ cls: 'emily-settings-tab-nav' });
 
-    providerHeader.addButton((btn) => {
-      btn
-        .setButtonText(t.settings.addProviderBtn)
-        .setCta()
-        .onClick(() => {
-          new ProviderModal(this.app, this.plugin, null, (saved) => {
-            this.expandedProviderIds.add(saved.id);
-            this.renderSettings(containerEl);
-          }).open();
-        });
-      btn.buttonEl.addClass('emily-btn-green');
-    });
+    const tabs: Array<{ id: 'providers' | 'translation' | 'proofreading' | 'general'; icon: string; label: string }> = [
+      { id: 'providers', icon: 'cpu', label: t.settings.tabProviders },
+      { id: 'translation', icon: 'languages', label: t.settings.tabTranslation },
+      { id: 'proofreading', icon: 'check-check', label: t.settings.tabProofreading },
+      { id: 'general', icon: 'sliders', label: t.settings.tabGeneral }
+    ];
 
-    // AI 서비스 프로바이더 목록
-    this.renderUnifiedProviderDashboard(containerEl, t);
+    for (const tab of tabs) {
+      const btn = navBar.createEl('button', {
+        cls: `emily-settings-tab-btn ${this.activeTab === tab.id ? 'is-active' : ''}`
+      });
+      setIcon(btn, tab.icon);
+      btn.createSpan({ text: tab.label });
 
-    // =========================================================================
-    // Section 2: 교열 기본 설정 (Proofreading Preferences)
-    // =========================================================================
-    new Setting(containerEl).setName(t.settings.proofreadSectionTitle).setDesc(t.settings.proofreadSectionDesc).setHeading();
+      btn.addEventListener('click', () => {
+        if (this.activeTab !== tab.id) {
+          this.activeTab = tab.id;
+          this.renderSettings(containerEl);
+        }
+      });
+    }
 
-    new Setting(containerEl)
-      .setName(t.settings.proofreadSpellingTitle)
-      .setDesc(t.settings.proofreadSpellingDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.defaultProofreadSpelling)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultProofreadSpelling = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t.settings.proofreadGrammarTitle)
-      .setDesc(t.settings.proofreadGrammarDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.defaultProofreadGrammar)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultProofreadGrammar = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
-
-    new Setting(containerEl)
-      .setName(t.settings.proofreadTimestampTitle)
-      .setDesc(t.settings.proofreadTimestampDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.defaultProofreadTimestamp)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultProofreadTimestamp = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+    const tabContentEl = containerEl.createDiv({ cls: 'emily-provider-tab-panel' });
 
     // =========================================================================
-    // Section 4: 번역 기본 설정 (Translation Preferences)
+    // Tab 1: AI 서비스 프로바이더 (AI Service Providers)
     // =========================================================================
-    new Setting(containerEl).setName(t.settings.translationSectionTitle).setDesc(t.settings.translationSectionDesc).setHeading();
+    if (this.activeTab === 'providers') {
+      const providerHeader = new Setting(tabContentEl)
+        .setName(t.settings.providerSectionHeading)
+        .setDesc(t.settings.providerSectionDesc)
+        .setHeading();
 
-    new Setting(containerEl)
-      .setName(t.settings.transEnabledTitle)
-      .setDesc(t.settings.transEnabledDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.defaultTranslationEnabled)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultTranslationEnabled = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+      providerHeader.addButton((btn) => {
+        btn
+          .setButtonText(t.settings.addProviderBtn)
+          .setCta()
+          .onClick(() => {
+            new ProviderModal(this.app, this.plugin, null, (saved) => {
+              this.expandedProviderIds.add(saved.id);
+              this.renderSettings(containerEl);
+            }).open();
+          });
+        btn.buttonEl.addClass('emily-btn-green');
+      });
 
-    const srcLanguages = getSourceLanguages(t);
-    new Setting(containerEl)
-      .setName(t.settings.transSourceTitle)
-      .setDesc(t.settings.transSourceDesc)
-      .addDropdown((dropdown) => {
-        srcLanguages.forEach((lang) => {
-          dropdown.addOption(lang.name, lang.name);
-        });
-        const currentSrc = this.plugin.settings.defaultTranslationSource;
-        const currentSrcLocalized = getLocalizedLanguageName(currentSrc, t);
-        const currentSrcCode = normalizeLanguageCode(currentSrc);
-        const matchedSrc = srcLanguages.find(l =>
-          l.name === currentSrcLocalized ||
-          l.name === currentSrc ||
-          l.code === currentSrcCode ||
-          (currentSrcCode === 'auto' && l.code === 'auto')
+      // AI 서비스 프로바이더 목록
+      this.renderUnifiedProviderDashboard(tabContentEl, t);
+    }
+
+    // =========================================================================
+    // Tab 2: 번역 기본 설정 (Translation Preferences)
+    // =========================================================================
+    if (this.activeTab === 'translation') {
+      new Setting(tabContentEl)
+        .setName(t.settings.translationSectionTitle)
+        .setDesc(t.settings.translationSectionDesc)
+        .setHeading();
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transEnabledTitle)
+        .setDesc(t.settings.transEnabledDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.defaultTranslationEnabled)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultTranslationEnabled = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
         );
-        dropdown
-          .setValue(matchedSrc ? matchedSrc.name : t.languages.auto)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultTranslationSource = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
 
-    const tgtLanguages = getSupportedLanguages(t);
-    const defaultTgtLang = this.plugin.settings.defaultTranslationTarget || getDefaultTargetLanguageName(t);
-    new Setting(containerEl)
-      .setName(t.settings.transTargetTitle)
-      .setDesc(t.settings.transTargetDesc)
-      .addDropdown((dropdown) => {
-        tgtLanguages.forEach((lang) => {
-          dropdown.addOption(lang.name, lang.name);
+      const srcLanguages = getSourceLanguages(t);
+      new Setting(tabContentEl)
+        .setName(t.settings.transSourceTitle)
+        .setDesc(t.settings.transSourceDesc)
+        .addDropdown((dropdown) => {
+          srcLanguages.forEach((lang) => {
+            dropdown.addOption(lang.name, lang.name);
+          });
+          const currentSrc = this.plugin.settings.defaultTranslationSource;
+          const currentSrcLocalized = getLocalizedLanguageName(currentSrc, t);
+          const currentSrcCode = normalizeLanguageCode(currentSrc);
+          const matchedSrc = srcLanguages.find(l =>
+            l.name === currentSrcLocalized ||
+            l.name === currentSrc ||
+            l.code === currentSrcCode ||
+            (currentSrcCode === 'auto' && l.code === 'auto')
+          );
+          dropdown
+            .setValue(matchedSrc ? matchedSrc.name : t.languages.auto)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultTranslationSource = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
         });
-        const currentTgtLocalized = getLocalizedLanguageName(defaultTgtLang, t);
-        const currentTgtCode = normalizeLanguageCode(defaultTgtLang);
-        const matchedTgt = tgtLanguages.find(l =>
-          l.name === currentTgtLocalized ||
-          l.name === defaultTgtLang ||
-          l.code === currentTgtCode
+
+      const tgtLanguages = getSupportedLanguages(t);
+      const defaultTgtLang = this.plugin.settings.defaultTranslationTarget || getDefaultTargetLanguageName(t);
+      new Setting(tabContentEl)
+        .setName(t.settings.transTargetTitle)
+        .setDesc(t.settings.transTargetDesc)
+        .addDropdown((dropdown) => {
+          tgtLanguages.forEach((lang) => {
+            dropdown.addOption(lang.name, lang.name);
+          });
+          const currentTgtLocalized = getLocalizedLanguageName(defaultTgtLang, t);
+          const currentTgtCode = normalizeLanguageCode(defaultTgtLang);
+          const matchedTgt = tgtLanguages.find(l =>
+            l.name === currentTgtLocalized ||
+            l.name === defaultTgtLang ||
+            l.code === currentTgtCode
+          );
+          dropdown
+            .setValue(matchedTgt ? matchedTgt.name : (tgtLanguages[0]?.name || defaultTgtLang))
+            .onChange(async (val) => {
+              this.plugin.settings.defaultTranslationTarget = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
+        });
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transScopeTitle)
+        .setDesc(t.settings.transScopeDesc)
+        .addDropdown((dropdown) => {
+          dropdown.addOption('selection', t.scopes.selection);
+          dropdown.addOption('all', t.scopes.all);
+          dropdown.addOption('paragraph_bilingual', t.scopes.paragraphBilingual);
+          dropdown
+            .setValue(this.plugin.settings.defaultTranslationScope || 'selection')
+            .onChange(async (val: TranslationScope) => {
+              this.plugin.settings.defaultTranslationScope = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
+        });
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transPreserveTitle)
+        .setDesc(t.settings.transPreserveDesc)
+        .addDropdown((dropdown) => {
+          dropdown.addOption('new_file', t.preservation.newFile);
+          dropdown.addOption('append', t.preservation.append);
+          dropdown.addOption('overwrite', t.preservation.overwrite);
+          dropdown
+            .setValue(this.plugin.settings.defaultPreservationStrategy || 'new_file')
+            .onChange(async (val: PreservationStrategy) => {
+              this.plugin.settings.defaultPreservationStrategy = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
+        });
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transToneTitle)
+        .setDesc(t.settings.transToneDesc)
+        .addDropdown((dropdown) => {
+          dropdown.addOption('academic', t.tones.academic);
+          dropdown.addOption('polite', t.tones.polite);
+          dropdown.addOption('casual', t.tones.casual);
+          dropdown
+            .setValue(this.plugin.settings.defaultTranslationTone || 'academic')
+            .onChange(async (val: string) => {
+              this.plugin.settings.defaultTranslationTone = val as TranslationTone;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
+        });
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transStyleTitle)
+        .setDesc(t.settings.transStyleDesc)
+        .addDropdown((dropdown) => {
+          dropdown.addOption('balanced', t.styles.balanced);
+          dropdown.addOption('literal', t.styles.literal);
+          dropdown.addOption('natural', t.styles.natural);
+          dropdown
+            .setValue(this.plugin.settings.defaultTranslationStyle || 'balanced')
+            .onChange(async (val: string) => {
+              this.plugin.settings.defaultTranslationStyle = val as TranslationStyle;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            });
+        });
+
+      new Setting(tabContentEl)
+        .setName(t.settings.transCodeCommentsTitle)
+        .setDesc(t.settings.transCodeCommentsDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.defaultTranslateCodeComments || false)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultTranslateCodeComments = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
         );
-        dropdown
-          .setValue(matchedTgt ? matchedTgt.name : (tgtLanguages[0]?.name || defaultTgtLang))
-          .onChange(async (val) => {
-            this.plugin.settings.defaultTranslationTarget = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.transScopeTitle)
-      .setDesc(t.settings.transScopeDesc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption('selection', t.scopes.selection);
-        dropdown.addOption('all', t.scopes.all);
-        dropdown.addOption('paragraph_bilingual', t.scopes.paragraphBilingual);
-        dropdown
-          .setValue(this.plugin.settings.defaultTranslationScope || 'selection')
-          .onChange(async (val: TranslationScope) => {
-            this.plugin.settings.defaultTranslationScope = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.transPreserveTitle)
-      .setDesc(t.settings.transPreserveDesc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption('new_file', t.preservation.newFile);
-        dropdown.addOption('append', t.preservation.append);
-        dropdown.addOption('overwrite', t.preservation.overwrite);
-        dropdown
-          .setValue(this.plugin.settings.defaultPreservationStrategy || 'new_file')
-          .onChange(async (val: PreservationStrategy) => {
-            this.plugin.settings.defaultPreservationStrategy = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.transToneTitle)
-      .setDesc(t.settings.transToneDesc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption('academic', t.tones.academic);
-        dropdown.addOption('polite', t.tones.polite);
-        dropdown.addOption('casual', t.tones.casual);
-        dropdown
-          .setValue(this.plugin.settings.defaultTranslationTone || 'academic')
-          .onChange(async (val: string) => {
-            this.plugin.settings.defaultTranslationTone = val as TranslationTone;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.transStyleTitle)
-      .setDesc(t.settings.transStyleDesc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption('balanced', t.styles.balanced);
-        dropdown.addOption('literal', t.styles.literal);
-        dropdown.addOption('natural', t.styles.natural);
-        dropdown
-          .setValue(this.plugin.settings.defaultTranslationStyle || 'balanced')
-          .onChange(async (val: string) => {
-            this.plugin.settings.defaultTranslationStyle = val as TranslationStyle;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          });
-      });
-
-    new Setting(containerEl)
-      .setName(t.settings.transCodeCommentsTitle)
-      .setDesc(t.settings.transCodeCommentsDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.defaultTranslateCodeComments || false)
-          .onChange(async (val) => {
-            this.plugin.settings.defaultTranslateCodeComments = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+    }
 
     // =========================================================================
-    // Section 5: 편집 및 서식 제거 기본 설정 (Editing & Format Removal Preferences)
+    // Tab 3: 교열 및 서식 제거 기본 설정 (Proofreading & Formatting)
     // =========================================================================
-    new Setting(containerEl).setName(t.settings.editPreferencesHeader).setHeading();
+    if (this.activeTab === 'proofreading') {
+      new Setting(tabContentEl)
+        .setName(t.settings.proofreadSectionTitle)
+        .setDesc(t.settings.proofreadSectionDesc)
+        .setHeading();
 
-    new Setting(containerEl)
-      .setName(t.settings.stripBoldTitle)
-      .setDesc(t.settings.stripBoldDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(Boolean(this.plugin.settings.defaultStripBold))
-          .onChange(async (val) => {
-            this.plugin.settings.defaultStripBold = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+      new Setting(tabContentEl)
+        .setName(t.settings.proofreadSpellingTitle)
+        .setDesc(t.settings.proofreadSpellingDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.defaultProofreadSpelling)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultProofreadSpelling = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
 
-    new Setting(containerEl)
-      .setName(t.settings.stripItalicTitle)
-      .setDesc(t.settings.stripItalicDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(Boolean(this.plugin.settings.defaultStripItalic))
-          .onChange(async (val) => {
-            this.plugin.settings.defaultStripItalic = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+      new Setting(tabContentEl)
+        .setName(t.settings.proofreadGrammarTitle)
+        .setDesc(t.settings.proofreadGrammarDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.defaultProofreadGrammar)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultProofreadGrammar = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
 
-    new Setting(containerEl)
-      .setName(t.settings.stripStrikethroughTitle)
-      .setDesc(t.settings.stripStrikethroughDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(Boolean(this.plugin.settings.defaultStripStrikethrough))
-          .onChange(async (val) => {
-            this.plugin.settings.defaultStripStrikethrough = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+      new Setting(tabContentEl)
+        .setName(t.settings.proofreadTimestampTitle)
+        .setDesc(t.settings.proofreadTimestampDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.defaultProofreadTimestamp)
+            .onChange(async (val) => {
+              this.plugin.settings.defaultProofreadTimestamp = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
 
-    new Setting(containerEl)
-      .setName(t.settings.stripHighlightTitle)
-      .setDesc(t.settings.stripHighlightDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(Boolean(this.plugin.settings.defaultStripHighlight))
-          .onChange(async (val) => {
-            this.plugin.settings.defaultStripHighlight = val;
-            await this.plugin.saveSettings();
-            this.plugin.syncSidebarSettings();
-          })
-      );
+      // 서식 제거 기본 설정
+      new Setting(tabContentEl)
+        .setName(t.settings.editPreferencesHeader)
+        .setHeading();
+
+      new Setting(tabContentEl)
+        .setName(t.settings.stripBoldTitle)
+        .setDesc(t.settings.stripBoldDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(Boolean(this.plugin.settings.defaultStripBold))
+            .onChange(async (val) => {
+              this.plugin.settings.defaultStripBold = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
+
+      new Setting(tabContentEl)
+        .setName(t.settings.stripItalicTitle)
+        .setDesc(t.settings.stripItalicDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(Boolean(this.plugin.settings.defaultStripItalic))
+            .onChange(async (val) => {
+              this.plugin.settings.defaultStripItalic = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
+
+      new Setting(tabContentEl)
+        .setName(t.settings.stripStrikethroughTitle)
+        .setDesc(t.settings.stripStrikethroughDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(Boolean(this.plugin.settings.defaultStripStrikethrough))
+            .onChange(async (val) => {
+              this.plugin.settings.defaultStripStrikethrough = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
+
+      new Setting(tabContentEl)
+        .setName(t.settings.stripHighlightTitle)
+        .setDesc(t.settings.stripHighlightDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(Boolean(this.plugin.settings.defaultStripHighlight))
+            .onChange(async (val) => {
+              this.plugin.settings.defaultStripHighlight = val;
+              await this.plugin.saveSettings();
+              this.plugin.syncSidebarSettings();
+            })
+        );
+    }
 
     // =========================================================================
-    // Section 6: 에디터 및 인터페이스 환경설정 (Editor Preferences)
+    // Tab 4: 일반 & 인터페이스 환경설정 (General & UI)
     // =========================================================================
-    new Setting(containerEl).setName(t.settings.editorPreferencesHeader).setHeading();
+    if (this.activeTab === 'general') {
+      new Setting(tabContentEl)
+        .setName(t.settings.editorPreferencesHeader)
+        .setHeading();
 
-    // Interface Display Language
-    const detectedLangCode = getObsidianLanguage();
-    const detectedLangName = detectedLangCode.startsWith('ko') ? '한국어 (Korean)' : 'English';
-    const autoOptionLabel = `${t.settings.languageAuto} (${detectedLangName})`;
+      // Interface Display Language
+      const detectedLangCode = getObsidianLanguage();
+      const detectedLangName = detectedLangCode.startsWith('ko') ? '한국어 (Korean)' : 'English';
+      const autoOptionLabel = `${t.settings.languageAuto} (${detectedLangName})`;
 
-    new Setting(containerEl)
-      .setName(t.settings.languageTitle)
-      .setDesc(t.settings.languageDesc)
-      .addDropdown((dropdown) => {
-        dropdown.addOption('auto', autoOptionLabel);
-        dropdown.addOption('en', t.settings.languageEn);
-        dropdown.addOption('ko', t.settings.languageKo);
-        dropdown
-          .setValue(this.plugin.settings.language || 'auto')
-          .onChange(async (val: string) => {
-            this.plugin.settings.language = val as 'auto' | 'en' | 'ko';
-            await this.plugin.saveSettings();
-            this.renderSettings(containerEl);
-            this.plugin.syncSidebarSettings();
-            this.plugin.refreshFloatingControls();
-          });
-      });
+      new Setting(tabContentEl)
+        .setName(t.settings.languageTitle)
+        .setDesc(t.settings.languageDesc)
+        .addDropdown((dropdown) => {
+          dropdown.addOption('auto', autoOptionLabel);
+          dropdown.addOption('en', t.settings.languageEn);
+          dropdown.addOption('ko', t.settings.languageKo);
+          dropdown
+            .setValue(this.plugin.settings.language || 'auto')
+            .onChange(async (val: string) => {
+              this.plugin.settings.language = val as 'auto' | 'en' | 'ko';
+              await this.plugin.saveSettings();
+              this.renderSettings(containerEl);
+              this.plugin.syncSidebarSettings();
+              this.plugin.refreshFloatingControls();
+            });
+        });
 
-    new Setting(containerEl)
-      .setName(t.settings.koreanBoldTitle)
-      .setDesc(t.settings.koreanBoldDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.autoProofreadKoreanBold)
-          .onChange(async (val) => {
-            this.plugin.settings.autoProofreadKoreanBold = val;
-            await this.plugin.saveSettings();
-          })
-      );
+      new Setting(tabContentEl)
+        .setName(t.settings.koreanBoldTitle)
+        .setDesc(t.settings.koreanBoldDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.autoProofreadKoreanBold)
+            .onChange(async (val) => {
+              this.plugin.settings.autoProofreadKoreanBold = val;
+              await this.plugin.saveSettings();
+            })
+        );
 
-    new Setting(containerEl)
-      .setName(t.settings.floatingScrollTitle)
-      .setDesc(t.settings.floatingScrollDesc)
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.showFloatingScrollButtons)
-          .onChange(async (val) => {
-            this.plugin.settings.showFloatingScrollButtons = val;
-            await this.plugin.saveSettings();
-            this.plugin.refreshFloatingControls();
-          })
-      );
+      new Setting(tabContentEl)
+        .setName(t.settings.floatingScrollTitle)
+        .setDesc(t.settings.floatingScrollDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.showFloatingScrollButtons)
+            .onChange(async (val) => {
+              this.plugin.settings.showFloatingScrollButtons = val;
+              await this.plugin.saveSettings();
+              this.plugin.refreshFloatingControls();
+            })
+        );
+    }
   }
 
   private renderTestResult(
@@ -599,9 +771,24 @@ export class EmilySettingTab extends PluginSettingTab {
     // Badges & Action Buttons (Right)
     const rightCol = header.createDiv({ cls: 'emily-provider-header-right' });
 
+    // Status badge (Health check result)
+    const testResult = this.providerTestResults.get(prov.id);
+    const statusBadge = rightCol.createSpan({ cls: 'emily-badge' });
+    if (testResult) {
+      if (testResult.success) {
+        statusBadge.addClass('is-success');
+        statusBadge.setText(t.settings.providerStatusOnline.replace('{latency}', String(testResult.latencyMs)));
+      } else {
+        statusBadge.addClass('is-error');
+        statusBadge.setText(t.settings.providerStatusOffline);
+      }
+    } else {
+      statusBadge.setText(t.settings.providerStatusUntested);
+    }
+
     // Models count badge
     const modelCountBadge = rightCol.createSpan({ cls: 'emily-badge' });
-    modelCountBadge.setText(`${prov.models?.length || 0} models`);
+    modelCountBadge.setText(t.settings.modelsCountBadge.replace('{count}', String(prov.models?.length || 0)));
 
     // Active Badge or Apply Button
     if (isActiveOnThisPC) {
@@ -714,6 +901,18 @@ export class EmilySettingTab extends PluginSettingTab {
               prov.apiKey || '',
               prov.baseUrl
             );
+            this.providerTestResults.set(prov.id, {
+              success: res.success,
+              latencyMs: res.latencyMs,
+              time: Date.now()
+            });
+            if (res.success) {
+              statusBadge.className = 'emily-badge is-success';
+              statusBadge.setText(t.settings.providerStatusOnline.replace('{latency}', String(res.latencyMs)));
+            } else {
+              statusBadge.className = 'emily-badge is-error';
+              statusBadge.setText(t.settings.providerStatusOffline);
+            }
             this.renderTestResult(testResultEl, res, t);
             if (res.success) {
               new Notice(t.settings.connectivitySuccessNotice.replace('{name}', prov.name).replace('{latency}', String(res.latencyMs)));
@@ -722,6 +921,13 @@ export class EmilySettingTab extends PluginSettingTab {
             }
           } catch (err: unknown) {
             const errMsg = err instanceof Error ? err.message : String(err);
+            this.providerTestResults.set(prov.id, {
+              success: false,
+              latencyMs: 0,
+              time: Date.now()
+            });
+            statusBadge.className = 'emily-badge is-error';
+            statusBadge.setText(t.settings.providerStatusOffline);
             this.renderTestResult(testResultEl, { success: false, message: '', latencyMs: 0, model: '', error: errMsg }, t);
             new Notice(`${t.settings.connectivityFailedNotice}${errMsg}`);
           } finally {
