@@ -192,7 +192,6 @@ export class TranslationEngine {
         if (isTargetKorean ? /[가-힣]/.test(retryRestored) : retryRestored.trim().length > 0) {
           restoredChunk = retryRestored;
           isValidTranslation = true;
-          console.log(`[Assistant Emily] Self-healing retry succeeded for chunk ${i + 1}/${totalChunks}.`);
         }
       }
 

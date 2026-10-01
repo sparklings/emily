@@ -226,11 +226,9 @@ export class ProviderModal extends Modal {
       if (this.isAdvancedOpen) {
         advToggleBar.addClass('is-open');
         advPanel.removeClass('is-hidden');
-        advPanel.style.display = 'flex';
       } else {
         advToggleBar.removeClass('is-open');
         advPanel.addClass('is-hidden');
-        advPanel.style.display = 'none';
       }
     };
     updateAdvVisibility();
@@ -275,7 +273,7 @@ export class ProviderModal extends Modal {
 
     // Advanced Row 2: No stainless headers inline toggle
     const stainlessRow = advPanel.createDiv({ cls: 'emily-inline-toggle-row' });
-    const stainlessLabel = stainlessRow.createEl('label', {
+    stainlessRow.createEl('label', {
       text: 'No stainless headers (Stainless SDK 메타 헤더 억제)',
       cls: 'text-xs'
     });

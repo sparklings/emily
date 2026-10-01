@@ -4,7 +4,7 @@ import { getTranslation, getObsidianLanguage, getDefaultTargetLanguageName, getS
 import { TranslationStrings } from '../i18n/types';
 import { getSystemContext } from '../utils/systemInfo';
 import { TranslationScope, PreservationStrategy, TranslationTone, TranslationStyle } from '../types/translation';
-import { DeviceKeyProfile, AIProviderConfig, ProviderModelConfig } from '../types/settings';
+import { DeviceKeyProfile, AIProviderConfig } from '../types/settings';
 import { ProviderModal } from './providerModal';
 import { ProviderModelModal } from './providerModelModal';
 import {
@@ -12,14 +12,11 @@ import {
   getDeviceDisplayName,
   setActiveProfileId,
   getActiveProfile,
-  resolveEffectiveApiKey,
-  resolveEffectiveEndpoint,
   getCandidateKeys,
   getCandidatePorts,
   isLocalEndpoint,
   getRegisteredProviders,
   getEffectiveProviderForDevice,
-  getEffectiveModelForDevice,
   setDeviceProviderBinding
 } from '../utils/deviceKeyManager';
 

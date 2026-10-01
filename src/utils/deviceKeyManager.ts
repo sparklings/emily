@@ -1,4 +1,4 @@
-import { EmilySettings, DeviceKeyProfile, AIProviderConfig, DeviceBinding, ProviderModelConfig } from '../types/settings';
+import { EmilySettings, DeviceKeyProfile, AIProviderConfig } from '../types/settings';
 
 /**
  * 등록된 전체 AI 프로바이더 목록을 반환합니다.
@@ -64,10 +64,10 @@ export function getEffectiveModelForDevice(
 
   // 1. 기기 바인딩에 명시된 모델 ID
   if (currentHost && mappings[currentHost]?.modelId) {
-    return mappings[currentHost].modelId!;
+    return mappings[currentHost].modelId;
   }
   if (mappings['default']?.modelId) {
-    return mappings['default'].modelId!;
+    return mappings['default'].modelId;
   }
 
   // 2. 활성 프로바이더에서 첫 번째 활성화된(enabled) 모델 ID

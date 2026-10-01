@@ -3198,15 +3198,17 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
 /* ==========================================================================
    YOLO 스타일 AI 프로바이더 및 모델 아코디언 UI
    ========================================================================== */
-.emily-btn-green {
-  background-color: var(--color-green, #10b981) !important;
-  color: #ffffff !important;
-  border: none !important;
-  font-weight: 600 !important;
+button.emily-btn-green,
+.setting-item-control button.emily-btn-green {
+  background-color: var(--color-green, #10b981);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
   transition: opacity 0.15s ease;
 }
 
-.emily-btn-green:hover {
+button.emily-btn-green:hover,
+.setting-item-control button.emily-btn-green:hover {
   opacity: 0.9;
 }
 
@@ -3400,12 +3402,13 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   padding-right: 32px;
 }
 
+button.emily-input-action-btn,
 .emily-input-action-btn {
   position: absolute;
   right: 4px;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   cursor: pointer;
   padding: 4px;
   color: var(--text-muted);
@@ -3414,6 +3417,7 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   justify-content: center;
 }
 
+button.emily-input-action-btn:hover,
 .emily-input-action-btn:hover {
   color: var(--text-normal);
 }
@@ -3462,7 +3466,7 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
 }
 
 .emily-advanced-panel.is-hidden {
-  display: none !important;
+  display: none;
 }
 
 .emily-inline-toggle-row {
@@ -3559,8 +3563,8 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
   background-color: var(--background-modifier-hover);
 }
 
-.emily-model-enable-td {
-  text-align: center !important;
+.emily-models-table td.emily-model-enable-td {
+  text-align: center;
   vertical-align: middle;
 }
 
