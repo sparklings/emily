@@ -1,6 +1,6 @@
 {
   "name": "assistant-emily",
-  "version": "1.0.19",
+  "version": "1.0.20",
   "description": "Intelligent Markdown proofreading and translation specialized plugin for Obsidian",
   "main": "main.js",
   "scripts": {
