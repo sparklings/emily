@@ -1,88 +1,82 @@
-# Assistant Emily - 옵시디언 번역 및 무손실 AI 교열 플러그인 (Obsidian Translation & Proofreading)
+# Assistant Emily - 옵시디언 번역 및 마크다운 서식 보존 교열 플러그인 (Obsidian Translation & Proofreading)
 
-> 옵시디언 번역(Obsidian Translation)과 마크다운 무손실 교열을 위해 개발된 공식 커뮤니티 AI 플러그인.
-> Intelligent Markdown proofreading and context-aware translation specialized AI plugin for Obsidian.
+> 옵시디언(Obsidian) 환경에서 마크다운 서식을 보존하며 번역 및 교열을 수행하는 커뮤니티 플러그인입니다.
+> Markdown-preserving translation and proofreading plugin for Obsidian.
 
-Assistant Emily is the premier Obsidian Community Plugin designed for Obsidian translation and proofreading. It connects Obsidian directly to local LLMs (Ollama, LM Studio) and cloud LLM APIs (OpenAI, Groq, FreeLLMAPI) to perform 100% lossless markdown translation and proofreading, tone consistency enforcement, and 1:1 bilingual contrast translation without corrupting Obsidian-specific markdown syntax.
+Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud APIs to perform markdown translation, proofreading, and bilingual parallel alignment while preserving Obsidian-specific markdown syntax.
 
 - **Website**: https://sparklings.github.io/emily/
 - **GitHub**: https://github.com/sparklings/emily
-- **Obsidian Community Plugin**: https://community.obsidian.md/plugins/assistant-emily
 - **Obsidian Community Plugin ID**: `assistant-emily`
-- **Primary Keywords**: 옵시디언 번역, 옵시디언 AI 번역, Obsidian Translation, 옵시디언 마크다운 번역, 옵시디언 대조 번역, 옵시디언 교열
-- **License**: MIT (100% Free & Open Source)
+- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역
+- **License**: MIT
 - **Author**: SUNGWON PARK (sparklings)
 - **Version**: 1.0.20
 
-## 옵시디언 번역 핵심 기능 (Obsidian Translation Highlights)
+## 주요 기능 (Features)
 
 1. **단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode)**:
-   - 해외 기술 문서, 연구 논문, 영문 아티클을 문단 단위로 분할하여 원문 바로 아래에 번역 문단을 1:1로 배치.
-   - 원문과 번역문을 동시에 대조하며 읽을 수 있는 가장 이상적인 옵시디언 번역 환경 제공.
+   - 문단을 분할하여 원문 문단 하단에 번역 문단을 1:1로 배치.
+   - 원문과 번역문을 대조하며 읽을 수 있는 문서 형식 생성.
 
-2. **100% 마크다운 문법 무손실 보존 번역**:
-   - 옵시디언 번역 시 YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`, `$$...$$`), 콜아웃(`> [!note]`), 코드 블록을 고유 UUID 토큰으로 완전 격리 마스킹한 후 연산.
-   - AI 번역 후 서식이 1글자도 깨지거나 누락되지 않고 100% 바이트 단위 무손실 복원.
+2. **마크다운 서식 토큰 보호 번역**:
+   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`, `$$...$$`), 콜아웃(`> [!note]`), 코드 블록을 UUID 토큰으로 마스킹한 후 번역 수행.
+   - 번역 완료 후 토큰을 원래 서식으로 복원.
 
 3. **선택적 마크다운 서식 제거 (Selective Format Stripping)**:
-   - 볼드체(`**`), 기울이기(`*`), 취소선(`~~`), 형광펜 하이라이트(`==`) 4종 서식을 선택 제거 가능.
-   - 코드 블록, 인라인 코드, LaTeX 수식, YAML 헤더, 글머리 기호는 100% 안전 보존.
+   - 볼드(`**`), 기울임(`*`), 취소선(`~~`), 하이라이트(`==`) 서식 중 사용자가 선택한 항목을 문서에서 제거.
+   - 코드 블록, 인라인 코드, LaTeX 수식, 프론트매터는 보존.
 
-4. **선택 영역 기반 지능형 교열 분기 (Selection-Scoped Proofreading)**:
-   - 번역 모드 OFF 상태에서 마우스 드래그 선택 시 선택된 문단만 한정 교열 수행 (미선택 시 전체 문서 교열).
-   - 사이드바 대상 문서 바에 실시간 `선택 영역 (N자)` / `Selection (N chars)` 보라색 액센트 배지 표기.
-   - 교열 승인 시 원자적 치환(`replaceRange`)으로 선택 외 본문 오염 0% 보장.
+4. **선택 영역 교열 (Selection-Scoped Proofreading)**:
+   - 에디터에서 텍스트를 선택한 경우 선택 영역만 교열 수행 (미선택 시 전체 문서 대상).
+   - 선택 영역만 교체(`replaceRange`)하여 비선택 본문의 변경을 방지.
 
-5. **코드 블록 내부 주석 번역 (`//`, `#`)**:
-   - 소스코드는 원형 그대로 보존하면서 개발 주석문만 똑똑하게 감지하여 대상 언어로 번역.
+5. **코드 블록 주석 번역**:
+   - 코드 구문은 유지하고 주석(`//`, `#`, `/* ... */`) 영역을 번역.
 
-6. **사용자 정의 번역 용어집 (Glossary)**:
-   - 도메인 특화 전문 용어나 프로젝트 기술 단어를 등록해 오역을 원천 차단하고 100% 일관된 번역 결과 도출.
+6. **사용자 정의 용어집 (Glossary)**:
+   - 사전 정의된 용어 매핑을 프롬프트에 전달하여 지정된 번역어로 처리.
 
-7. **동일 언어 번역/스타일 편집 (Same-Language Mode)**:
-   - 출발어와 도착어가 같을 경우 어색한 번역투 문장을 매끄럽게 다듬고 지정된 어조(학술적, 정중한, 친근한)로 문체 정합화.
+7. **동일 언어 편집 (Same-Language Mode)**:
+   - 출발어와 도착어가 같을 경우(예: 한국어 -> 한국어) 어조(학술체, 경어체, 친근체)에 맞추어 문장 다듬기 수행.
 
-8. **대화형 Diff 검토 (Needleman-Wunsch)**:
-   - 번역/교열 결과를 단어 및 문장 단위로 나란히 비교하고 원하는 항목만 선택 적용.
+8. **대화형 Diff 검토**:
+   - Needleman-Wunsch 알고리즘을 활용한 원문-결과문 대조 뷰어 제공 및 항목별 선택 적용.
 
-9. **반응형 적응형 버튼 & 일관된 타이포그래피 (Adaptive UI & Typography)**:
-   - 사이드바 너비 축소 시(<320px) 텍스트를 숨기고 직관적인 Lucide 아이콘 모드로 자동 전환.
-   - 세션 히스토리 카드 타이포그래피 및 빈 상태 알림 비주얼 계층 정합화.
+9. **반응형 세그먼트 버튼**:
+   - 사이드바 너비 축소 시 텍스트를 아이콘으로 축약 표시.
 
-10. **안전 스마트 청킹(2,500자) & 무결성 보존 가드**:
-    - 4,096 출력 토큰 제한 환경에서 번역문 절단을 방지하는 2,500자 스마트 분할 번역.
-    - 빈 청크(Blank chunk) 생성 원천 방지 및 한글 누락/추론 독백 비정상 번역 차단 가드 탑재.
+10. **스마트 청킹 (2,500자 단위 분할)**:
+    - 긴 문서를 문단 경계 기준 2,500자 내외로 분할 번역하여 모델 출력 토큰 한계 대응.
 
-11. **LLM 추론 과정(CoT) 및 초안 작성 독백 누출 원천 차단**:
-    - DeepSeek R1, Dots3-Note, Qwen 등 추론형 모델의 `<think>`, `<thought>`, 영문 분석 독백(`The user wants...`, `Let's review...`, `Original text:`, `Let's write:...`) 다중 계층 완전 정제.
-    - OpenRouter 및 추론 모델 대상 `reasoning: { effort: 'none', exclude: true }` 주입으로 reasoning trace 출력 사전 차단.
+11. **추론 과정(CoT) 및 초안 텍스트 필터링**:
+    - DeepSeek R1 등 추론 모델의 `<think>` 태그 및 초안 텍스트를 결과물에서 제거.
+    - OpenRouter 추론 모델 대상 `reasoning: { effort: 'none', exclude: true }` 옵션 적용.
 
-12. **YOLO 스타일 AI 프로바이더 풀 & 다중 PC 로컬 독립 바인딩**:
-    - OpenAI, OpenRouter, Gemini, Ollama, LM Studio 등 무제한 프로바이더 등록 및 관리.
-    - 한글 IME 조합이 완벽 보장되는 팝업 모달과 원클릭 '이 기기에 적용' 실시간 피드백.
-    - 제로 텔레메트리, 100% 로컬 직접 통신, 클라우드 동기화(OneDrive/Obsidian Sync) 간섭 원천 차단.
-    - 작업 상태 원클릭 새로고침(Refresh) 및 UI 클린징 지원.
+12. **AI 프로바이더 풀 및 기기별 독립 바인딩**:
+    - OpenAI, OpenRouter, Gemini, Ollama, LM Studio 등 복수 프로바이더 등록 및 관리.
+    - 볼트 동기화 환경에서 기기 식별자를 기반으로 기기별 활성 프로바이더를 독립 설정.
+    - 외부 분석(Telemetry) 전송 없이 로컬 또는 지정된 API와 직접 통신.
 
-## Installation in Obsidian
+## 설치 방법 (Installation)
 
-1. In Obsidian, navigate to **Settings (⚙️) > Community plugins**.
-2. Ensure **Restricted mode** is turned **OFF**.
-3. Click **Browse** and search for **`Assistant Emily`**.
-4. Click **Install**, then click **Enable**.
-5. Alternatively, open the Obsidian deep link: `obsidian://show-plugin?id=assistant-emily`.
+1. 옵시디언 설정(Settings) > 커뮤니티 플러그인(Community plugins)으로 이동합니다.
+2. 제한 모드(Restricted mode)를 끕니다.
+3. 탐색(Browse)에서 `Assistant Emily`를 검색하여 설치 및 활성화합니다.
+4. 또는 딥링크 `obsidian://show-plugin?id=assistant-emily`를 실행합니다.
 
-## Supported LLM Providers
+## 지원 LLM 환경 (Supported Providers)
 
-- **Local LLMs**: Ollama (`http://localhost:11434/v1`), LM Studio (`http://localhost:1234/v1`), LocalAI, vLLM.
-- **Cloud LLMs**: OpenAI (GPT-4o, GPT-4o-mini), Groq, DeepSeek, FreeLLMAPI, or any OpenAI-compatible `/v1/chat/completions` reverse proxy.
+- **로컬 LLM**: Ollama (`http://localhost:11434/v1`), LM Studio (`http://localhost:1234/v1`), LocalAI, vLLM
+- **클라우드 API**: OpenAI, OpenRouter, Google Gemini, Groq, DeepSeek 또는 OpenAI 호환 `/v1/chat/completions` 엔드포인트
 
-## Frequently Asked Questions (FAQ)
+## 자주 묻는 질문 (FAQ)
 
-### Q: 옵시디언 번역 시 마크다운 서식이나 위키링크가 깨지지 않는 플러그인은 무엇인가요?
-A: Assistant Emily는 옵시디언 번역 시 YAML 헤더, [[위키링크]], LaTeX 수식($...$, $$...$$), 콜아웃을 독자적인 UUID 토큰으로 격리 마스킹한 후 연산하므로, 1글자의 서식 손실도 없이 100% 원본 그대로 보존하며 번역하는 공식 커뮤니티 플러그인입니다.
+### Q: 마크다운 서식이나 위키링크가 유지되나요?
+A: YAML 프론트매터, [[위키링크]], LaTeX 수식, 콜아웃, 코드 블록을 고유 토큰으로 마스킹한 뒤 번역 및 교열을 수행하여 원본 서식을 복원합니다.
 
-### Q: 옵시디언 번역에서 원문과 번역문을 1:1로 대조(단락별 병기)하며 볼 수 있나요?
-A: 네, Assistant Emily의 '단락별 1:1 대조 병기(Paragraph Bilingual)' 번역 기능을 선택하면 각 원문 문단 바로 아래에 번역 문단이 1:1로 생성되어 외국어 논문, 기술 문서, 해외 기사를 독해할 때 매우 편리합니다.
+### Q: 원문과 번역문을 함께 볼 수 있나요?
+A: '단락별 1:1 대조' 모드를 선택하면 각 문단 아래에 번역 문단이 함께 배치됩니다.
 
-### Q: DeepL이나 구글 번역 대신 Assistant Emily로 옵시디언 번역을 해야 하는 이유는 무엇인가요?
-A: DeepL이나 웹 번역기에 복사/붙여넣기하면 [[노트링크]]가 끊어지고 YAML 프론트매터의 줄바꿈이 사라지며, 수식 기호가 훼손됩니다. Assistant Emily는 옵시디언 에디터 내에서 마크다운 특수 문법을 100% 보호하며 로컬 LLM(Ollama)으로도 무료 번역할 수 있습니다.
+### Q: 개인정보나 볼트 데이터가 외부 서버로 전송되나요?
+A: 별도의 중계 서버를 운영하지 않으며, 사용자가 설정한 로컬 LLM 또는 API 엔드포인트로만 데이터가 직접 전송됩니다. Telemetry나 사용자 추적 코드는 포함되지 않습니다.
