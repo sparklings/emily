@@ -11,7 +11,7 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
 - **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역
 - **License**: MIT
 - **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.0.21
+- **Version**: 1.0.22
 
 ## 주요 기능 (Features)
 
