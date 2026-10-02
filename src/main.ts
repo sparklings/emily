@@ -7,7 +7,7 @@ import { LLMProxyClient } from './api/llmClient';
 import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
 import { getTranslation } from './i18n';
-import { migrateDeviceProfiles, migrateLegacySettingsToProviders } from './utils/deviceKeyManager';
+import { migrateDeviceProfiles, migrateLegacySettingsToProviders, getEffectiveProviderForDevice } from './utils/deviceKeyManager';
 
 /**
  * Assistant Emily - 옵시디언 마크다운 지능형 교열 및 번역 전문 플러그인 메인 클래스
@@ -171,10 +171,15 @@ export default class EmilyPlugin extends Plugin {
    * 코어 백엔드 서비스(LLM 클라이언트, 교열 엔진, 번역 엔진, 일관성 엔진)를 초기화합니다.
    */
   public initServices() {
+    const activeProv = getEffectiveProviderForDevice(this.settings);
+    const effectiveUrl = activeProv?.baseUrl || this.settings.apiBaseUrl;
+    const effectiveKey = activeProv?.apiKey || this.settings.apiKey;
+    const effectiveModel = activeProv?.models?.[0]?.id || this.settings.modelName;
+
     this.llmClient = new LLMProxyClient(
-      this.settings.apiBaseUrl,
-      this.settings.apiKey,
-      this.settings.modelName
+      effectiveUrl,
+      effectiveKey,
+      effectiveModel
     );
     this.llmClient.updateMultiConfig(this.settings);
     this.proofreadingEngine = new ProofreadingEngine(this.llmClient, this.settings.language);

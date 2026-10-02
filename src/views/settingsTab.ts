@@ -683,6 +683,11 @@ export class EmilySettingTab extends PluginSettingTab {
         void (async () => {
           setDeviceProviderBinding(this.plugin.settings, prov.id);
           this.plugin.settings.defaultProviderId = prov.id;
+          this.plugin.settings.apiBaseUrl = prov.baseUrl;
+          this.plugin.settings.apiKey = prov.apiKey || '';
+          if (prov.models && prov.models[0]) {
+            this.plugin.settings.modelName = prov.models[0].id;
+          }
           await this.plugin.saveSettings();
           this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
           new Notice(t.settings.appliedToCurrentMachineNotice.replace('{name}', prov.name));

@@ -11,6 +11,7 @@ import { PromptBuilder } from '../api/promptBuilder';
 import { MarkdownFormatter } from '../core/markdownFormatter';
 import { LLMUsage } from '../api/llmClient';
 import { TranslationKeys } from '../i18n/types';
+import { getEffectiveProviderForDevice, isLocalEndpoint } from '../utils/deviceKeyManager';
 
 function getISODateTimeString(date: Date = new Date()): string {
   const pad = (num: number) => num.toString().padStart(2, '0');
@@ -1084,15 +1085,16 @@ export class EmilySidebarView extends ItemView {
     const isLocalFormatOnly = !hasProofreadOptions && !hasTranslation && !promptText && hasFormatStrip;
 
     if (!isLocalFormatOnly) {
-      // API 연결 설정 유효성 검사 (엔드포인트 누락 또는 원격 API 키 누락 시 사전 안내)
-      const baseUrl = (this.plugin.settings.apiBaseUrl || '').trim();
-      const apiKey = (this.plugin.settings.apiKey || '').trim();
+      // API 연결 설정 유효성 검사 (현재 기기 활성 프로바이더 우선 조회)
+      const activeProv = getEffectiveProviderForDevice(this.plugin.settings);
+      const baseUrl = (activeProv?.baseUrl || this.plugin.settings.apiBaseUrl || '').trim();
+      const apiKey = (activeProv?.apiKey || this.plugin.settings.apiKey || '').trim();
       if (!baseUrl) {
         new Notice('API Base URL이 설정되지 않았습니다. [설정 > Assistant Emily]에서 엔드포인트를 입력해 주세요.');
         return;
       }
-      const isLocalEndpoint = /localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(baseUrl);
-      if (!isLocalEndpoint && !apiKey) {
+      const isLocal = isLocalEndpoint(baseUrl);
+      if (!isLocal && !apiKey) {
         new Notice('API Key가 설정되지 않았습니다. [설정 > Assistant Emily]에서 API 키를 입력해 주세요.');
         return;
       }
