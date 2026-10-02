@@ -37,134 +37,13 @@ export class EmilySettingTab extends PluginSettingTab {
   }
 
   /**
-   * Declarative setting definitions for Obsidian 1.13+ settings search compatibility.
+   * Return empty array so Obsidian 1.13+ calls display() imperatively.
+   * According to Obsidian 1.13+ API docs:
+   * "display() is not called when getSettingDefinitions returns a non-empty array;
+   * the tab is rendered declaratively from those definitions instead."
    */
   getSettingDefinitions(): SettingDefinitionItem[] {
-    const t = getTranslation(this.plugin.settings.language);
-    return [
-      // 1. AI 프로바이더 관련 검색
-      {
-        name: t.settings.providerSectionHeading,
-        desc: t.settings.providerSectionDesc,
-        aliases: ['AI Provider', 'LLM', 'OpenAI', 'Ollama', 'LM Studio', 'Gemini', 'OpenRouter', 'DeepSeek', 'Groq', 'Claude', 'vLLM']
-      },
-      {
-        name: t.settings.addProviderBtn,
-        desc: 'OpenAI, Ollama, LM Studio 등 신규 AI 서비스 프로바이더 추가',
-        aliases: ['Add provider', '엔드포인트 등록', 'Base URL', 'API Key']
-      },
-      {
-        name: t.settings.connectivityTestBtn,
-        desc: t.settings.sayHelloDesc,
-        aliases: ['Ping', 'Connection Test', '지연 시간', 'Latency', '헬스체크']
-      },
-
-      // 2. 번역 관련 검색
-      {
-        name: t.settings.translationSectionTitle,
-        desc: t.settings.translationSectionDesc,
-        aliases: ['번역', 'Translation', '다국어', 'Bilingual']
-      },
-      {
-        name: t.settings.transEnabledTitle,
-        desc: t.settings.transEnabledDesc,
-        aliases: ['번역 켜기', 'Enable Translation']
-      },
-      {
-        name: t.settings.transSourceTitle,
-        desc: t.settings.transSourceDesc,
-        aliases: ['출발어', 'Source Language', '원문 언어']
-      },
-      {
-        name: t.settings.transTargetTitle,
-        desc: t.settings.transTargetDesc,
-        aliases: ['도착어', 'Target Language', '번역 언어']
-      },
-      {
-        name: t.settings.transScopeTitle,
-        desc: t.settings.transScopeDesc,
-        aliases: ['번역 범위', 'Translation Scope', '단락별 대조', '선택 영역', '전체 문서']
-      },
-      {
-        name: t.settings.transPreserveTitle,
-        desc: t.settings.transPreserveDesc,
-        aliases: ['원문 보존', 'Preservation Strategy', '새 파일', '덧붙이기', '덮어쓰기']
-      },
-      {
-        name: t.settings.transToneTitle,
-        desc: t.settings.transToneDesc,
-        aliases: ['문체', 'Tone', '학술적', '경어체', '친근체']
-      },
-      {
-        name: t.settings.transStyleTitle,
-        desc: t.settings.transStyleDesc,
-        aliases: ['스타일', 'Style', '직역', '의역', '균형']
-      },
-      {
-        name: t.settings.transCodeCommentsTitle,
-        desc: t.settings.transCodeCommentsDesc,
-        aliases: ['코드 주석 번역', 'Code Comments', '//', '#', '/*']
-      },
-
-      // 3. 교열 및 서식 제거 검색
-      {
-        name: t.settings.proofreadSectionTitle,
-        desc: t.settings.proofreadSectionDesc,
-        aliases: ['교열', 'Proofreading', '맞춤법', '문법', '서식 교정']
-      },
-      {
-        name: t.settings.proofreadSpellingTitle,
-        desc: t.settings.proofreadSpellingDesc,
-        aliases: ['맞춤법 검사', 'Spelling Check', '오탈자', '띄어쓰기']
-      },
-      {
-        name: t.settings.proofreadGrammarTitle,
-        desc: t.settings.proofreadGrammarDesc,
-        aliases: ['문법 검사', 'Grammar Check', '어색한 문장']
-      },
-      {
-        name: t.settings.proofreadTimestampTitle,
-        desc: t.settings.proofreadTimestampDesc,
-        aliases: ['타임스탬프 삭제', 'Timestamp Clean', '유튜브 스크립트']
-      },
-      {
-        name: t.settings.stripBoldTitle,
-        desc: t.settings.stripBoldDesc,
-        aliases: ['볼드 제거', '볼드체', '**', '굵게', 'Strip Bold']
-      },
-      {
-        name: t.settings.stripItalicTitle,
-        desc: t.settings.stripItalicDesc,
-        aliases: ['기울임 제거', '이탤릭', '*', '기울이기', 'Strip Italic']
-      },
-      {
-        name: t.settings.stripStrikethroughTitle,
-        desc: t.settings.stripStrikethroughDesc,
-        aliases: ['취소선 제거', '~~', '취소선', 'Strip Strikethrough']
-      },
-      {
-        name: t.settings.stripHighlightTitle,
-        desc: t.settings.stripHighlightDesc,
-        aliases: ['하이라이트 제거', '==', '형광펜', 'Strip Highlight']
-      },
-
-      // 4. 일반 및 UI 검색
-      {
-        name: t.settings.languageTitle,
-        desc: t.settings.languageDesc,
-        aliases: ['언어', 'Interface Language', '한국어', 'English']
-      },
-      {
-        name: t.settings.koreanBoldTitle,
-        desc: t.settings.koreanBoldDesc,
-        aliases: ['한글 볼드 공백', '조사 띄어쓰기', '조사 보정', 'Korean Bold Spacing']
-      },
-      {
-        name: t.settings.floatingScrollTitle,
-        desc: t.settings.floatingScrollDesc,
-        aliases: ['플로팅 스크롤 버튼', '위로 이동', '아래로 이동', 'Floating Scroll']
-      }
-    ];
+    return [];
   }
 
   /**
