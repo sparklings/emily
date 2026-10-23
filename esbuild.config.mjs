@@ -73,17 +73,19 @@ const context = await esbuild.context({
 function copyToVaults() {
 	const userProfile = process.env.USERPROFILE || '';
 	const customVault = process.env.OBSIDIAN_VAULT_PATH;
+	// 배포 타깃을 PlugVaults로 제한 (ObsidianVaults 배포 완전 배제)
 	const candidateVaults = [
 		...(customVault ? [customVault] : []),
 		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
-		path.join(userProfile, 'OneDrive', 'ObsidianVaults', '.obsidian', 'plugins', 'assistant-emily'),
-		path.join(userProfile, 'OneDrive', 'ObsidianVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
 		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily')
 	];
 
-	for (const destDir of candidateVaults) {
+	// 중복 경로 제거
+	const uniqueDestDirs = [...new Set(candidateVaults.map(p => path.resolve(p)))];
+
+	for (const destDir of uniqueDestDirs) {
 		if (fs.existsSync(destDir)) {
 			try {
 				fs.copyFileSync('main.js', path.join(destDir, 'main.js'));

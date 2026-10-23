@@ -1682,7 +1682,7 @@ export class EmilySidebarView extends ItemView {
               await this.app.fileManager.trashFile(tempFile);
             }
           } catch (cleanErr) {
-            console.warn('Temporary file cleanup error:', cleanErr);
+            console.warn('[Assistant Emily] 임시 파일 정리 오류 (Temporary file cleanup error):', cleanErr);
           }
           this.lastCreatedTempPath = null;
         }
@@ -1813,7 +1813,7 @@ export class EmilySidebarView extends ItemView {
                 await this.app.fileManager.trashFile(tempFile);
               }
             } catch (cleanErr) {
-              console.warn('Temporary file cleanup error:', cleanErr);
+              console.warn('[Assistant Emily] 임시 파일 정리 오류 (Temporary file cleanup error):', cleanErr);
             }
             this.lastCreatedTempPath = null;
           }
