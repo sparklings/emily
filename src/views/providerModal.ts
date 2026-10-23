@@ -424,7 +424,7 @@ export class ProviderModal extends Modal {
             type: 'text',
             cls: 'emily-form-input font-mono text-xs',
             value: item.key,
-            attr: { placeholder: 'Header Key (예: X-Title)' }
+            attr: { placeholder: 'Header key (예: X-Title)' }
           });
           kInput.addEventListener('input', (e) => {
             item.key = (e.target as HTMLInputElement).value;
@@ -434,7 +434,7 @@ export class ProviderModal extends Modal {
             type: 'text',
             cls: 'emily-form-input font-mono text-xs',
             value: item.value,
-            attr: { placeholder: 'Header Value' }
+            attr: { placeholder: 'Header value' }
           });
           vInput.addEventListener('input', (e) => {
             item.value = (e.target as HTMLInputElement).value;

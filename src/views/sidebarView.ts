@@ -1090,12 +1090,12 @@ export class EmilySidebarView extends ItemView {
       const baseUrl = (activeProv?.baseUrl || this.plugin.settings.apiBaseUrl || '').trim();
       const apiKey = (activeProv?.apiKey || this.plugin.settings.apiKey || '').trim();
       if (!baseUrl) {
-        new Notice('API Base URL이 설정되지 않았습니다. [설정 > Assistant Emily]에서 엔드포인트를 입력해 주세요.');
+        new Notice('API base URL이 설정되지 않았습니다. [설정 > Assistant Emily]에서 엔드포인트를 입력해 주세요.');
         return;
       }
       const isLocal = isLocalEndpoint(baseUrl);
       if (!isLocal && !apiKey) {
-        new Notice('API Key가 설정되지 않았습니다. [설정 > Assistant Emily]에서 API 키를 입력해 주세요.');
+        new Notice('API key가 설정되지 않았습니다. [설정 > Assistant Emily]에서 API 키를 입력해 주세요.');
         return;
       }
     }
@@ -1726,8 +1726,8 @@ export class EmilySidebarView extends ItemView {
         cancelPipelineBtn.remove();
       }
       this.currentAbortController = null;
-      console.error(err);
       const rawMsg = err instanceof Error ? err.message : String(err);
+      console.error('[Assistant Emily] 작업 실패 (Pipeline execution failed):', rawMsg);
       const isContextOrSizeError = /context|chunk|memory|token|length|too large|413|rate_limit|exceeded|payload|overflow|maximum context/i.test(rawMsg);
 
       const userNotice = isContextOrSizeError

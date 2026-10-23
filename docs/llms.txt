@@ -60,6 +60,10 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
     - 기기 식별자 기반의 독립 프로바이더 바인딩을 통한 OneDrive/클라우드 설정 충돌 방지.
     - 외부 분석(Telemetry) 전송 없이 로컬 또는 지정된 API와 직접 통신.
 
+13. **공식 옵시디언 린터 준수 및 빌드 보안 최신화**:
+    - eslint-plugin-obsidianmd 공식 룰셋 도입, UI Sentence case 표준화 및 식별자 기반 에러 로깅 일원화.
+    - esbuild ^0.25.0 업그레이드로 빌드 툴체인 보안 취약점 완전 패치.
+
 ## 설치 방법 (Installation)
 
 1. 옵시디언 설정(Settings) > 커뮤니티 플러그인(Community plugins)으로 이동합니다.

@@ -138,6 +138,11 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
 * **LLM 생각 과정(Reasoning/CoT) 및 초안 독백 누출 차단**
   * DeepSeek R1 등 추론형 LLM의 `<think>...</think>` 태그 블록을 제거하고, 영문 독백 및 초안 루프를 필터링합니다. OpenRouter 호출 시 reasoning 파라미터를 억제합니다.
 
+* **공식 옵시디언 린터 규정 준수 및 UI 타이포그래피 정제 (`eslint-plugin-obsidianmd`)**
+  * `eslint-plugin-obsidianmd` 공식 룰셋을 도입하고, 버튼 및 레이블의 Sentence case 표준화, 식별자 기반 로깅(`[Assistant Emily]`)을 일원화하여 옵시디언 커뮤니티 플러그인 심사 기준을 100% 준수합니다.
+* **빌드 툴체인 보안 취약점 패치 (`esbuild ^0.25.0`)**
+  * 최신 보안 권고(GHSA-67mh-4wv8-2f99)를 반영하여 번들링 도구체인을 최신화하고 개발 서버 취약점을 완전히 해소했습니다.
+
 ### 7. 실시간 작업 제어 및 스마트 데스크톱 UX (Real-Time Control & Smart UX)
 * **반응형 너비 감지 적응형 버튼 (Responsive Adaptive Segmented Buttons)**
   * 옵시디언 사이드바의 너비가 좁아질 때(<320px) 텍스트를 숨기고 아이콘 모드로 자동 전환되며, 중간 너비(<380px)에서는 핵심 라벨만 간결하게 표시하여 좁은 패널에서도 조작성을 유지합니다.
@@ -254,6 +259,7 @@ Assistant Emily의 코드베이스는 외부 대형 에이전트 라이브러리
 * **[TypeScript](https://www.typescriptlang.org/)** ([GitHub: microsoft/TypeScript](https://github.com/microsoft/TypeScript)): 복잡한 비동기 문서 처리 및 마크다운 AST 파이프라인을 견고하고 결함 없이 유지할 수 있게 해 준 최고의 개발 언어입니다.
 * **[esbuild](https://esbuild.github.io/)** ([GitHub: evanw/esbuild](https://github.com/evanw/esbuild)): 초고속 번들링과 트리 셰이킹을 통해 최적화된 배포 번들을 순식간에 빌드해 준 고성능 빌더입니다.
 * **[builtin-modules](https://github.com/sindresorhus/builtin-modules)** ([GitHub: sindresorhus/builtin-modules](https://github.com/sindresorhus/builtin-modules)): Node.js 런타임 의존성을 옵시디언 데스크톱 환경과 안전하게 조화시킬 수 있도록 기여해 주었습니다.
+* **[eslint-plugin-obsidianmd](https://github.com/obsidianmd/eslint-plugin-obsidianmd)** ([GitHub: obsidianmd/eslint-plugin-obsidianmd](https://github.com/obsidianmd/eslint-plugin-obsidianmd)): 옵시디언 커뮤니티 플러그인의 공식 UI 가이드라인(Sentence case) 및 보안 규범을 지속적으로 준수할 수 있도록 지원하는 공식 린터입니다.
 
 ---
 
@@ -418,6 +424,11 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
 * **LLM Reasoning (CoT) & Draft Monologue Filter**
   * Strips internal `<think>...</think>` traces and draft monologues from reasoning models, applying `reasoning: { effort: 'none', exclude: true }` parameters for OpenRouter.
 
+* **Official Obsidian Linter Compliance & Sentence Case (`eslint-plugin-obsidianmd`)**
+  * Fully adopts `eslint-plugin-obsidianmd` rules, standardizing UI buttons/modals to strict Sentence case and unifying identifier-scoped logging (`[Assistant Emily]`) to meet all Obsidian Community Plugin review standards.
+* **Build Toolchain Security Patch (`esbuild ^0.25.0`)**
+  * Upgraded bundling dependencies to resolve GHSA-67mh-4wv8-2f99, ensuring a secure, zero-vulnerability build pipeline.
+
 ### 7. Real-Time Task Cancellation & Desktop UX
 * **Responsive Adaptive Segmented Buttons**
   * Automatically collapses labels into intuitive Lucide icons when sidebar width is narrow (<320px).
@@ -532,6 +543,7 @@ Assistant Emily's codebase is implemented directly with an **independent custom 
 * **[TypeScript](https://www.typescriptlang.org/)** ([GitHub: microsoft/TypeScript](https://github.com/microsoft/TypeScript)): The premier language that keeps complex asynchronous document processing and Markdown AST pipelines robust, strictly typed, and reliable.
 * **[esbuild](https://esbuild.github.io/)** ([GitHub: evanw/esbuild](https://github.com/evanw/esbuild)): High-performance builder delivering instantaneous builds, fast bundling, and efficient tree-shaking for release distributions.
 * **[builtin-modules](https://github.com/sindresorhus/builtin-modules)** ([GitHub: sindresorhus/builtin-modules](https://github.com/sindresorhus/builtin-modules)): Contributed to cleanly harmonizing Node.js runtime dependencies within Obsidian's desktop Electron environment.
+* **[eslint-plugin-obsidianmd](https://github.com/obsidianmd/eslint-plugin-obsidianmd)** ([GitHub: obsidianmd/eslint-plugin-obsidianmd](https://github.com/obsidianmd/eslint-plugin-obsidianmd)): Official linter ensuring strict adherence to Obsidian community plugin developer policies, UI sentence casing, and secure DOM practices.
 
 ---
 

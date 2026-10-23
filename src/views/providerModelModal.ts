@@ -75,7 +75,7 @@ export class ProviderModelModal extends Modal {
 
     // 2. Row 2: Enable Toggle (Inline)
     const enableRow = formEl.createDiv({ cls: 'emily-inline-toggle-row' });
-    enableRow.createEl('label', { text: '모델 활성화 (Enable this model)', cls: 'text-xs font-semibold' });
+    enableRow.createEl('label', { text: '모델 활성화 (enable this model)', cls: 'text-xs font-semibold' });
     new ToggleComponent(enableRow)
       .setValue(enabled)
       .onChange((val) => {
