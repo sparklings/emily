@@ -9,7 +9,7 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Desktop Only](https://img.shields.io/badge/Platform-Desktop%20Only-orange.svg)]()
 [![Obsidian: v1.7.2+](https://img.shields.io/badge/Obsidian-v1.7.2%2B-purple.svg)](https://obsidian.md)
-[![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.0a-green.svg)](CHANGELOG.md)
+[![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.1-green.svg)](CHANGELOG.md)
 [![TypeScript: Strict Mode](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg)]()
 [![Privacy: 100% Local/Direct](https://img.shields.io/badge/Privacy-100%25%20Local%2FDirect-success.svg)](SECURITY.md)
 
@@ -74,7 +74,7 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers** and select your 
 
 ---
 
-## Latest Release Information (v1.1.0a)
+## Latest Release Information (v1.1.1)
 
 * **TOC Chapter Timestamp Masking Lock (`TOCTIME`)**: Preserves chapter timestamps (`1:57 BEGINNER`) and formats them into structured bullet list items.
 * **Video Clipping Note Section Partitioning**: Strictly preserves pre-transcript metadata line breaks while cleaning timestamps and reflowing subtitle paragraphs.

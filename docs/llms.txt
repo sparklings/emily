@@ -11,7 +11,7 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
 - **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역, OFM 자가 치유, 무손실 마스킹, 비디오 클리핑 정제
 - **License**: MIT
 - **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.1.0a
+- **Version**: 1.1.1
 
 ## 주요 기능 요약 (Features)
 
