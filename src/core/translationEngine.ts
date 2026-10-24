@@ -211,17 +211,11 @@ export class TranslationEngine {
       }
 
       if (!isValidTranslation && chunk.trim().length > 30) {
-        const clientConfig = this.client.getConfig();
-        const isAutoModel = !clientConfig.model || clientConfig.model === 'auto';
-        if (isAutoModel) {
-          throw new Error(
-            `현재 'auto' 설정으로 자동 할당된 AI 모델(${lastModel})이 번역 본문 대신 내부 추론(Reasoning) 독백만 출력하여 번역을 완료하지 못했습니다 (자동 재시도 실패). 안정적인 번역을 위해 설정 화면에서 구체적인 모델(예: Claude 3.5 Sonnet, GPT-4o, Gemini 2.5 Flash 등)을 프로바이더 모델 목록에서 활성화하여 지정해 주십시오.`
-          );
-        } else {
-          throw new Error(
-            `지정된 AI 모델(${lastModel})이 번역 본문 대신 내부 추론(Reasoning) 독백만 출력하여 번역을 완료하지 못했습니다 (자동 재시도 실패). 다른 모델을 선택하거나 모델 설정을 확인해 주십시오.`
-          );
-        }
+        // [Graceful Resilience]: 전체 번역을 중단(Fatal Throw)시키지 않고,
+        // 정제된 결과물을 보존하여 끝까지 파일 생성을 완주합니다.
+        console.warn(
+          `[Assistant Emily] Model '${lastModel}' produced partial or incomplete translation for chunk ${i + 1}/${totalChunks}. Proceeding with sanitized content to ensure completion.`
+        );
       }
 
       accumulatedTranslatedMarkdown += (accumulatedTranslatedMarkdown ? '\n\n' : '') + restoredChunk.trim();

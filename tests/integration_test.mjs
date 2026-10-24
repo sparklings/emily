@@ -237,7 +237,9 @@ class MarkdownFormatter {
     if (!rawContent) return '';
     let text = rawContent.trim();
     text = text.replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, '').trim();
-    text = text.replace(/^(?:[-*•]\s*)?Role:\s*Professional[\s\S]*?(?:The original text starts with:?|The text starts with:?|starts with:?|translated:?)\s*/gi, '').trim();
+    text = text.replace(/^(?:[-*•]\s*)?(?:Role:\s*Professional|No preamble|Use academic|No Chinese characters|Pure Korean)[\s\S]*?(?:The original text starts with:?|The text starts with:?|starts with:?|translated:?)\s*/gi, '').trim();
+    text = text.replace(/(?:^|\n)(?:Then the (?:intro|section|body|text|overview)|About Me section)[:：]\s*(?:"|')?/gi, '\n').trim();
+    text = text.replace(/(?:^|\n)[A-Z\s,]+(?:sections?|Transcript|About Me),?\s*etc\.?\s*(?:\n|$)/gi, '\n').trim();
     text = text.replace(/\s*\((?:Wait|Note|Notice|Tip|Translation note),[\s\S]*?\)/gi, '');
     
     text = text.split(/\n{2,}/).map(para => {

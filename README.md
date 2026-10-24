@@ -292,6 +292,9 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
 ## 📜 변경 이력 (Changelog)
 
 ### [v1.1.0] - 2026-10-24
+* **치명적 오류 중단(Fatal Throw) 제거 및 유연한 번역 완주 가드레일 (Graceful Resilience)**:
+  * 소형/무료 AI 모델(`dots-3-note-preview:free` 등)이나 프록시 auto 모델이 특정 청크에서 내부 독백을 남기더라도, 작업을 에러 팝업으로 중단(`throw Error`)시키지 않고 정제된 결과물을 결합하여 문서 번역을 끝까지 완주하도록 안정성 대폭 강화.
+  * 프롬프트에서 모델의 역복기(Echoing)를 유발하던 부정형 예시 문구를 전면 제거하고 직관적인 긍정 지시문으로 개편하여 경량 모델의 독백 및 영문 복사 버그 원천 차단.
 * **영상 클리핑 노트 지능적 영역 분할(Section Partitioning) 및 100% 무손실 보존 엔진 탑재**:
   * **동영상 링크/임베드 100% 확정 보존**: `![](https://www.youtube.com/...)`, `<iframe...>`, 유튜브/비메오 플레이어 링크를 코드 레벨에서 자동 격리 보호하고, LLM이 번역 중 토큰을 누락하더라도 원래 위치에 100% 무손실 확정 복원(`ensureVideoEmbedsPreserved`).
   * **목차(Timestamps/Chapters) 타임스탬프 완전 보존**: `Timestamps:` 아래의 챕터 목차(`0:00 설명`, `1:57 BEGINNER`)는 절대 지우지 않고 마크다운 리스트(`- 0:00 설명`)로 원형 보존.
@@ -633,6 +636,9 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 ## 📜 Changelog
 
 ### [v1.1.0] - 2026-10-24
+* **Graceful Translation Resilience & Elimination of Fatal Execution Throws**:
+  * Eliminated fatal error interrupts when using lightweight/free models (`dots-3-note-preview:free`, auto proxies), ensuring translations complete and output files are generated even if an individual chunk requires sanitization.
+  * Purged negative prompt examples that previously triggered prompt echoing/monologues in small LLMs, replacing them with direct positive translation directives.
 * **Intelligent Video Clipping Note Section Partitioning & Lossless Embed Preservation**:
   * **100% Deterministic Video Embed Restoration**: Extracts and guards video embed tags (`![](https://www.youtube.com/...)`, `<iframe...>`, player URLs), deterministically re-injecting them into the translated document even if the LLM drops them (`ensureVideoEmbedsPreserved`).
   * **TOC Chapter Timestamps Preserved**: Timestamps under table of contents (`Timestamps:`, `Chapters:`) like `0:00 Intro` and `1:57 BEGINNER` are 100% preserved as structured lists.

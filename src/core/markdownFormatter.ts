@@ -510,8 +510,14 @@ export class MarkdownFormatter {
     // 4. 빈 입력 등으로 인한 LLM의 메타 거절/독백 안내문 제거
     text = text.replace(/^(?:We need to translate a markdown document, but the user hasn't provided|Please provide the (?:markdown|text|content)|It looks like you didn't provide|As an AI language model, I need)[\s\S]*$/i, '').trim();
 
-    // 4-1. 시스템 프롬프트 복기(Echo) 블록 일괄 제거 (예: "- Role: Professional Markdown Translation AI ... The original text starts with:")
-    text = text.replace(/^(?:[-*•]\s*)?Role:\s*Professional[\s\S]*?(?:The original text starts with:?|The text starts with:?|starts with:?|translated:?)\s*/gi, '').trim();
+    // 4-1. 시스템 프롬프트 복기(Echo) 블록 일괄 제거 (예: "- Role: Professional ...", "- No preamble ... The original text starts with:")
+    text = text.replace(/^(?:[-*•]\s*)?(?:Role:\s*Professional|No preamble|Use academic|No Chinese characters|Pure Korean)[\s\S]*?(?:The original text starts with:?|The text starts with:?|starts with:?|translated:?)\s*/gi, '').trim();
+
+    // 4-2. "Then the intro:", "Then the ... :", "About Me section:" 등 메타 프레이밍 라벨 제거
+    text = text.replace(/(?:^|\n)(?:Then the (?:intro|section|body|text|overview)|About Me section)[:：]\s*(?:"|')?/gi, '\n').trim();
+
+    // 4-3. "BEGINNER, INTERMEDIATE, PRO sections, About Me, Transcript, etc." 같은 요약 독백 라인 제거
+    text = text.replace(/(?:^|\n)[A-Z\s,]+(?:sections?|Transcript|About Me),?\s*etc\.?\s*(?:\n|$)/gi, '\n').trim();
 
     // 5. 시작부 CoT 독백 ("The user wants me to...", "Let's review the guidelines:", "Target language:...") 감지 및 정제
     const cotStartRegex = /^(?:The user (?:wants|asked|provides|needs|requested|is asking)|I (?:need to|must|should|will|am asked to)|Let's (?:review|analyze|examine|first|check|start)|Okay, (?:I will|let's)|We (?:need to|are asked to)|Target language:|도착어:)/i;

@@ -286,10 +286,9 @@ ${codeCommentInstruction}${pureKoreanInstruction}
   * 모든 문장을 한 문장도 누락 없이 상세하게 100% ${options.targetLanguage}로 완역하십시오.
 - 마크다운 서식을 손상시키지 마십시오.${PromptBuilder.buildFormatStripInstruction(options.formatStripOptions)}
 
-[출력 절대 원칙 - 즉각적인 번역 본문만 출력]:
-- 어떠한 인사말, 설명, 생각 과정(Thinking/Reasoning), 가이드라인 검토("Let's review..."), 원문 복사("Original text:..."), 초안 메모("Let's write...", "A -> B")도 절대로 출력하지 마십시오.
-- Do NOT output any preamble, thinking process, draft notes, or guideline reviews.
-- 문서의 첫 단어/첫 줄부터 100% 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.`;
+[출력 절대 원칙 - 완성된 번역 본문만 곧바로 출력]:
+- 문서의 첫 줄부터 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.
+- 부가적인 설명, 인사말, 초안 메모는 일절 생략하고 순수 번역 결과물만 반환하십시오.`;
 
     let user = `다음 마크다운 문서를 도착어(${options.targetLanguage})로 즉시 번역하십시오.\n`;
 
@@ -297,7 +296,7 @@ ${codeCommentInstruction}${pureKoreanInstruction}
       user += `\n[편집자 특별 요청사항]\n${customInstruction.trim()}\n`;
     }
 
-    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 절대 원칙 - 위반 엄금]:\n1. "The user wants...", "Let's review...", "Original text:", "Let's write...", "A -> B" 등 생각 과정이나 가이드라인 복습, 초안 메모를 일절 출력하지 마십시오.\n2. Do NOT output thoughts, drafts, or preamble. Start directly with the first line of the translated markdown.\n3. 원문의 첫 번째 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.${isKoreanTarget ? '\n4. 중국어 간체자/번체자(한자) 어휘를 절대로 출력하지 마시고 100% 순수 한국어로 번역하십시오.\n5. 원문 영어를 번역하지 않고 복사하여 출력하는 행위는 엄격히 금지되며 모든 문장을 100% 한국어로 번역하십시오.' : ''}`;
+    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 원칙]:\n- 원문의 첫 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 즉시 출력하십시오.${isKoreanTarget ? '\n- 중국어(간체/번체) 및 영어 원문 복사를 배제하고 모든 문장을 100% 순수 한국어로 완역하십시오.' : ''}`;
 
     return { system, user };
   }
