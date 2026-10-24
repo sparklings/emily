@@ -972,11 +972,10 @@ select.emily-select-input {
   cursor: not-allowed;
 }
 
-/* Ensure Live Status Box and Error Actions remain fully interactive and clearly visible */
+/* Ensure Live Status Box and Error Actions remain clearly visible */
 .emily-active-form-container.is-form-executing .emily-status-box,
 .emily-active-form-container.is-form-executing .emily-error-banner,
 .emily-active-form-container.is-form-executing .emily-error-actions,
-.emily-active-form-container.is-form-executing .emily-error-actions button,
 .emily-active-form-container.is-form-executing .emily-pipeline-cancel-btn {
   opacity: 1;
   pointer-events: auto;
@@ -984,9 +983,37 @@ select.emily-select-input {
   filter: none;
 }
 
-.emily-active-form-container.is-form-executing .emily-error-actions button,
+.emily-active-form-container.is-form-executing .emily-error-actions button:not(:disabled):not(.is-disabled),
 .emily-active-form-container.is-form-executing .emily-pipeline-cancel-btn {
+  opacity: 1;
+  pointer-events: auto;
   cursor: pointer;
+  filter: none;
+}
+
+/* Explicit Disabled Styling for Error Actions (E.g. After Retry is Clicked) */
+.emily-error-actions button:disabled,
+.emily-error-actions button.is-disabled,
+.emily-active-form-container.is-form-executing .emily-error-actions button:disabled,
+.emily-active-form-container.is-form-executing .emily-error-actions button.is-disabled {
+  opacity: 0.45 !important;
+  pointer-events: none !important;
+  cursor: not-allowed !important;
+  filter: grayscale(0.7) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.emily-restarted-badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  margin-left: 6px;
+  border-radius: var(--radius-s, 4px);
+  background-color: var(--background-modifier-border);
+  color: var(--text-muted);
+  vertical-align: middle;
 }
 
 .emily-btn-secondary {

@@ -303,6 +303,7 @@ export const en: TranslationStrings = {
     applyBtn: '🚀 Start Task',
     pipelineStream: 'Pipeline Progress',
     retryBtn: '🔄 Retry',
+    restartingBtn: '⏳ Restarting...',
     cancelBtn: '❌ Cancel Task',
     statusError: 'Pipeline Error',
     errorOccurredTitle: '❌ Error Occurred During Execution',

@@ -285,6 +285,9 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
 ## 📜 변경 이력 (Changelog)
 
 ### [v1.1.0] - 2026-10-24
+* **오류 재시작 시 버튼 즉시 비활성화 및 영구 동결 (UI/UX)**:
+  * 사용자가 오류 카드의 '재시작하기'를 누르면 버튼을 즉시 `disabled` 및 `⏳ 재시작 진행 중...` 상태로 전환하고, 상단 오류 제목에 진행 배지를 추가하여 중복 클릭과 사용자 혼란을 원천 방지.
+  * 신규 파이프라인이 실행되는 동안 모든 기존 오류 카드의 재시작/취소 버튼을 동결하고 CSS 가드레일(`pointer-events: none`, 회색 딤 처리)을 강화.
 * **복합 영상 스크립트 타임스탬프(18:11· 등) 코드 레벨 선제적 정규식 제거**:
   * LLM에게 타임스탬프 제거를 일임하던 기존 방식에서 탈피하여, 번역 및 교열 파이프라인 진입 직전 코드에서 선제적으로 100% 무결하게 타임스탬프를 제거하고 문단을 결합하도록 개선.
   * `18:11·`, `거예요.18:19·`, `18:29·` 등 마침표 뒤 바로 결합된 형태 및 특수 구분점(`·`, `•`, `-`, `:`)까지 완전 무결하게 정제.
@@ -599,6 +602,9 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 ## 📜 Changelog
 
 ### [v1.1.0] - 2026-10-24
+* **Error Retry Button Immediate Disabling & Visual Lockout UX**:
+  * Immediately disables the retry button upon click, updates its label to `⏳ Restarting...`, and displays a restart badge on the error header to eliminate accidental double clicks and clarify execution state.
+  * Reinforced CSS safety styles (`pointer-events: none !important`, `opacity: 0.45`) to guarantee visual feedback regardless of parent container execution states.
 * **Deterministic Code-Level Regex Timestamp Stripping**:
   * Eliminated dependency on LLM prompt obedience by executing deterministic code-level pre-processing regex to strip timestamps (e.g. `18:11·`, `sentence.18:19·`, middle-dots `·`, colons, brackets) and reflow paragraphs before dispatching text to LLM.
 * **Chinese Cross-Lingual Leakage Prevention & Sanitization for Korean Output**:

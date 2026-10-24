@@ -303,6 +303,7 @@ export const ko: TranslationStrings = {
     applyBtn: '🚀 작업 시작하기',
     pipelineStream: '작업 진행 상태',
     retryBtn: '🔄 재시작하기',
+    restartingBtn: '⏳ 재시작 진행 중...',
     cancelBtn: '❌ 작업 취소',
     statusError: '작업 실행 중 오류',
     errorOccurredTitle: '❌ 작업 실행 중 오류 발생',

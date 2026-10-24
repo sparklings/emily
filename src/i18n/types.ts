@@ -301,6 +301,7 @@ export interface TranslationStrings {
     applyBtn: string;
     pipelineStream: string;
     retryBtn: string;
+    restartingBtn: string;
     cancelBtn: string;
     statusError: string;
     errorOccurredTitle: string;

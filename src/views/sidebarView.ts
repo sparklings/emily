@@ -1032,6 +1032,24 @@ export class EmilySidebarView extends ItemView {
         el.removeClass('is-disabled');
       }
     });
+
+    // 작업 실행 중 사이드바 내 모든 오류 카드의 재시작/취소 버튼 동결
+    const errorActionBtns = this.containerEl.querySelectorAll<HTMLButtonElement>(
+      '.emily-error-actions button'
+    );
+    errorActionBtns.forEach((btn) => {
+      if (disabled) {
+        btn.disabled = true;
+        btn.addClass('is-disabled');
+      } else {
+        // 이미 재시작되었거나 취소된 에러 박스의 버튼은 영구 동결 유지
+        const isParentRestarted = btn.closest('.emily-error-actions')?.classList.contains('is-restarted');
+        if (!isParentRestarted && !btn.classList.contains('is-restarted')) {
+          btn.disabled = false;
+          btn.removeClass('is-disabled');
+        }
+      }
+    });
   }
 
   private async executePipeline(
@@ -1790,8 +1808,26 @@ export class EmilySidebarView extends ItemView {
 
       // [재시작하기] 핸들러: 기존 오류 박스를 보존(동결)하고, 바로 아래에 신규 스트림을 append하여 재시작
       retryBtn.addEventListener('click', () => {
+        // 이미 다른 작업이 실행 중인 경우 추가 중복 클릭 원천 차단
+        if (this.isExecuting) return;
+
         retryBtn.disabled = true;
+        retryBtn.addClass('is-disabled');
+        retryBtn.addClass('is-restarted');
+        retryBtn.setText(t.sidebar.restartingBtn);
         cancelBtn.disabled = true;
+        cancelBtn.addClass('is-disabled');
+        actionsWrap.addClass('is-restarted');
+        errBox.addClass('is-retrying');
+
+        // 오류 박스 헤더에 재시작 상태 배지 추가 표시
+        const errorTitleEl = errBox.querySelector('.emily-error-title');
+        if (errorTitleEl && !errorTitleEl.querySelector('.emily-restarted-badge')) {
+          errorTitleEl.createSpan({
+            cls: 'emily-restarted-badge',
+            text: t.sidebar.restartingBtn.replace('⏳ ', '')
+          });
+        }
 
         const parentEl = statusBoxEl.parentElement || statusBoxEl;
         const newStatusBoxEl = parentEl.createDiv({ cls: 'emily-status-box' });
