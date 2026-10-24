@@ -98,13 +98,21 @@ export class MarkdownFormatter {
     const { frontmatter, body } = this.extractFrontmatter(text);
     if (!body && frontmatter) return frontmatter;
 
+    // 2. 영상 클리핑 문서인지 확인 (Transcript 헤더 또는 타임스탬프 패턴 존재 여부)
+    const isVideoNote = /^#{1,4}\s+Transcript\b/im.test(body) ||
+      /(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?)/.test(body);
+
+    if (!isVideoNote) {
+      // 일반 신문기사, 기술 블로그 등은 자막 타임스탬프 정제를 건너뛰고 원문 줄바꿈을 100% 보존
+      return text;
+    }
+
     const lines = body.split(/\r?\n/);
 
-    // 2. Transcript (스크립트 본문) 시작 라인 인덱스 탐색
+    // 3. Transcript (스크립트 본문) 시작 라인 인덱스 탐색
     let transcriptLineIdx = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      // '## Transcript', '# Transcript', '### Transcript', '**Transcript**' 등
       if (/^#{1,4}\s+Transcript\b/i.test(trimmed) || /^(?:\*\*|__)?Transcript(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
         transcriptLineIdx = i;
         break;
@@ -116,9 +124,7 @@ export class MarkdownFormatter {
     if (transcriptLineIdx === -1) {
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
-        if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
-          continue;
-        }
+        if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) continue;
         if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
           transcriptLineIdx = i;
           break;
@@ -131,33 +137,37 @@ export class MarkdownFormatter {
     const metaLines = transcriptLineIdx !== -1 ? lines.slice(0, transcriptLineIdx) : [];
     const transcriptLines = transcriptLineIdx !== -1 ? lines.slice(transcriptLineIdx) : lines;
 
-    // 3. 메타/목차 영역 정제:
+    // 4. 메타/목차 영역 정제:
     // - 동영상 링크/임베드 100% 보존
-    // - 목차(Timestamps)의 타임스탬프 100% 보존
-    // - Connect, Newsletter 등 줄바꿈 100% 보존 (절대 문단으로 합치지 않음!)
+    // - 목차(Timestamps)의 타임스탬프 100% 보존 (불릿 리스트로 표준화)
+    // - Connect, Newsletter 등 줄바꿈 100% 보존
     const cleanedMetaLines: string[] = [];
     for (let i = 0; i < metaLines.length; i++) {
       const rawLine = metaLines[i];
       const trimmed = rawLine.trim();
 
-      // 단독 챕터/목차 줄: "0:00 What is Gemini Notebook" -> "- 0:00 What is Gemini Notebook" (타임스탬프 100% 보존!)
-      const chapterMatch = trimmed.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
-      if (chapterMatch) {
-        cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
+      if (!trimmed) {
+        cleanedMetaLines.push('');
         continue;
       }
 
       // 목차 헤더 "Timestamps:" -> "### Timestamps"
       if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
-        cleanedMetaLines.push(`### ${trimmed.replace(/:$/, '')}`);
+        cleanedMetaLines.push(`### ${trimmed.replace(/:$/, '')}\n`);
         continue;
       }
 
-      // 원본 줄바꿈과 내용 그대로 보존 (공백 줄도 마크다운 구조 보존)
+      // 단독 챕터/목차 줄: "0:00 What is Gemini Notebook" -> "- 0:00 What is Gemini Notebook"
+      const chapterMatch = trimmed.match(/^[-*+]?\s*(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (chapterMatch) {
+        cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
+        continue;
+      }
+
       cleanedMetaLines.push(rawLine);
     }
 
-    // 4. 스크립트 본문 영역 정제:
+    // 5. 스크립트 본문 영역 정제:
     // - '## Transcript' 헤더 자체는 보존
     // - 스크립트 줄에 있는 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
     const cleanedScriptParagraphs: string[] = [];
@@ -227,9 +237,6 @@ export class MarkdownFormatter {
     return combinedBody;
   }
 
-  /**
-   * 마크다운 텍스트에서 동영상 임베드 및 플레이어 링크 태그를 추출합니다.
-   */
   static extractVideoEmbeds(markdown: string): string[] {
     if (!markdown) return [];
     const embeds: string[] = [];

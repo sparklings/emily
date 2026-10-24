@@ -640,9 +640,10 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
   * Eliminated fatal error interrupts when using lightweight/free models (`dots-3-note-preview:free`, auto proxies), ensuring translations complete and output files are generated even if an individual chunk requires sanitization.
   * Purged negative prompt examples that previously triggered prompt echoing/monologues in small LLMs, replacing them with direct positive translation directives.
 * **Intelligent Video Clipping Note Section Partitioning & Lossless Embed Preservation**:
+  * **TOC Timestamp Masking Lock (`TOCTIME`)**: Masks chapter table of contents timestamps (`0:00 Intro`, `1:57 BEGINNER`) into immutable tokens (`__EMILY_TOCTIME_n__`) formatted as explicit bullet list items, preventing LLMs from stripping times or collapsing table-of-contents into single-line text.
+  * **General Web Clippings & News Articles Full Pass-Through**: Automatically detects articles and news clippings without subtitle timestamps, bypassing timestamp pre-processing so that article paragraphs and original line breaks remain 100% untouched.
   * **100% Deterministic Video Embed Restoration**: Extracts and guards video embed tags (`![](https://www.youtube.com/...)`, `<iframe...>`, player URLs), deterministically re-injecting them into the translated document even if the LLM drops them (`ensureVideoEmbedsPreserved`).
-  * **TOC Chapter Timestamps Preserved**: Timestamps under table of contents (`Timestamps:`, `Chapters:`) like `0:00 Intro` and `1:57 BEGINNER` are 100% preserved as structured lists.
-  * **Metadata & Contact Line Breaks Intact**: Pre-transcript metadata, about sections, and contact lists (`Newsletter:`, `Email:`) strictly retain their original line breaks.
+  * **Metadata & Contact Line Breaks Intact**: Pre-transcript metadata, about sections, and contact lists (`Connect:`, `Newsletter:`, `Email:`) strictly retain their original line breaks.
   * **Transcript-Only Timestamp Stripping & Paragraph Reflow**: Only strips timestamps within the actual `## Transcript` body and reflows fragmented subtitle sentences into coherent paragraphs (400–600 chars).
 * **Korean Ratio & Untranslated English Block Interception Guardrails**:
   * Intercepts untranslated English paragraph leaks (blocks >200 chars with >75% Latin characters) and forces self-healing retries with direct Korean translation prompts.

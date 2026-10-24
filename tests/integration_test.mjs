@@ -84,6 +84,13 @@ class MarkdownFormatter {
     const { frontmatter, body } = this.extractFrontmatter(text);
     if (!body && frontmatter) return frontmatter;
 
+    const isVideoNote = /^#{1,4}\s+Transcript\b/im.test(body) ||
+      /(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?)/.test(body);
+
+    if (!isVideoNote) {
+      return text;
+    }
+
     const lines = body.split(/\r?\n/);
 
     let transcriptLineIdx = -1;
@@ -98,9 +105,7 @@ class MarkdownFormatter {
     if (transcriptLineIdx === -1) {
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
-        if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
-          continue;
-        }
+        if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) continue;
         if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
           transcriptLineIdx = i;
           break;
@@ -112,18 +117,25 @@ class MarkdownFormatter {
     const transcriptLines = transcriptLineIdx !== -1 ? lines.slice(transcriptLineIdx) : lines;
 
     const cleanedMetaLines = [];
+
     for (let i = 0; i < metaLines.length; i++) {
       const rawLine = metaLines[i];
       const trimmed = rawLine.trim();
 
-      const chapterMatch = trimmed.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
-      if (chapterMatch) {
-        cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
+      if (!trimmed) {
+        cleanedMetaLines.push('');
         continue;
       }
 
+      // 목차 헤더 "Timestamps:" -> "### Timestamps"
       if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
-        cleanedMetaLines.push(`### ${trimmed.replace(/:$/, '')}`);
+        cleanedMetaLines.push(`### ${trimmed.replace(/:$/, '')}\n`);
+        continue;
+      }
+
+      const chapterMatch = trimmed.match(/^[-*+]?\s*(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (chapterMatch) {
+        cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
         continue;
       }
 

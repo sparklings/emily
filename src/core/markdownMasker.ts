@@ -136,6 +136,14 @@ export class MarkdownMasker {
       return token;
     });
 
+    // 10. 목차/챕터 타임스탬프 (- 0:00 설명, 1:57 BEGINNER 등)
+    target = target.replace(/^(\s*[-*+]?\s*)(\d{1,2}:\d{2}(?::\d{2})?)(?=\s)/gm, (match: string, prefix: string, timeStr: string) => {
+      const token = getPlaceholder('TOCTIME');
+      maskMap.set(token, timeStr);
+      const listPrefix = prefix.trim() ? prefix : '- ';
+      return `${listPrefix}${token}`;
+    });
+
     return {
       maskedText: target,
       maskMap,
