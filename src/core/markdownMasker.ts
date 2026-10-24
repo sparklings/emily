@@ -130,10 +130,10 @@ export class MarkdownMasker {
       maskMap.set(token, match);
       return token;
     });
-    target = target.replace(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g, (match: string, alt: string, url: string) => {
-      const token = getPlaceholder('IMGURL');
-      maskMap.set(token, url);
-      return `![${alt}](${token})`;
+    target = target.replace(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g, (match: string) => {
+      const token = getPlaceholder('EMBEDIMG');
+      maskMap.set(token, match);
+      return token;
     });
 
     return {

@@ -291,7 +291,8 @@ export class TranslationEngine {
   }
 
   /**
-   * 대용량 마크다운 문서를 헤딩(##, ###) 및 문단 단위로 스마트 청킹합니다.
+   * 대용량 마크다운 문서를 헤딩(##, ###), 문단 단위 및 문장 단위로 스마트 청킹합니다.
+   * - 어떤 경우에도 1개 청크가 maxChunkLength(기본 2,500자)를 초과하지 않도록 문장 단위 강제 분할 가드를 제공합니다.
    */
   splitIntoSmartChunks(markdown: string, maxChunkLength: number = 2500): string[] {
     if (!markdown || markdown.length <= maxChunkLength) {
@@ -299,30 +300,56 @@ export class TranslationEngine {
     }
 
     const { frontmatter, body } = MarkdownFormatter.extractFrontmatter(markdown);
-    const lines = body.split(/\r?\n/);
+    const paragraphs = body.split(/\n{2,}/);
     const rawChunks: string[] = [];
-    let currentChunkLines: string[] = [];
+    let currentChunkParagraphs: string[] = [];
     let currentLength = 0;
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const isHeader = /^#{1,6}\s+/.test(line);
+    for (const rawPara of paragraphs) {
+      const para = rawPara.trim();
+      if (!para) continue;
 
-      // 청크 임계 크기 초과 & 헤딩 또는 빈 줄(문단) 경계에서 분할
-      if (currentLength + line.length > maxChunkLength && (isHeader || line.trim() === '' || currentChunkLines.length > 50)) {
-        if (currentChunkLines.length > 0) {
-          rawChunks.push(currentChunkLines.join('\n'));
-          currentChunkLines = [];
+      // 만약 단일 문단 자체가 maxChunkLength를 초과하는 경우: 문장 단위 강제 분할
+      if (para.length > maxChunkLength) {
+        if (currentChunkParagraphs.length > 0) {
+          rawChunks.push(currentChunkParagraphs.join('\n\n'));
+          currentChunkParagraphs = [];
           currentLength = 0;
         }
+
+        const sentences = para.split(/(?<=[.?!])\s+/);
+        let subSentences: string[] = [];
+        let subLength = 0;
+
+        for (const sent of sentences) {
+          if (subLength + sent.length > maxChunkLength && subSentences.length > 0) {
+            rawChunks.push(subSentences.join(' '));
+            subSentences = [];
+            subLength = 0;
+          }
+          subSentences.push(sent);
+          subLength += sent.length + 1;
+        }
+
+        if (subSentences.length > 0) {
+          rawChunks.push(subSentences.join(' '));
+        }
+        continue;
       }
 
-      currentChunkLines.push(line);
-      currentLength += line.length + 1;
+      // 청크 임계 크기 초과 시 분할
+      if (currentLength + para.length > maxChunkLength && currentChunkParagraphs.length > 0) {
+        rawChunks.push(currentChunkParagraphs.join('\n\n'));
+        currentChunkParagraphs = [];
+        currentLength = 0;
+      }
+
+      currentChunkParagraphs.push(para);
+      currentLength += para.length + 2;
     }
 
-    if (currentChunkLines.length > 0) {
-      rawChunks.push(currentChunkLines.join('\n'));
+    if (currentChunkParagraphs.length > 0) {
+      rawChunks.push(currentChunkParagraphs.join('\n\n'));
     }
 
     // 공백/개행만 있는 빈 청크 원천 배제

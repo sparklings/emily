@@ -101,9 +101,10 @@ export class MarkdownFormatter {
     cleaned = cleaned.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ');
 
     // 3. 줄 단위 분할 및 문단 단위 Concatination
-    const lines = cleaned.split(/\r?\n/);
+    const lines = body.split(/\r?\n/);
     const cleanedParagraphs: string[] = [];
     let currentParagraph: string[] = [];
+    let currentParagraphLength = 0;
 
     for (const rawLine of lines) {
       const line = rawLine.trim();
@@ -113,22 +114,61 @@ export class MarkdownFormatter {
         if (currentParagraph.length > 0) {
           cleanedParagraphs.push(currentParagraph.join(' '));
           currentParagraph = [];
+          currentParagraphLength = 0;
         }
         continue;
       }
 
-      // 마크다운 블록 요소(헤딩, 콜아웃, 구분선, 리스트, 이미지/임베드, 위키링크 등)는 독립 줄로 보존
+      // 3-1. 마크다운 블록 요소(헤딩, 콜아웃, 구분선, 리스트, 이미지/임베드, 위키링크 등)는 독립 줄로 보존
       if (/^(?:#{1,6}\s+|>\s*|---\s*$|\*\*\*[^*]+\*\*\*|[-*+]\s+|\d+\.\s+|!\[.*\]\(.*\)|\[\[.*\]\])/.test(line)) {
         if (currentParagraph.length > 0) {
           cleanedParagraphs.push(currentParagraph.join(' '));
           currentParagraph = [];
+          currentParagraphLength = 0;
         }
         cleanedParagraphs.push(line);
         continue;
       }
 
-      // 일반 문장 줄은 현재 문단에 결합 (원문 단어 100% 보존)
-      currentParagraph.push(line);
+      // 3-2. 단독 챕터/목차 타임스탬프 라인 (예: "0:00 What is Gemini Notebook", "1:57 BEGINNER")
+      // - 스크립트 본문이 아니라 영상 목차(Table of Contents)이므로 타임스탬프를 보존하며 마크다운 리스트 형태로 구조화
+      const chapterMatch = line.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (chapterMatch) {
+        if (currentParagraph.length > 0) {
+          cleanedParagraphs.push(currentParagraph.join(' '));
+          currentParagraph = [];
+          currentParagraphLength = 0;
+        }
+        cleanedParagraphs.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
+        continue;
+      }
+
+      // 3-3. "Timestamps:" 또는 "Chapters:" 같은 목차 헤더 라인
+      if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(line)) {
+        if (currentParagraph.length > 0) {
+          cleanedParagraphs.push(currentParagraph.join(' '));
+          currentParagraph = [];
+          currentParagraphLength = 0;
+        }
+        cleanedParagraphs.push(`### ${line.replace(/:$/, '')}`);
+        continue;
+      }
+
+      // 3-4. 일반 영상 스크립트 줄: 타임스탬프 제거 후 본문 문단 결합
+      let cleanedLine = line.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
+      cleanedLine = cleanedLine.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ').trim();
+
+      if (cleanedLine) {
+        currentParagraph.push(cleanedLine);
+        currentParagraphLength += cleanedLine.length;
+
+        // 적절한 문단 호흡 유지: 400자 이상 누적되고 문장이 종결(., !, ?)되었으면 자연스러운 문단 분할
+        if (currentParagraphLength >= 400 && /[.?!]$/.test(cleanedLine)) {
+          cleanedParagraphs.push(currentParagraph.join(' '));
+          currentParagraph = [];
+          currentParagraphLength = 0;
+        }
+      }
     }
 
     if (currentParagraph.length > 0) {
@@ -313,8 +353,13 @@ export class MarkdownFormatter {
     }
 
     // 2. 가이드라인 / 설정 / 프롬프트 항목 복기 (영어 또는 한국어)
-    // 예: "Target language: Korean", "도착어: 한국어", "Tone: ...", "- 문체(Tone): ...", "Translate all: ...", "출발어: ...", "번역 범위: ...", "Code comment: ..."
-    if (/^(?:[-*•]\s*)?(?:Target language|Source language|Tone|Style|Translation scope|Scope|Code comment(?:s)?|Translate(?:\s+all|\s+the|\s+each|\s+comments)?|Preserve|Formatting|Guidelines|Requirements|Correct example|Incorrect example|도착어|출발어|문체|스타일|번역 범위|주의사항|필수 지침|출력 절대 원칙)\b[:：]/i.test(trimmed)) {
+    // 예: "Role: ...", "Target language: Korean", "도착어: 한국어", "Tone: ...", "- 문체(Tone): ...", "Translate all: ...", "출발어: ...", "번역 범위: ...", "Code comment: ..."
+    if (/^(?:[-*•]\s*)?(?:Role|Target language|Source language|Tone|Style|Translation scope|Scope|Code block comments|Code comment(?:s)?|Translate(?:\s+all|\s+the|\s+each|\s+comments)?|Preserve|Formatting(?:\s+restrictions)?|Guidelines|Requirements|Correct example|Incorrect example|Headings|Obsidian callouts|No HTML tags|Remove timestamps|YAML frontmatter|Obsidian Markdown|도착어|출발어|문체|스타일|번역 범위|주의사항|필수 지침|출력 절대 원칙)\b[:：]/i.test(trimmed)) {
+      return true;
+    }
+
+    // 2-1. 원문 시작 안내 라인 ("The original text starts with:", "The translated text is:")
+    if (/^(?:The original text starts with|The text starts with|Original text starts with|The translated text is|Translated text:?):?$/i.test(trimmed)) {
       return true;
     }
 
@@ -383,6 +428,9 @@ export class MarkdownFormatter {
 
     // 4. 빈 입력 등으로 인한 LLM의 메타 거절/독백 안내문 제거
     text = text.replace(/^(?:We need to translate a markdown document, but the user hasn't provided|Please provide the (?:markdown|text|content)|It looks like you didn't provide|As an AI language model, I need)[\s\S]*$/i, '').trim();
+
+    // 4-1. 시스템 프롬프트 복기(Echo) 블록 일괄 제거 (예: "- Role: Professional Markdown Translation AI ... The original text starts with:")
+    text = text.replace(/^(?:[-*•]\s*)?Role:\s*Professional[\s\S]*?(?:The original text starts with:?|The text starts with:?|starts with:?|translated:?)\s*/gi, '').trim();
 
     // 5. 시작부 CoT 독백 ("The user wants me to...", "Let's review the guidelines:", "Target language:...") 감지 및 정제
     const cotStartRegex = /^(?:The user (?:wants|asked|provides|needs|requested|is asking)|I (?:need to|must|should|will|am asked to)|Let's (?:review|analyze|examine|first|check|start)|Okay, (?:I will|let's)|We (?:need to|are asked to)|Target language:|도착어:)/i;
@@ -554,10 +602,22 @@ export class MarkdownFormatter {
       // 8-4. 라인 끝에 붙은 불필요한 메타 주석(예: `(no bold)`, `(no bold, just a link)`) 정리
       let cleanedLine = line.replace(/\s*\((?:no bold|just a link|no italics?|only link|plain text)[^)]*\)\s*$/i, '');
 
+      // 8-5. 인라인 괄호 독백 제거 (예: "(Wait, the name is Penolopie David, ...)")
+      cleanedLine = cleanedLine.replace(/\s*\((?:Wait|Note|Notice|Tip|Translation note),[\s\S]*?\)/gi, '');
+
       processedLines.push(cleanedLine);
     }
 
     text = processedLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+
+    // 9. 문단 전체가 큰따옴표("...")로 불필요하게 래핑된 경우 언래핑
+    text = text.split(/\n{2,}/).map(para => {
+      let p = para.trim();
+      if (p.startsWith('"') && p.endsWith('"') && p.length > 2) {
+        p = p.slice(1, -1).trim();
+      }
+      return p;
+    }).join('\n\n');
 
     return text;
   }
