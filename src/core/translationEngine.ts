@@ -218,10 +218,9 @@ export class TranslationEngine {
       throw abortError;
     }
 
-    // 2. 동아시아 볼드 닫는 태그 뒤 조사 공백 자동 보정 (**단어**는 -> **단어** 는)
-    let finalTranslatedMarkdown = options.autoProofreadKoreanBold !== false
-      ? MarkdownFormatter.fixEastAsianBoldSpacing(accumulatedTranslatedMarkdown)
-      : accumulatedTranslatedMarkdown;
+    // 2. Obsidian Flavored Markdown (OFM) 전용 무손실 정규화 및 렌더링 자가 치유 수행
+    // (헤딩 개행 보정, 콜아웃 연속성, 테이블 구조 정합, HTML 태그 정제 및 동아시아 볼드 조사 공백 자동 처리)
+    let finalTranslatedMarkdown = MarkdownFormatter.normalizeObsidianMarkdown(accumulatedTranslatedMarkdown);
 
     // 2-1. 사용자 선택 서식 제거 (볼드체, 기울이기, 취소선, 하이라이트)
     if (options.formatStripOptions) {

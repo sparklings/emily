@@ -58,6 +58,36 @@ export class MarkdownMasker {
       return token;
     });
 
+    // 4-1. 옵시디언 주석 (%%...%%)
+    target = target.replace(/%%[\s\S]*?%%/g, (match) => {
+      const token = getPlaceholder('COMMENT');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    // 4-2. 옵시디언 하이라이트 (==...==) 구문 기호 보호
+    target = target.replace(/==([^=\n]+?)==/g, (match: string, content: string) => {
+      const startToken = getPlaceholder('HLSTART');
+      const endToken = getPlaceholder('HLEND');
+      maskMap.set(startToken, '==');
+      maskMap.set(endToken, '==');
+      return `${startToken}${content}${endToken}`;
+    });
+
+    // 4-3. 옵시디언 블록 식별자 (^block-id)
+    target = target.replace(/(?<=\s)\^([a-zA-Z0-9_-]+)(?=\s*$)/gm, (match: string) => {
+      const token = getPlaceholder('BLOCKID');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    // 4-4. 마크다운 체크리스트 / 태스크 박스 (- [ ], - [x], - [/] 등)
+    target = target.replace(/^(\s*[-*+]\s+\[[\sxX/\\-]?\])(?=\s)/gm, (match: string) => {
+      const token = getPlaceholder('TASKBOX');
+      maskMap.set(token, match);
+      return token;
+    });
+
     // 5. 옵시디언 콜아웃 헤더 (> [!type] 또는 > [!type]+, > [!type]-)
     target = target.replace(/^(>\s*\[!)([a-zA-Z0-9_-]+)(\][+-]?)/gm, (match: string, prefix: string, calloutType: string, suffix: string) => {
       const token = getPlaceholder('CALLOUT');
@@ -82,7 +112,12 @@ export class MarkdownMasker {
       return token;
     });
 
-    // 8. 옵시디언 각주 참조 ([^1], [^note])
+    // 8. 옵시디언 각주 참조 ([^1], [^note]) 및 각주 정의 헤더 ([^1]:)
+    target = target.replace(/^(\[\^([a-zA-Z0-9_-]+)\]:)/gm, (match) => {
+      const token = getPlaceholder('FOOTNOTEDEF');
+      maskMap.set(token, match);
+      return token;
+    });
     target = target.replace(/\[\^([a-zA-Z0-9_-]+)\]/g, (match) => {
       const token = getPlaceholder('FOOTNOTE');
       maskMap.set(token, match);
@@ -94,6 +129,11 @@ export class MarkdownMasker {
       const token = getPlaceholder('EMBED');
       maskMap.set(token, match);
       return token;
+    });
+    target = target.replace(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g, (match: string, alt: string, url: string) => {
+      const token = getPlaceholder('IMGURL');
+      maskMap.set(token, url);
+      return `![${alt}](${token})`;
     });
 
     return {

@@ -514,4 +514,148 @@ export class MarkdownFormatter {
 
     return text;
   }
+
+  /**
+   * 번역 및 편집 후 생성된 마크다운을 Obsidian Flavored Markdown (OFM) 규격에 맞추어
+   * 무손실 정규화 및 렌더링 자가 치유(Self-Healing)를 수행합니다.
+   * - 프론트매터 및 코드 블록, 수식 블록 격리 보존
+   * - 잔여 인라인 HTML 태그(<br>, <b>, <strong>, <i>, <em>, <mark>, <code>)를 순수 OFM 마크다운으로 변환
+   * - 헤딩(# ~ ######) 전후 빈 줄(개행) 확보 (옵시디언 렌더러 문단 병합 방지)
+   * - 콜아웃(> [!TYPE]) 블록 내부 인용 기호(>) 연속성 보정
+   * - 마크다운 테이블(GFM Table) 행 간 불필요한 빈 줄 제거
+   * - 체크리스트(- [ ], - [x]) 공백 규격화
+   * - 동아시아 볼드 조사 공백 자동 정합 연계
+   */
+  static normalizeObsidianMarkdown(markdown: string): string {
+    if (!markdown) return markdown;
+
+    // 1. 프론트매터 격리
+    const { frontmatter, body } = this.extractFrontmatter(markdown);
+    let target = body;
+
+    // 2. 코드 블록(```...```) 및 블록 수식($$...$$) 임시 격리
+    const blockMap = new Map<string, string>();
+    let blockCounter = 0;
+
+    target = target.replace(/```[\s\S]*?```/g, (match) => {
+      const token = `__EMILY_FMT_CODE_${blockCounter++}__`;
+      blockMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/\$\$[\s\S]*?\$\$/g, (match) => {
+      const token = `__EMILY_FMT_MATH_${blockCounter++}__`;
+      blockMap.set(token, match);
+      return token;
+    });
+
+    // 3. 인라인 HTML 태그를 순수 마크다운/옵시디언 문법으로 변환
+    target = target
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<strong>([\s\S]*?)<\/strong>/gi, '**$1**')
+      .replace(/<b>([\s\S]*?)<\/b>/gi, '**$1**')
+      .replace(/<em>([\s\S]*?)<\/em>/gi, '*$1*')
+      .replace(/<i>([\s\S]*?)<\/i>/gi, '*$1*')
+      .replace(/<mark>([\s\S]*?)<\/mark>/gi, '==$1==')
+      .replace(/<code>([^<\n]+?)<\/code>/gi, '`$1`');
+
+    // 4. 체크리스트 태스크 공백 정규화 (-[], -[ ], -[x], -[/] 등 -> - [ ] , - [x] )
+    target = target.replace(/^(\s*[-*+])\s*\[\s*([xX/\\-]?)\s*\](?!\s)/gm, (match, bullet: string, mark: string) => {
+      const state = mark && mark.trim() ? mark : ' ';
+      return `${bullet} [${state}] `;
+    });
+
+    // 5. 콜아웃(> [!TYPE]) 블록 내 연속 인용 부호(>) 보정
+    // 콜아웃 헤더 다음 줄에서 빈 줄이 나오기 전까지 '>'가 누락된 일반 텍스트 라인에 '>' 접두사 복원
+    const lines = target.split(/\r?\n/);
+    const normalizedLines: string[] = [];
+    let insideCallout = false;
+    let insideTable = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const trimmed = line.trim();
+
+      // 콜아웃 헤더 감지
+      if (/^>\s*\[![a-zA-Z0-9_-]+\][+-]?/.test(trimmed)) {
+        insideCallout = true;
+        normalizedLines.push(line);
+        continue;
+      }
+
+      // 테이블 행 감지 (| ... |)
+      const isTableRow = /^\|.*\|$/.test(trimmed);
+      if (isTableRow) {
+        insideTable = true;
+        insideCallout = false;
+        normalizedLines.push(line);
+        continue;
+      } else if (insideTable) {
+        if (!trimmed) {
+          // 테이블 직후 빈 줄이거나 테이블 내부에 잘못 삽입된 빈 줄인 경우:
+          // 만약 다음 줄도 테이블 행이면 빈 줄을 스킵(테이블 찢어짐 방지)
+          if (i + 1 < lines.length && /^\|.*\|$/.test(lines[i + 1].trim())) {
+            continue;
+          }
+        }
+        insideTable = false;
+      }
+
+      // 콜아웃 처리 중
+      if (insideCallout) {
+        if (!trimmed) {
+          // 콜아웃 내부의 빈 줄은 빈 인용 부호(>)로 보존
+          // 만약 다음 줄이 완전히 새로운 블록(헤딩, 구분선 등)이면 콜아웃 종료
+          if (i + 1 < lines.length && /^(?:#{1,6}\s+|---|\*\*\*|```)/.test(lines[i + 1].trim())) {
+            insideCallout = false;
+            normalizedLines.push('');
+            continue;
+          }
+          normalizedLines.push('>');
+          continue;
+        } else if (trimmed.startsWith('>')) {
+          normalizedLines.push(line);
+          continue;
+        } else if (/^(?:#{1,6}\s+|---|\*\*\*|```)/.test(trimmed)) {
+          // 헤딩이나 코드블록, 구분선이 나오면 콜아웃 종료
+          insideCallout = false;
+          normalizedLines.push(line);
+          continue;
+        } else {
+          // 콜아웃 내부에서 '>'가 누락된 후속 줄 자동 치유
+          normalizedLines.push(`> ${line}`);
+          continue;
+        }
+      }
+
+      normalizedLines.push(line);
+    }
+
+    target = normalizedLines.join('\n');
+
+    // 6. 헤딩(# ~ ######) 전후 빈 줄(개행) 확보 (옵시디언 렌더러 파싱 오류 원천 방지)
+    // 윗줄이 빈 줄이나 시작점이 아닌 경우 빈 줄 추가
+    target = target.replace(/([^\r\n])\r?\n(#{1,6}\s+[^\r\n]+)/g, '$1\n\n$2');
+    // 헤딩 아랫줄이 빈 줄이 아니면 빈 줄 추가 (단, 다음 줄이 다른 헤딩(#)인 경우 제외)
+    target = target.replace(/(#{1,6}\s+[^\r\n]+)\r?\n([^#\r\n\s>])/g, '$1\n\n$2');
+
+    // 7. 연속 3개 이상의 불필요한 공백 개행을 표준 마크다운 문단 간격(2개)으로 축소
+    target = target.replace(/\n{3,}/g, '\n\n').trim();
+
+    // 8. 격리된 코드 블록 및 수식 블록 복원
+    blockMap.forEach((blockContent, token) => {
+      target = target.split(token).join(blockContent);
+    });
+
+    // 9. 동아시아 볼드 닫는 태그 뒤 조사 공백 자동 보정
+    target = this.fixEastAsianBoldSpacing(target);
+
+    // 10. 프론트매터 재결합
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${target.trimStart()}`;
+    }
+
+    return target;
+  }
 }

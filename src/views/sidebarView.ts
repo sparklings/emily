@@ -1604,10 +1604,8 @@ export class EmilySidebarView extends ItemView {
             editedDoc = MarkdownFormatter.stripMarkdownDecorations(editedDoc, this.formatStripOptions);
           }
 
-          // Apply East Asian bold spacing rule (**단어** 조사 -> **단어** 조사)
-          if (this.plugin.settings.autoProofreadKoreanBold !== false) {
-            editedDoc = MarkdownFormatter.fixEastAsianBoldSpacing(editedDoc);
-          }
+          // Apply Obsidian Flavored Markdown normalization and East Asian bold spacing
+          editedDoc = MarkdownFormatter.normalizeObsidianMarkdown(editedDoc);
 
           totalTimeMs = Date.now() - startTime;
           tokensPerSec = response.tokensPerSec || Math.round((editedDoc.length / 4) / (totalTimeMs / 1000 || 1));

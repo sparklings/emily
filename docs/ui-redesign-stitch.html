@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistant Emily - Next-Gen UI/UX Design System (Stitch Prototype)</title>
+  <!-- Tailwind CSS CDN with Typography & Forms plugins -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              300: '#c4b5fd',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+              900: '#4c1d95',
+            },
+            surface: {
+              base: '#0c0e14',
+              elevated: '#131620',
+              card: '#1a1e2c',
+              border: 'rgba(255, 255, 255, 0.08)',
+              hover: 'rgba(255, 255, 255, 0.04)',
+              active: 'rgba(124, 58, 237, 0.12)',
+            }
+          },
+          fontFamily: {
+            sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'Roboto', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace']
+          },
+          boxShadow: {
+            'glow-sm': '0 0 15px -3px rgba(139, 92, 246, 0.25)',
+            'glow-md': '0 0 25px -4px rgba(139, 92, 246, 0.35)',
+            'card': '0 4px 20px -2px rgba(0, 0, 0, 0.4)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+    .glass-card {
+      background: rgba(26, 30, 44, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-surface-base text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500/30 selection:text-brand-200">
+
+  <!-- =========================================================================
+       Top Global Showcase Navigation Bar (Stitch Interactive Switcher)
+       ========================================================================= -->
+  <header class="sticky top-0 z-50 bg-surface-elevated/80 backdrop-blur-md border-b border-surface-border px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-glow-sm">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-base tracking-tight text-white">Assistant Emily</span>
+          <span class="px-2 py-0.5 text-[11px] font-semibold bg-brand-500/15 text-brand-300 border border-brand-500/30 rounded-full font-mono">v2.0 Design System</span>
+        </div>
+        <p class="text-xs text-slate-400">Next-Gen Obsidian AI Pair Assistant UI/UX Showcase for Google Stitch</p>
+      </div>
+    </div>
+
+    <!-- Screen Switcher Tabs -->
+    <div class="flex items-center bg-surface-card p-1 rounded-xl border border-surface-border">
+      <button onclick="switchView('sidebar')" id="tab-sidebar" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-brand-600 text-white shadow-sm">
+        <i data-lucide="panel-right" class="w-3.5 h-3.5"></i>
+        <span>1. 사이드바 패널 (Sidebar)</span>
+      </button>
+      <button onclick="switchView('settings')" id="tab-settings" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+        <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+        <span>2. 설정 대시보드 (Settings 4-Tab)</span>
+      </button>
+      <button onclick="switchView('modal')" id="tab-modal" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+        <i data-lucide="cpu" class="w-3.5 h-3.5"></i>
+        <span>3. 프로바이더 등록 모달 (Modal)</span>
+      </button>
+      <button onclick="switchView('diff')" id="tab-diff" class="view-tab-btn flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-all">
+        <i data-lucide="git-compare" class="w-3.5 h-3.5"></i>
+        <span>4. 대화형 Diff 검토 뷰어 (Diff Review)</span>
+      </button>
+    </div>
+
+    <!-- Theme & Quick Actions -->
+    <div class="flex items-center gap-2">
+      <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        PlugVaults 동기화 완료
+      </span>
+      <a href="https://github.com/sparklings/emily" target="_blank" class="p-2 rounded-lg bg-surface-card hover:bg-surface-border text-slate-400 hover:text-white border border-surface-border transition-colors">
+        <i data-lucide="github" class="w-4 h-4"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       Main Content Container
+       ========================================================================= -->
+  <main class="flex-1 p-8 max-w-7xl w-full mx-auto flex items-start justify-center">
+
+    <!-- =======================================================================
+         VIEW 1: SIDEBAR VIEW (Obsidian Right Pane Mockup)
+         ======================================================================= -->
+    <section id="view-sidebar" class="view-section w-full max-w-[420px] transition-all">
+      <div class="glass-card rounded-2xl overflow-hidden shadow-card border border-surface-border flex flex-col h-[860px]">
+        
+        <!-- Sidebar Top Header -->
+        <div class="px-4 py-3 bg-surface-elevated/90 border-b border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+            </div>
+            <div>
+              <span class="font-semibold text-sm text-white flex items-center gap-1.5">
+                Assistant Emily
+                <span class="w-2 h-2 rounded-full bg-emerald-400" title="온라인"></span>
+              </span>
+              <p class="text-[10px] text-slate-400 font-mono">v1.0.22 · Ollama Local</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <button class="w-7 h-7 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white flex items-center justify-center transition-colors" title="상태 초기화 및 새로고침">
+              <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="w-7 h-7 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white flex items-center justify-center transition-colors" title="작업 제어 영역 접기">
+              <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
+            </button>
+            <button class="w-7 h-7 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white flex items-center justify-center transition-colors" title="세션 히스토리">
+              <i data-lucide="history" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Target Document Status Bar -->
+        <div class="px-4 py-2.5 bg-surface-card/60 border-b border-surface-border/60 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2 min-w-0">
+            <i data-lucide="file-text" class="w-3.5 h-3.5 text-brand-400 shrink-0"></i>
+            <span class="font-medium text-slate-200 truncate">System_Architecture_2026.md</span>
+          </div>
+          <span class="px-2 py-0.5 text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-md shrink-0">
+            선택 영역 (342자)
+          </span>
+        </div>
+
+        <!-- Sidebar Scrollable Body -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-3.5">
+
+          <!-- 1. Proofreading Accordion Card -->
+          <div class="glass-card rounded-xl border border-surface-border/80 overflow-hidden transition-all duration-200 hover:border-surface-border">
+            <div class="px-3.5 py-3 flex items-center justify-between cursor-pointer select-none bg-surface-card/30">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-blue-500/10 text-blue-400 flex items-center justify-center">
+                  <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-200">마크다운 교열 (Proofreading)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded-full bg-surface-elevated text-slate-400 border border-surface-border">2개 선택</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked class="sr-only peer">
+                  <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+              </div>
+            </div>
+            
+            <!-- Proofreading Options Body -->
+            <div class="p-3 pt-0 border-t border-surface-border/40 grid grid-cols-3 gap-1.5 mt-2.5">
+              <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-brand-600/20 border border-brand-500/40 text-brand-300 text-center transition-all">
+                <i data-lucide="spell-check" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px] font-medium">맞춤법 검사</span>
+              </button>
+              <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-brand-600/20 border border-brand-500/40 text-brand-300 text-center transition-all">
+                <i data-lucide="binary" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px] font-medium">문법 검사</span>
+              </button>
+              <button class="flex flex-col items-center justify-center gap-1 p-2 rounded-lg bg-surface-card hover:bg-surface-elevated text-slate-400 hover:text-slate-200 border border-surface-border text-center transition-all">
+                <i data-lucide="clock-rewind" class="w-3.5 h-3.5"></i>
+                <span class="text-[11px] font-medium">타임스탬프 삭제</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. Translation & Tone Accordion Card -->
+          <div class="glass-card rounded-xl border border-surface-border/80 overflow-hidden transition-all duration-200 hover:border-surface-border">
+            <div class="px-3.5 py-3 flex items-center justify-between cursor-pointer select-none bg-surface-card/30">
+              <div class="flex items-center gap-2.5">
+                <div class="w-6 h-6 rounded-md bg-purple-500/10 text-purple-400 flex items-center justify-center">
+                  <i data-lucide="languages" class="w-3.5 h-3.5"></i>
+                </div>
+                <span class="text-xs font-semibold text-slate-200">전문 번역 및 문체 정합 (Translation)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 text-[10px] font-mono font-medium rounded-full bg-surface-elevated text-slate-400 border border-surface-border">선택 영역</span>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" checked class="sr-only peer">
+                  <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Translation Options Body -->
+            <div class="p-3.5 pt-1 border-t border-surface-border/40 space-y-3 mt-2">
+              
+              <!-- Language Pair -->
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-surface-card border border-surface-border rounded-lg px-2.5 py-1.5 text-xs flex items-center justify-between">
+                  <span class="text-slate-400 text-[10px]">출발어</span>
+                  <span class="font-medium text-slate-200">영어 (Auto)</span>
+                </div>
+                <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-slate-500 shrink-0"></i>
+                <div class="flex-1 bg-surface-card border border-surface-border rounded-lg px-2.5 py-1.5 text-xs flex items-center justify-between">
+                  <span class="text-slate-400 text-[10px]">도착어</span>
+                  <span class="font-medium text-brand-300">한국어 (KO)</span>
+                </div>
+              </div>
+
+              <!-- Scope 3-Way Segmented Control -->
+              <div>
+                <label class="block text-[11px] font-medium text-slate-400 mb-1.5">작업 범위 (Scope)</label>
+                <div class="grid grid-cols-3 gap-1 p-1 bg-surface-elevated rounded-lg border border-surface-border">
+                  <button class="py-1.5 rounded-md bg-brand-600 text-white text-[11px] font-medium shadow-sm flex items-center justify-center gap-1">
+                    <i data-lucide="text-select" class="w-3 h-3"></i>
+                    선택 영역
+                  </button>
+                  <button class="py-1.5 rounded-md text-slate-400 hover:text-slate-200 text-[11px] font-medium flex items-center justify-center gap-1 transition-colors">
+                    <i data-lucide="file" class="w-3 h-3"></i>
+                    전체 문서
+                  </button>
+                  <button class="py-1.5 rounded-md text-slate-400 hover:text-slate-200 text-[11px] font-medium flex items-center justify-center gap-1 transition-colors">
+                    <i data-lucide="split" class="w-3 h-3"></i>
+                    단락 대조
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tone & Style 2-Column Select -->
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-[10px] font-medium text-slate-400 mb-1">문체 (Tone)</label>
+                  <select class="w-full bg-surface-card border border-surface-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <option>학술체 (~이다/한다)</option>
+                    <option>경어체 (~합니다/하십시오)</option>
+                    <option>친근체 (~해요/있어요)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[10px] font-medium text-slate-400 mb-1">스타일 (Style)</label>
+                  <select class="w-full bg-surface-card border border-surface-border rounded-lg px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                    <option>균형 잡힌 정제 (Balanced)</option>
+                    <option>직역 중심 (Literal)</option>
+                    <option>자연스러운 의역 (Natural)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Format Stripping Pills -->
+              <div>
+                <div class="flex items-center justify-between mb-1.5">
+                  <label class="text-[11px] font-medium text-slate-400">선택적 서식 제거 (Format Stripper)</label>
+                  <span class="text-[10px] text-brand-400">서식 무손실 보호</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <button class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-brand-500/20 text-brand-300 border border-brand-500/40">
+                    ✓ 볼드체 (**) 제거
+                  </button>
+                  <button class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-card text-slate-400 border border-surface-border hover:border-slate-500">
+                    기울이기 (*)
+                  </button>
+                  <button class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-card text-slate-400 border border-surface-border hover:border-slate-500">
+                    취소선 (~~)
+                  </button>
+                  <button class="px-2.5 py-1 rounded-full text-[11px] font-medium bg-surface-card text-slate-400 border border-surface-border hover:border-slate-500">
+                    하이라이트 (==)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 3. Natural Language Instruction Box -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between px-1">
+              <label class="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                <i data-lucide="wand-2" class="w-3.5 h-3.5 text-brand-400"></i>
+                에밀리 특별 요청사항 (Custom Prompt)
+              </label>
+              <span class="text-[10px] font-mono text-slate-500">38자</span>
+            </div>
+            <div class="relative">
+              <textarea rows="3" class="w-full bg-surface-card/80 border border-surface-border rounded-xl p-3 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/30 transition-all resize-none" placeholder="에밀리에게 요청할 추가 지시를 자유롭게 입력하세요... (예: 핵심 기술 용어는 영문 병기, 불릿 리스트 요약 추가 등)">기술 용어는 괄호 안에 영문 원어를 함께 병기해 줘.</textarea>
+              <div class="absolute right-2.5 bottom-2 text-[10px] text-slate-500 flex items-center gap-1">
+                <kbd class="px-1 py-0.5 rounded bg-surface-elevated border border-surface-border text-[9px]">Ctrl</kbd>+<kbd class="px-1 py-0.5 rounded bg-surface-elevated border border-surface-border text-[9px]">Enter</kbd>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Execution Primary Action Button -->
+          <button class="w-full py-3 rounded-xl bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-semibold text-xs tracking-wide shadow-glow-sm hover:shadow-glow-md transition-all flex items-center justify-center gap-2 group">
+            <i data-lucide="sparkle" class="w-4 h-4 transition-transform group-hover:scale-110"></i>
+            <span>스마트 작업 시작하기 (Apply)</span>
+          </button>
+
+          <!-- 5. Active Result / Diff Review Card -->
+          <div class="p-3.5 rounded-xl bg-gradient-to-b from-surface-card to-surface-elevated border border-brand-500/30 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-xs font-semibold text-white">작업 완료 (Completed)</span>
+              </div>
+              <span class="text-[10px] font-mono text-slate-400">1.8s · 86 tokens/s</span>
+            </div>
+            <p class="text-[11px] text-slate-300 leading-relaxed">
+              선택한 3개 문단의 맞춤법 교열 및 학술체 한국어 번역이 정상적으로 완료되었습니다.
+            </p>
+            <div class="flex items-center gap-2 pt-1">
+              <button onclick="switchView('diff')" class="flex-1 py-1.5 px-3 rounded-lg bg-brand-600/30 hover:bg-brand-600/40 text-brand-200 border border-brand-500/40 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors">
+                <i data-lucide="git-compare" class="w-3.5 h-3.5"></i>
+                결과 비교 검토 (Review Diff)
+              </button>
+              <button class="py-1.5 px-2.5 rounded-lg bg-surface-border hover:bg-white/10 text-slate-300 text-xs transition-colors" title="문서에 즉시 반영">
+                적용
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 2: SETTINGS DASHBOARD (4-Subtab Layout Mockup)
+         ======================================================================= -->
+    <section id="view-settings" class="view-section w-full max-w-4xl hidden transition-all">
+      <div class="glass-card rounded-2xl overflow-hidden shadow-card border border-surface-border">
+        
+        <!-- Settings Header -->
+        <div class="p-6 border-b border-surface-border bg-surface-elevated/70">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                <i data-lucide="sliders" class="w-5 h-5 text-brand-400"></i>
+                Assistant Emily 환경 설정 (Settings)
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">AI 프로바이더 풀, 맞춤법/문법 교열 엔진 및 번역 정책을 기기별로 독립 관리합니다.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="switchView('modal')" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                + Add Provider
+              </button>
+            </div>
+          </div>
+
+          <!-- 4-Subtab Navigation Bar -->
+          <div class="flex items-center gap-2 border-b border-surface-border/80 -mb-6 pb-2">
+            <button class="settings-subtab-btn active px-4 py-2 rounded-t-lg text-xs font-semibold border-b-2 border-brand-500 text-white flex items-center gap-2">
+              <i data-lucide="cpu" class="w-3.5 h-3.5 text-brand-400"></i>
+              AI 프로바이더 풀 (Providers)
+            </button>
+            <button class="settings-subtab-btn px-4 py-2 rounded-t-lg text-xs font-medium text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-colors">
+              <i data-lucide="languages" class="w-3.5 h-3.5"></i>
+              번역 설정 (Translation)
+            </button>
+            <button class="settings-subtab-btn px-4 py-2 rounded-t-lg text-xs font-medium text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-colors">
+              <i data-lucide="check-check" class="w-3.5 h-3.5"></i>
+              교열 & 서식 (Proofread & Format)
+            </button>
+            <button class="settings-subtab-btn px-4 py-2 rounded-t-lg text-xs font-medium text-slate-400 hover:text-slate-200 flex items-center gap-2 transition-colors">
+              <i data-lucide="cog" class="w-3.5 h-3.5"></i>
+              일반 환경설정 (General)
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Body -->
+        <div class="p-6 space-y-4">
+
+          <!-- Device Binding Banner -->
+          <div class="p-4 rounded-xl bg-surface-card border border-surface-border flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-400 border border-brand-500/20 flex items-center justify-center">
+                <i data-lucide="laptop" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-white">현재 기기 식별자:</span>
+                  <span class="px-2 py-0.5 text-[11px] font-mono bg-surface-elevated text-brand-300 border border-brand-500/30 rounded-md">G2300227</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">OneDrive 동기화 중에도 기기별 독점 엔드포인트 및 API Key가 충돌 없이 독립 바인딩됩니다.</p>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              ✓ 독립 격리 활성
+            </span>
+          </div>
+
+          <!-- Provider Card List -->
+          <div class="space-y-3">
+            
+            <!-- Provider Card 1: Active Local Provider -->
+            <div class="rounded-xl border border-brand-500/40 bg-surface-card/70 overflow-hidden shadow-sm">
+              <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-white">HOME (집 서재 Ollama)</span>
+                      <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+                        🟢 Online (42ms)
+                      </span>
+                      <span class="px-2 py-0.5 text-[10px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 rounded-full">
+                        📍 이 기기에 적용 중
+                      </span>
+                    </div>
+                    <p class="text-xs font-mono text-slate-400 mt-1">http://localhost:11434/v1 · 3개 모델 등록됨</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="px-3 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-border text-slate-200 text-xs font-medium border border-surface-border transition-colors flex items-center gap-1.5">
+                    <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    연결 테스트
+                  </button>
+                  <button onclick="switchView('modal')" class="p-2 rounded-lg bg-surface-elevated hover:bg-surface-border text-slate-400 hover:text-white border border-surface-border transition-colors">
+                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button class="p-2 rounded-lg bg-surface-elevated hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-surface-border transition-colors">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Registered Models Pill Row -->
+              <div class="px-4 py-2.5 bg-surface-elevated/50 border-t border-surface-border/60 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2">
+                  <span class="text-slate-400 text-[11px]">기본 활성 모델:</span>
+                  <span class="px-2 py-0.5 rounded bg-surface-card border border-surface-border font-mono text-slate-200 text-[11px]">qwen2.5:32b</span>
+                  <span class="px-2 py-0.5 rounded bg-surface-card/50 border border-surface-border/50 font-mono text-slate-500 text-[11px]">llama3.2</span>
+                  <span class="px-2 py-0.5 rounded bg-surface-card/50 border border-surface-border/50 font-mono text-slate-500 text-[11px]">mistral</span>
+                </div>
+                <button class="text-xs text-brand-400 hover:text-brand-300 font-medium">+ 모델 추가/관리</button>
+              </div>
+            </div>
+
+            <!-- Provider Card 2: Cloud Fallback Provider -->
+            <div class="rounded-xl border border-surface-border bg-surface-card/40 overflow-hidden">
+              <div class="p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                  <span class="w-2.5 h-2.5 rounded-full bg-slate-500"></span>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-semibold text-slate-200">Google Gemini (Official)</span>
+                      <span class="px-2 py-0.5 text-[10px] font-semibold bg-surface-elevated text-slate-400 border border-surface-border rounded-full">
+                        ⚪ 대기 중 (Standby)
+                      </span>
+                    </div>
+                    <p class="text-xs font-mono text-slate-500 mt-1">https://generativelanguage.googleapis.com/v1beta/openai/ · 2개 모델</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="px-3 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-border text-slate-300 text-xs font-medium border border-surface-border transition-colors">
+                    이 기기에 적용
+                  </button>
+                  <button class="p-2 rounded-lg bg-surface-elevated hover:bg-surface-border text-slate-400 hover:text-white border border-surface-border transition-colors">
+                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 3: PROVIDER MODAL (Compact 2-Column Dialog Mockup)
+         ======================================================================= -->
+    <section id="view-modal" class="view-section w-full max-w-xl hidden transition-all">
+      <div class="glass-card rounded-2xl overflow-hidden shadow-2xl border border-surface-border">
+        
+        <!-- Modal Header -->
+        <div class="px-6 py-4 bg-surface-elevated border-b border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-brand-500/15 text-brand-400 flex items-center justify-center">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">Add Custom AI Provider (프로바이더 등록)</h3>
+          </div>
+          <button onclick="switchView('settings')" class="w-7 h-7 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white flex items-center justify-center">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Modal Form Body -->
+        <div class="p-6 space-y-4 text-xs">
+
+          <!-- Row 1: ID & Display Name -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-400 font-medium mb-1.5">ID (식별자) *</label>
+              <input type="text" value="ollama-desktop" class="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-brand-500" placeholder="예: ollama-local">
+            </div>
+            <div>
+              <label class="block text-slate-400 font-medium mb-1.5">Display name (표시 이름) *</label>
+              <input type="text" value="HOME (집 서재 Ollama)" class="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-brand-500" placeholder="예: HOME, 회사 PC">
+            </div>
+          </div>
+
+          <!-- Row 2: One-Click Presets -->
+          <div>
+            <label class="block text-slate-400 font-medium mb-1.5">Provider preset (원클릭 자동완성) *</label>
+            <div class="grid grid-cols-5 gap-1.5">
+              <button class="p-2 rounded-lg bg-brand-600/30 border border-brand-500/50 text-brand-200 text-center font-medium">
+                ⚡ Ollama
+              </button>
+              <button class="p-2 rounded-lg bg-surface-card hover:bg-surface-elevated border border-surface-border text-slate-400 text-center font-medium">
+                ⚡ LM Studio
+              </button>
+              <button class="p-2 rounded-lg bg-surface-card hover:bg-surface-elevated border border-surface-border text-slate-400 text-center font-medium">
+                🌐 OpenAI
+              </button>
+              <button class="p-2 rounded-lg bg-surface-card hover:bg-surface-elevated border border-surface-border text-slate-400 text-center font-medium">
+                🌐 Gemini
+              </button>
+              <button class="p-2 rounded-lg bg-surface-card hover:bg-surface-elevated border border-surface-border text-slate-400 text-center font-medium">
+                🌐 OpenRouter
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 3: Base URL -->
+          <div>
+            <label class="block text-slate-400 font-medium mb-1.5">Base URL *</label>
+            <input type="text" value="http://localhost:11434/v1" class="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-brand-500">
+          </div>
+
+          <!-- Row 4: API Key -->
+          <div>
+            <label class="block text-slate-400 font-medium mb-1.5">API key (로컬 환경은 공백 허용)</label>
+            <div class="relative">
+              <input type="password" value="" placeholder="로컬 Ollama는 공백 허용 (선택 사항)" class="w-full bg-surface-card border border-surface-border rounded-lg px-3 py-2 text-white font-mono focus:outline-none focus:border-brand-500">
+              <button class="absolute right-2.5 top-2.5 text-slate-500 hover:text-slate-300">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Collapsible Advanced Section -->
+          <div class="p-3 rounded-lg bg-surface-card/50 border border-surface-border/60">
+            <div class="flex items-center justify-between cursor-pointer text-slate-400">
+              <span class="font-medium text-[11px] flex items-center gap-1.5">
+                <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                고급 네트워크 & 헤더 옵션 (Advanced)
+              </span>
+              <span class="text-[10px] text-slate-500">requestUrl / No Stainless</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 bg-surface-elevated/70 border-t border-surface-border flex items-center justify-between">
+          <button class="px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-border text-slate-300 text-xs font-medium border border-surface-border flex items-center gap-1.5">
+            <i data-lucide="activity" class="w-3.5 h-3.5 text-emerald-400"></i>
+            통신 테스트 (Ping)
+          </button>
+          <div class="flex items-center gap-2">
+            <button onclick="switchView('settings')" class="px-4 py-1.5 rounded-lg text-slate-400 hover:text-white text-xs font-medium">취소</button>
+            <button onclick="switchView('settings')" class="px-4 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-sm">프로바이더 저장</button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =======================================================================
+         VIEW 4: INTERACTIVE DIFF REVIEW MODAL (Needleman-Wunsch Alignment Mockup)
+         ======================================================================= -->
+    <section id="view-diff" class="view-section w-full max-w-5xl hidden transition-all">
+      <div class="glass-card rounded-2xl overflow-hidden shadow-2xl border border-surface-border flex flex-col h-[750px]">
+        
+        <!-- Diff Header -->
+        <div class="px-6 py-4 bg-surface-elevated border-b border-surface-border flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-brand-600/20 text-brand-300 border border-brand-500/30 flex items-center justify-center">
+              <i data-lucide="git-compare" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h3 class="text-sm font-bold text-white">결과 대화형 비교 검토 (Diff Review)</h3>
+                <span class="px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
+                  3개 항목 감지됨
+                </span>
+              </div>
+              <p class="text-xs text-slate-400">Needleman-Wunsch 문단 1:1 정렬 · 승인된 항목만 원자적으로 치환합니다.</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1.5 rounded-lg bg-surface-card hover:bg-surface-border text-slate-300 text-xs font-medium border border-surface-border">전체 승인</button>
+            <button class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold shadow-sm">선택 항목 문서 적용</button>
+            <button onclick="switchView('sidebar')" class="w-7 h-7 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white flex items-center justify-center">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Diff Split Body -->
+        <div class="flex-1 overflow-hidden grid grid-cols-2 divide-x divide-surface-border text-xs">
+          
+          <!-- Left Column: Source (Original) -->
+          <div class="flex flex-col h-full bg-surface-card/20">
+            <div class="px-4 py-2.5 bg-surface-elevated/40 border-b border-surface-border font-semibold text-slate-400 flex items-center justify-between">
+              <span>원본 마크다운 (Original)</span>
+              <span class="text-[10px] font-mono text-slate-500">English</span>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-[11.5px] leading-relaxed text-slate-300">
+              <div class="p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                <span class="text-red-400 font-bold block mb-1">¶ 단락 1 (오탈자 및 어색한 표현)</span>
+                We needs to configured the network interfaces for each <span class="bg-red-500/20 text-red-300 px-1 py-0.5 rounded">rabbitMQ</span> clusters.
+              </div>
+              <div class="p-3 rounded-lg bg-surface-card border border-surface-border/50">
+                <span class="text-slate-400 font-bold block mb-1">¶ 단락 2 (목록 서식)</span>
+                - Describe how NetBox models facility power as discrete power panels.<br>
+                - Understand how to add Power Distribution Units (PDUs).
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Proposed (Target) -->
+          <div class="flex flex-col h-full bg-surface-card/40">
+            <div class="px-4 py-2.5 bg-surface-elevated/40 border-b border-surface-border font-semibold text-brand-300 flex items-center justify-between">
+              <span>개선 및 번역 제안 (Assistant Emily)</span>
+              <span class="text-[10px] font-mono text-brand-400">한국어 (학술체)</span>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 font-mono text-[11.5px] leading-relaxed text-slate-200">
+              <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 relative">
+                <span class="text-emerald-400 font-bold block mb-1">✓ 단락 1 교정 제안 (문법 및 고유명사 정규화)</span>
+                각 <span class="bg-emerald-500/30 text-emerald-200 px-1 py-0.5 rounded font-bold">RabbitMQ</span> 클러스터에 대해 네트워크 인터페이스를 구성해야 한다.
+                <div class="mt-2 text-[10px] text-slate-400 bg-surface-elevated/70 p-2 rounded border border-surface-border">
+                  <strong>교열 근거</strong>: 'needs to configured' 문법 오류 교정 및 'rabbitMQ' 공식 표기(RabbitMQ) 대문자 정합화.
+                </div>
+              </div>
+              <div class="p-3 rounded-lg bg-surface-card border border-brand-500/20">
+                <span class="text-brand-300 font-bold block mb-1">✓ 단락 2 번역 제안 (전문 마크다운 목록)</span>
+                - NetBox가 시설 전력을 개별 전력 패널 및 피드로 모델링하는 방식을 설명한다.<br>
+                - 전력 분배 장치(PDU)를 추가하여 개별 장치에 전원을 공급하는 방법을 이해한다.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       Footer Info
+       ========================================================================= -->
+  <footer class="py-4 text-center text-xs text-slate-500 border-t border-surface-border">
+    Assistant Emily UI/UX Redesign System · Designed with modern Glassmorphism, Tailwind CSS & Lucide Icons for Obsidian Ecosystem.
+  </footer>
+
+  <!-- =========================================================================
+       Interactive Tab Switcher Script
+       ========================================================================= -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    function switchView(viewId) {
+      // 1. Hide all view sections
+      document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+      // 2. Show active view
+      const activeSec = document.getElementById('view-' + viewId);
+      if (activeSec) {
+        activeSec.classList.remove('hidden');
+      }
+
+      // 3. Update tab button styles
+      document.querySelectorAll('.view-tab-btn').forEach(btn => {
+        btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-400');
+      });
+      const activeBtn = document.getElementById('tab-' + viewId);
+      if (activeBtn) {
+        activeBtn.classList.remove('text-slate-400');
+        activeBtn.classList.add('bg-brand-600', 'text-white', 'shadow-sm');
+      }
+
+      // Re-trigger icon rendering for dynamic components
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+  </script>
+</body>
+</html>

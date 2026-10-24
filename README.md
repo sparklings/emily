@@ -96,7 +96,13 @@ Assistant Emily의 상세 기능 소개, 대화형 시연 목업, 최신 설치 
   * 빈 줄이나 공백만 남은 불완전 청크 생성을 원천 차단하고 루프 안전 가드를 적용하여 안정적인 1:1 대조 정합성을 제공합니다.
   * 한국어 번역 시 한글 누락이나 모델 추론 독백으로 인한 비정상 절단을 감지하는 안전 가드를 탑재하여 볼트 파일 오염을 방지합니다.
 
-### 3. 마크다운 타이포그래피 및 선택적 서식 제거 (Typography & Format Stripper)
+### 3. 마크다운 타이포그래피, 옵시디언 마크다운(OFM) 자가 치유 및 선택적 서식 제거 (Typography, OFM Normalizer & Format Stripper)
+* **옵시디언 마크다운(OFM) 무손실 렌더링 자가 치유 정규화 (Obsidian Flavored Markdown Normalizer)**
+  * **헤딩(Headings) 전후 개행 자가 치유**: LLM 출력 시 헤딩(`#` ~ `######`)이 윗 문단이나 아랫 문단과 붙어서 옵시디언 렌더러에서 파싱이 깨지는 현상을 방지하기 위해 헤딩 전후 표준 개행(빈 줄)을 자동으로 확보합니다.
+  * **콜아웃(Callout) 연속성 복원**: `> [!NOTE]` 등 옵시디언 콜아웃 블록 내부에서 LLM이 둘째 줄 이후 `>` 인용 부호를 누락하더라도 문단 구조를 분석하여 콜아웃 인용 기호를 자동으로 복원·정합합니다.
+  * **OFM 전용 문법 무손실 마스킹**: 옵시디언 전용 형광펜 하이라이트(`==단어==`), 체크리스트 태스크(`- [ ]`, `- [x]`), 비공개 주석(`%%...%%`), 고유 블록 참조 ID(`^block-id`), 각주 정의(`[^1]:`), 위키링크 내부 앵커/블록 참조(`[[노트#헤딩|별칭]]`)를 100% 온전하게 마스킹하고 무손실 복원합니다.
+  * **잔여 인라인 HTML 태그 순수 마크다운 변환**: 모델이 마크다운 대신 출력하기 쉬운 잔여 HTML 태그(`<br>`, `<b>`, `<strong>`, `<i>`, `<em>`, `<mark>`, `<code>`)를 감지하여 각각 표준 마크다운 및 옵시디언 하이라이트(`==...==`)로 자동 변환합니다.
+  * **GFM 테이블(Table) 및 체크리스트 정규화**: 표 행 사이에 잘못 삽입된 빈 줄을 제거하여 테이블 붕괴를 방지하고, `-[]`처럼 붙어있는 태스크 체크박스 공백을 `- [ ] ` 표준 형태로 규격화합니다.
 * **선택적 마크다운 서식 제거 (Selective Markdown Format Stripping)**
   * 복사해 온 웹 아티클이나 번역 문서에서 **볼드체(`**`), 기울이기(`*`), 취소선(`~~`), 형광펜 하이라이트(`==`)** 4종 서식을 체크박스로 선택하여 본문에서 즉시 제거할 수 있습니다.
   * 4개 항목 중 전체 또는 일부를 자유롭게 선택 적용할 수 있으며, 설정 화면(`Settings > Assistant Emily`)에서 기본 활성값을 지정할 수 있습니다.
@@ -383,7 +389,13 @@ Comprehensive user guides, interactive UI mockups, and the latest installation w
   * Completely prevents the generation of blank or incomplete chunks, ensuring robust 1:1 bilingual contrast alignment.
   * Equipped with an integrity safety guard that detects missing target language text or unclosed reasoning monologues, preventing corrupt files from polluting your vault.
 
-### 3. Markdown Typography & Selective Format Stripper
+### 3. Markdown Typography, Obsidian Flavored Markdown (OFM) Normalizer & Format Stripper
+* **Obsidian Flavored Markdown (OFM) Self-Healing Normalizer**:
+  * **Headings Newline Self-Healing**: Automatically ensures standard empty lines before and after headings (`#`–`######`), preventing Obsidian parser glitch where headings fuse into adjacent paragraphs.
+  * **Callout Continuity Restoration**: Automatically recovers missing `>` quote prefixes across subsequent lines within Obsidian callouts (e.g. `> [!NOTE]`), eliminating layout breakdown.
+  * **OFM Extended Syntax Masking & Lossless Restoration**: 100% preserves Obsidian highlights (`==text==`), task checkboxes (`- [ ]`, `- [x]`), private comments (`%%...%%`), block IDs (`^block-id`), footnote definitions (`[^1]:`), and wikilink section anchors (`[[Note#Heading|Alias]]`).
+  * **HTML-to-Markdown Inline Transpiler**: Converts leaked HTML tags (`<br>`, `<b>`, `<strong>`, `<i>`, `<em>`, `<mark>`, `<code>`) directly into clean native Markdown and Obsidian highlights (`==...==`).
+  * **GFM Table & Checklist Normalization**: Removes spurious blank lines within table rows to keep tables intact, and formats tight task boxes (`-[]`) into standard `- [ ] `.
 * **Selective Markdown Format Stripping**:
   * Effortlessly strip bold (`**`), italic (`*`), strikethrough (`~~`), and highlight (`==`) syntax from imported articles or translations using clean checkboxes.
   * Select any combination or all 4 formatting types, and customize the default selection under `Settings > Assistant Emily`.

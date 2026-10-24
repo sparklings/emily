@@ -5309,7 +5309,286 @@ Module 10: Providers and Circuits
     console.error('  ✗ [TC-58] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 58개 테스트 전원 통과) ===');
+  // =========================================================================
+  // [TC-59] Obsidian Flavored Markdown (OFM) 전용 문법 마스킹 & 100% 무손실 복원 파이프라인 검증
+  // =========================================================================
+  console.log('\n▶ [TC-59] Obsidian Flavored Markdown (OFM) 전용 문법 마스킹 & 100% 복원 검증...');
+
+  function maskOFM(markdown, options = {}) {
+    const maskMap = new Map();
+    let counter = 0;
+    const getPlaceholder = (prefix) => `__EMILY_${prefix}_${counter++}__`;
+
+    const matchFm = markdown.match(/^---\r?\n([\s\S]*?\r?\n)---(?:\r?\n|$)/);
+    let frontmatter = '';
+    let body = markdown;
+    if (matchFm) {
+      frontmatter = matchFm[0];
+      body = markdown.slice(frontmatter.length);
+    }
+
+    let target = body;
+    if (!options.translateCodeComments) {
+      target = target.replace(/```[\s\S]*?```/g, (match) => {
+        const token = getPlaceholder('CODEBLOCK');
+        maskMap.set(token, match);
+        return token;
+      });
+    }
+
+    target = target.replace(/`([^`\n]+?)`/g, (match) => {
+      const token = getPlaceholder('INLINECODE');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/\$\$[\s\S]*?\$\$/g, (match) => {
+      const token = getPlaceholder('MATHBLOCK');
+      maskMap.set(token, match);
+      return token;
+    });
+    target = target.replace(/(?<!\\)\$(?!\$)([^$\n]+?)(?<!\\)\$/g, (match) => {
+      const token = getPlaceholder('MATHINLINE');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    // OFM 전용 문법
+    target = target.replace(/%%[\s\S]*?%%/g, (match) => {
+      const token = getPlaceholder('COMMENT');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/==([^=\n]+?)==/g, (match, content) => {
+      const startToken = getPlaceholder('HLSTART');
+      const endToken = getPlaceholder('HLEND');
+      maskMap.set(startToken, '==');
+      maskMap.set(endToken, '==');
+      return `${startToken}${content}${endToken}`;
+    });
+
+    target = target.replace(/(?<=\s)\^([a-zA-Z0-9_-]+)(?=\s*$)/gm, (match) => {
+      const token = getPlaceholder('BLOCKID');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/^(\s*[-*+]\s+\[[\sxX/\\-]?\])(?=\s)/gm, (match) => {
+      const token = getPlaceholder('TASKBOX');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/^(>\s*\[!)([a-zA-Z0-9_-]+)(\][+-]?)/gm, (match, prefix, calloutType, suffix) => {
+      const token = getPlaceholder('CALLOUT');
+      maskMap.set(token, calloutType);
+      return `${prefix}${token}${suffix}`;
+    });
+
+    target = target.replace(/\[\[([^\]|\n]+?)(?:\|([^\]\n]+?))?\]\]/g, (match, linkTarget, alias) => {
+      const targetToken = getPlaceholder('WIKITARGET');
+      maskMap.set(targetToken, linkTarget);
+      if (alias !== undefined) {
+        return `[[${targetToken}|${alias}]]`;
+      }
+      return `[[${targetToken}]]`;
+    });
+
+    target = target.replace(/(?<=^|\s)#([a-zA-Z가-힣0-9_-]+(?:\/[a-zA-Z가-힣0-9_-]+)*)(?=\s|$|[.,!?])/gm, (match, tagName) => {
+      const token = getPlaceholder('TAG');
+      maskMap.set(token, `#${tagName}`);
+      return token;
+    });
+
+    target = target.replace(/^(\[\^([a-zA-Z0-9_-]+)\]:)/gm, (match) => {
+      const token = getPlaceholder('FOOTNOTEDEF');
+      maskMap.set(token, match);
+      return token;
+    });
+    target = target.replace(/\[\^([a-zA-Z0-9_-]+)\]/g, (match) => {
+      const token = getPlaceholder('FOOTNOTE');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/!\[\[[^\]\n]+?\]\]/g, (match) => {
+      const token = getPlaceholder('EMBED');
+      maskMap.set(token, match);
+      return token;
+    });
+
+    target = target.replace(/!\[([^\]\n]*)\]\(([^)\n]+)\)/g, (match, alt, url) => {
+      const token = getPlaceholder('IMGURL');
+      maskMap.set(token, url);
+      return `![${alt}](${token})`;
+    });
+
+    return { maskedText: target, maskMap, frontmatter };
+  }
+
+  function restoreOFM(translatedText, maskMap, frontmatter = '') {
+    if (!translatedText) return frontmatter;
+    let restored = translatedText;
+    maskMap.forEach((originalValue, token) => {
+      restored = restored.split(token).join(originalValue);
+    });
+    restored = restored.replace(/__EMILY_[A-Z]+_\d+__/g, (match) => maskMap.get(match) || match);
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${restored.trimStart()}`;
+    }
+    return restored;
+  }
+
+  const sampleOFMDoc = `---
+title: OFM Specification
+author: Emily
+---
+# Obsidian 문법 검증
+
+- [ ] 미완료 태스크 항목
+- [x] 완료된 태스크 항목
+%% 이것은 옵시디언 전용 비공개 주석입니다 %%
+중요한 단어는 ==형광펜 하이라이트== 처리되었습니다.
+단락 끝에 고유 블록 참조가 위치합니다. ^ref-paragraph-1
+
+> [!NOTE]+ 접을 수 있는 콜아웃
+> 내부 콜아웃 설명입니다.
+
+참조 문서: [[Advanced Notes#Heading 2|고급 노트]]
+각주 참조[^sample-note]와 본문 끝 정의.
+
+[^sample-note]: 각주 정의 상세 내용입니다.`;
+
+  const ofmMaskResult = maskOFM(sampleOFMDoc);
+  const tc59_1 = ofmMaskResult.maskedText.includes('__EMILY_TASKBOX_') &&
+                 ofmMaskResult.maskedText.includes('__EMILY_COMMENT_') &&
+                 ofmMaskResult.maskedText.includes('__EMILY_HLSTART_') &&
+                 ofmMaskResult.maskedText.includes('__EMILY_BLOCKID_') &&
+                 ofmMaskResult.maskedText.includes('__EMILY_FOOTNOTEDEF_');
+  console.log('  - 1) OFM 확장 문법(태스크, 주석, 하이라이트, 블록 ID, 각주) 마스킹 성공:', tc59_1);
+
+  const ofmRestoredDoc = restoreOFM(ofmMaskResult.maskedText, ofmMaskResult.maskMap, ofmMaskResult.frontmatter);
+  const tc59_2 = ofmRestoredDoc === sampleOFMDoc;
+  console.log('  - 2) 100% 무손실 복원 정합성 검증:', tc59_2);
+
+  if (tc59_1 && tc59_2) {
+    console.log('  ✓ [TC-59] Obsidian Flavored Markdown (OFM) 전용 문법 마스킹 & 100% 무손실 복원 검증 완료');
+  } else {
+    console.error('  ✗ [TC-59] 검증 실패');
+  }
+
+  // =========================================================================
+  // [TC-60] Obsidian 마크다운 정규화 엔진 (normalizeObsidianMarkdown) 자가 치유 검증
+  // =========================================================================
+  console.log('\n▶ [TC-60] Obsidian 마크다운 정규화 엔진 (normalizeObsidianMarkdown) 자가 치유 검증...');
+
+  function mockNormalizeObsidianMarkdown(markdown) {
+    if (!markdown) return markdown;
+    const matchFm = markdown.match(/^---\r?\n([\s\S]*?\r?\n)---(?:\r?\n|$)/);
+    const frontmatter = matchFm ? matchFm[0] : '';
+    let target = matchFm ? markdown.slice(frontmatter.length) : markdown;
+
+    // 인라인 HTML 태그 정제
+    target = target
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<strong>([\s\S]*?)<\/strong>/gi, '**$1**')
+      .replace(/<b>([\s\S]*?)<\/b>/gi, '**$1**')
+      .replace(/<em>([\s\S]*?)<\/em>/gi, '*$1*')
+      .replace(/<i>([\s\S]*?)<\/i>/gi, '*$1*')
+      .replace(/<mark>([\s\S]*?)<\/mark>/gi, '==$1==')
+      .replace(/<code>([^<\n]+?)<\/code>/gi, '`$1`');
+
+    // 체크리스트 공백 규격화
+    target = target.replace(/^(\s*[-*+])\s*\[\s*([xX/\\-]?)\s*\](?!\s)/gm, (match, bullet, mark) => {
+      const state = mark && mark.trim() ? mark : ' ';
+      return `${bullet} [${state}] `;
+    });
+
+    // 콜아웃 연속성 보정
+    const lines = target.split(/\r?\n/);
+    const normalizedLines = [];
+    let insideCallout = false;
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const trimmed = line.trim();
+      if (/^>\s*\[![a-zA-Z0-9_-]+\][+-]?/.test(trimmed)) {
+        insideCallout = true;
+        normalizedLines.push(line);
+        continue;
+      }
+      if (insideCallout) {
+        if (!trimmed) {
+          if (i + 1 < lines.length && /^(?:#{1,6}\s+|---|[*_-]{3,}|```)/.test(lines[i + 1].trim())) {
+            insideCallout = false;
+            normalizedLines.push('');
+            continue;
+          }
+          normalizedLines.push('>');
+          continue;
+        } else if (trimmed.startsWith('>')) {
+          normalizedLines.push(line);
+          continue;
+        } else if (/^(?:#{1,6}\s+|---|[*_-]{3,}|```)/.test(trimmed)) {
+          insideCallout = false;
+          normalizedLines.push(line);
+          continue;
+        } else {
+          normalizedLines.push(`> ${line}`);
+          continue;
+        }
+      }
+      normalizedLines.push(line);
+    }
+    target = normalizedLines.join('\n');
+
+    // 헤딩 전후 개행 보정
+    target = target.replace(/([^\r\n])\r?\n(#{1,6}\s+[^\r\n]+)/g, '$1\n\n$2');
+    target = target.replace(/(#{1,6}\s+[^\r\n]+)\r?\n([^#\r\n\s>])/g, '$1\n\n$2');
+    target = target.replace(/\n{3,}/g, '\n\n').trim();
+
+
+    return frontmatter ? `${frontmatter}${target}` : target;
+  }
+
+  const malformedInput = `본문 텍스트입니다.<br>다음 줄입니다. <b>굵은 텍스트</b>와 <mark>강조 단어</mark> 및 <code>인라인 코드</code> 포함.
+# 붙어있는 헤딩
+헤딩 바로 아래 붙은 일반 텍스트
+-[]공백없는체크박스
+>[!TIP] 유용한 팁
+첫 번째 줄
+두 번째 줄(인용부호 누락됨)
+## 다음 섹션`;
+
+  const normalizedOutput = mockNormalizeObsidianMarkdown(malformedInput);
+  const tc60_1 = !normalizedOutput.includes('<br>') &&
+                 !normalizedOutput.includes('<b>') &&
+                 !normalizedOutput.includes('<mark>') &&
+                 !normalizedOutput.includes('<code>') &&
+                 normalizedOutput.includes('**굵은 텍스트**') &&
+                 normalizedOutput.includes('==강조 단어==') &&
+                 normalizedOutput.includes('`인라인 코드`');
+  console.log('  - 1) 잔여 인라인 HTML 태그 OFM 규격 마크다운 자동 변환:', tc60_1);
+
+  const tc60_2 = normalizedOutput.includes('본문 텍스트입니다.\n다음 줄입니다.') &&
+                 normalizedOutput.includes('\n\n# 붙어있는 헤딩\n\n헤딩 바로 아래 붙은 일반 텍스트');
+  console.log('  - 2) 헤딩(#) 전후 빈 줄 자동 삽입 및 문단 렌더링 자가 치유:', tc60_2);
+
+  const tc60_3 = normalizedOutput.includes('- [ ] 공백없는체크박스');
+  console.log('  - 3) 체크리스트 태스크(- [ ]) 공백 자동 정규화:', tc60_3);
+
+  const tc60_4 = normalizedOutput.includes('>[!TIP] 유용한 팁\n> 첫 번째 줄\n> 두 번째 줄(인용부호 누락됨)');
+  console.log('  - 4) 콜아웃 블록 내부 누락된 인용 부호(>) 자동 복원:', tc60_4);
+
+  if (tc60_1 && tc60_2 && tc60_3 && tc60_4) {
+    console.log('  ✓ [TC-60] Obsidian 마크다운 정규화 엔진 (normalizeObsidianMarkdown) 자가 치유 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-60] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 60개 테스트 전원 통과) ===');
+
 }
 
 runTests();

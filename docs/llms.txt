@@ -19,9 +19,30 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
    - 문단을 분할하여 원문 문단 하단에 번역 문단을 1:1로 배치.
    - 원문과 번역문을 대조하며 읽을 수 있는 문서 형식 생성.
 
-2. **마크다운 서식 토큰 보호 번역**:
-   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`, `$$...$$`), 콜아웃(`> [!note]`), 코드 블록을 UUID 토큰으로 마스킹한 후 번역 수행.
-   - 번역 완료 후 토큰을 원래 서식으로 복원.
+2. **마크다운 서식 토큰 보호 번역 및 OFM 무손실 자가 치유 정규화**:
+   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...# Assistant Emily - 옵시디언 번역 및 마크다운 서식 보존 교열 플러그인 (Obsidian Translation & Proofreading)
+
+> 옵시디언(Obsidian) 환경에서 마크다운 서식을 보존하며 번역 및 교열을 수행하는 커뮤니티 플러그인입니다.
+> Markdown-preserving translation and proofreading plugin for Obsidian.
+
+Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud APIs to perform markdown translation, proofreading, and bilingual parallel alignment while preserving Obsidian-specific markdown syntax.
+
+- **Website**: https://sparklings.github.io/emily/
+- **GitHub**: https://github.com/sparklings/emily
+- **Obsidian Community Plugin ID**: `assistant-emily`
+- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역
+- **License**: MIT
+- **Author**: SUNGWON PARK (sparklings)
+- **Version**: 1.0.22
+
+## 주요 기능 (Features)
+
+1. **단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode)**:
+   - 문단을 분할하여 원문 문단 하단에 번역 문단을 1:1로 배치.
+   - 원문과 번역문을 대조하며 읽을 수 있는 문서 형식 생성.
+
+, `$...$`), 콜아웃(`> [!note]`), 코드 블록, 형광펜 하이라이트(`==단어==`), 체크리스트 태스크(`- [ ]`, `- [x]`), 비공개 주석(`%%...%%`), 블록 식별자(`^block-id`), 각주 정의(`[^1]:`)를 UUID 토큰으로 마스킹한 후 번역 및 편집 수행.
+   - 번역 완료 후 토큰을 원래 서식으로 100% 무손실 복원하며, 헤딩 전후 개행 보정, 콜아웃 인용 부호(>) 연속성 복원, 잔여 인라인 HTML 태그 정제 등 옵시디언 마크다운(OFM) 표준 렌더링 자가 치유를 자동 적용.
 
 3. **선택적 마크다운 서식 제거 (Selective Format Stripping)**:
    - 볼드(`**`), 기울임(`*`), 취소선(`~~`), 하이라이트(`==`) 서식 중 사용자가 선택한 항목을 문서에서 제거.
