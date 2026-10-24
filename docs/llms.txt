@@ -8,7 +8,7 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
 - **Website**: https://sparklings.github.io/emily/
 - **GitHub**: https://github.com/sparklings/emily
 - **Obsidian Community Plugin ID**: `assistant-emily`
-- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역
+- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역, OFM 자가 치유
 - **License**: MIT
 - **Author**: SUNGWON PARK (sparklings)
 - **Version**: 1.1.0
@@ -20,70 +20,63 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
    - 원문과 번역문을 대조하며 읽을 수 있는 문서 형식 생성.
 
 2. **마크다운 서식 토큰 보호 번역 및 OFM 무손실 자가 치유 정규화**:
-   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...# Assistant Emily - 옵시디언 번역 및 마크다운 서식 보존 교열 플러그인 (Obsidian Translation & Proofreading)
-
-> 옵시디언(Obsidian) 환경에서 마크다운 서식을 보존하며 번역 및 교열을 수행하는 커뮤니티 플러그인입니다.
-> Markdown-preserving translation and proofreading plugin for Obsidian.
-
-Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud APIs to perform markdown translation, proofreading, and bilingual parallel alignment while preserving Obsidian-specific markdown syntax.
-
-- **Website**: https://sparklings.github.io/emily/
-- **GitHub**: https://github.com/sparklings/emily
-- **Obsidian Community Plugin ID**: `assistant-emily`
-- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역
-- **License**: MIT
-- **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.0.22
-
-## 주요 기능 (Features)
-
-1. **단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode)**:
-   - 문단을 분할하여 원문 문단 하단에 번역 문단을 1:1로 배치.
-   - 원문과 번역문을 대조하며 읽을 수 있는 문서 형식 생성.
-
-, `$...$`), 콜아웃(`> [!note]`), 코드 블록, 형광펜 하이라이트(`==단어==`), 체크리스트 태스크(`- [ ]`, `- [x]`), 비공개 주석(`%%...%%`), 블록 식별자(`^block-id`), 각주 정의(`[^1]:`)를 UUID 토큰으로 마스킹한 후 번역 및 편집 수행.
+   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`), 콜아웃(`> [!note]`), 코드 블록, 형광펜 하이라이트(`==단어==`), 체크리스트 태스크(`- [ ]`, `- [x]`), 비공개 주석(`%%...%%`), 블록 식별자(`^block-id`), 각주 정의(`[^1]:`)를 UUID 토큰으로 마스킹한 후 번역 및 편집 수행.
    - 번역 완료 후 토큰을 원래 서식으로 100% 무손실 복원하며, 헤딩 전후 개행 보정, 콜아웃 인용 부호(>) 연속성 복원, 잔여 인라인 HTML 태그 정제 등 옵시디언 마크다운(OFM) 표준 렌더링 자가 치유를 자동 적용.
 
-3. **선택적 마크다운 서식 제거 (Selective Format Stripping)**:
+3. **복합 영상 스크립트 타임스탬프 선제적 정규식 제거**:
+   - `18:11·`, `거예요.18:19·` 등 유튜브/영상 대본의 타임스탬프 및 특수 기호를 번역/교열 파이프라인 진입 전 코드 레벨에서 선제적으로 100% 완전 제거하고 끊어진 문단을 자연스럽게 자동 결합.
+
+4. **한국어 번역 시 중국어(간체자) 유출 방지 및 자가 치유**:
+   - 다국어/중국계 오픈소스 LLM(DeepSeek, Qwen 등) 사용 시 발생하는 중국어 간체 어휘(예: `我们所拥有的` ➔ `우리가 가진 것`)를 코드 레벨에서 자동 치환 정제하고, 100% 순수 한국어 강제 가드레일(`Strict Pure Korean`)을 탑재.
+
+5. **LLM Proxy 통신 실패(502 등) 시 상단 Notice 억제 및 직관적 작업 안내**:
+   - LLM Proxy 사용 중 502 Bad Gateway 또는 네트워크 미도달 오류 발생 시 불필요한 상단 팝업 알람(`Notice`)을 억제하고, 사이드바 타임라인(Step 2)과 전용 에러 배너(`.is-proxy-error`)에 프록시 점검 가이드를 명확히 표시.
+
+6. **번역 범위 기본값 '전체 문서 번역(all)' 최적화**:
+   - 플러그인 초기 설정 및 사이드바 번역 세그먼트 버튼의 기본 범위를 '전체 문서 번역'으로 설정하여 문서를 열고 즉시 전체 번역을 실행할 수 있도록 UX 개선.
+
+7. **오류 재시작 시 버튼 즉시 비활성화 및 중복 실행 방지**:
+   - 오류 카드의 [재시작하기] 클릭 즉시 버튼을 `disabled` 및 `⏳ 재시작 진행 중...`으로 전환하고, 중복 클릭 방지 CSS 가드레일 적용.
+
+8. **선택적 마크다운 서식 제거 (Selective Format Stripping)**:
    - 볼드(`**`), 기울임(`*`), 취소선(`~~`), 하이라이트(`==`) 서식 중 사용자가 선택한 항목을 문서에서 제거.
    - 코드 블록, 인라인 코드, LaTeX 수식, 프론트매터는 보존.
 
-4. **선택 영역 교열 (Selection-Scoped Proofreading)**:
+9. **선택 영역 교열 (Selection-Scoped Proofreading)**:
    - 에디터에서 텍스트를 선택한 경우 선택 영역만 교열 수행 (미선택 시 전체 문서 대상).
    - 선택 영역만 교체(`replaceRange`)하여 비선택 본문의 변경을 방지.
 
-5. **코드 블록 주석 번역**:
-   - 코드 구문은 유지하고 주석(`//`, `#`, `/* ... */`) 영역을 번역.
+10. **코드 블록 주석 번역**:
+    - 코드 구문은 유지하고 주석(`//`, `#`, `/* ... */`) 영역만 대상 언어로 번역.
 
-6. **사용자 정의 용어집 (Glossary)**:
-   - 사전 정의된 용어 매핑을 프롬프트에 전달하여 지정된 번역어로 처리.
+11. **사용자 정의 용어집 (Glossary)**:
+    - 사전 정의된 용어 매핑을 프롬프트에 전달하여 지정된 번역어로 일관되게 처리.
 
-7. **동일 언어 편집 (Same-Language Mode)**:
-   - 출발어와 도착어가 같을 경우(예: 한국어 -> 한국어) 어조(학술체, 경어체, 친근체)에 맞추어 문장 다듬기 수행.
+12. **동일 언어 편집 (Same-Language Mode)**:
+    - 출발어와 도착어가 같을 경우(예: 한국어 -> 한국어) 어조(학술체, 경어체, 친근체)에 맞추어 문장 다듬기 수행.
 
-8. **대화형 Diff 검토**:
-   - Needleman-Wunsch 알고리즘을 활용한 원문-결과문 대조 뷰어 제공 및 항목별 선택 적용.
+13. **대화형 Diff 검토**:
+    - Needleman-Wunsch 알고리즘을 활용한 원문-결과문 대조 뷰어 제공 및 항목별 선택 적용.
 
-9. **반응형 세그먼트 버튼**:
-   - 사이드바 너비 축소 시 텍스트를 아이콘으로 축약 표시.
+14. **반응형 세그먼트 버튼**:
+    - 사이드바 너비 축소 시 텍스트를 아이콘으로 축약 표시.
 
-10. **스마트 청킹 (2,500자 단위 분할)**:
+15. **스마트 청킹 (2,500자 단위 분할)**:
     - 긴 문서를 문단 경계 기준 2,500자 내외로 분할 번역하여 모델 출력 토큰 한계 대응.
 
-11. **추론 과정(CoT) 및 초안 텍스트 필터링**:
-    - DeepSeek R1 등 추론 모델의 `<think>` 태그 및 초안 텍스트를 결과물에서 제거.
+16. **추론 과정(CoT) 및 초안 텍스트 필터링**:
+    - DeepSeek R1 등 추론 모델의 `<think>` 태그 및 초안 텍스트를 결과물에서 완전 제거.
     - OpenRouter 추론 모델 대상 `reasoning: { effort: 'none', exclude: true }` 옵션 적용.
 
-12. **설정 화면 4대 서브탭 및 AI 프로바이더 관리**:
+17. **설정 화면 4대 서브탭 및 AI 프로바이더 관리**:
     - 4대 독립 서브탭(AI 프로바이더, 번역 설정, 교열 & 서식, 일반 & UI) 구조.
     - Ollama, OpenAI, Gemini 등 원클릭 프리셋 자동완성 및 실시간 헬스체크 뱃지(온라인/오프라인) 지원.
     - 옵시디언 1.13+ 선언형 설정 검색(`getSettingDefinitions`) 지원.
     - 기기 식별자 기반의 독립 프로바이더 바인딩을 통한 OneDrive/클라우드 설정 충돌 방지.
     - 외부 분석(Telemetry) 전송 없이 로컬 또는 지정된 API와 직접 통신.
 
-13. **공식 옵시디언 린터 준수 및 빌드 보안 최신화**:
-    - eslint-plugin-obsidianmd 공식 룰셋 도입, UI Sentence case 표준화 및 식별자 기반 에러 로깅 일원화.
-    - esbuild ^0.25.0 업그레이드로 빌드 툴체인 보안 취약점 완전 패치.
+18. **배포 환경 격리 및 안전 가드레일**:
+    - 배포 대상을 `PlugVaults`로 제한하고, 실사용 볼트인 `ObsidianVaults`로의 배포를 물리적으로 원천 차단.
 
 ## 설치 방법 (Installation)
 
@@ -100,10 +93,10 @@ Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-c
 ## 자주 묻는 질문 (FAQ)
 
 ### Q: 마크다운 서식이나 위키링크가 유지되나요?
-A: YAML 프론트매터, [[위키링크]], LaTeX 수식, 콜아웃, 코드 블록을 고유 토큰으로 마스킹한 뒤 번역 및 교열을 수행하여 원본 서식을 복원합니다.
+A: YAML 프론트매터, [[위키링크]], LaTeX 수식, 콜아웃, 코드 블록을 고유 토큰으로 마스킹한 뒤 번역 및 교열을 수행하여 원본 서식을 복원합니다. 또한 옵시디언 마크다운 정규화 엔진이 헤딩 전후 개행과 콜아웃 부호를 자동 치유합니다.
 
 ### Q: 원문과 번역문을 함께 볼 수 있나요?
 A: '단락별 1:1 대조' 모드를 선택하면 각 문단 아래에 번역 문단이 함께 배치됩니다.
 
 ### Q: 개인정보나 볼트 데이터가 외부 서버로 전송되나요?
-A: 별도의 중계 서버를 운영하지 않으며, 사용자가 설정한 로컬 LLM 또는 API 엔드포인트로만 데이터가 직접 전송됩니다. Telemetry나 사용자 추적 코드는 포함되지 않습니다.
+A: 별도의 중계 서버를 운영하지 않으며, 사용자가 설정한 로컬 LLM 또는 API 엔드포인트로만 데이터가 직접 전송됩니다. Telemetry나 사용자 추적 코드는 전혀 포함되지 않습니다.

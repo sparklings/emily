@@ -449,9 +449,9 @@ updated: 2026-09-14
         <!-- Feature 1 -->
         <article class="feature-card">
           <div class="feature-icon">🛡️</div>
-          <h3 class="feature-title">마크다운 서식 마스킹 보존</h3>
+          <h3 class="feature-title">OFM 서식 보존 및 자가 치유 정규화</h3>
           <p class="feature-desc">
-            YAML 프론트매터, 옵시디언 <code>[[위키링크]]</code>, <code>#태그</code>, LaTeX 수식(<code>$...$</code>), 콜아웃 블록(<code>&gt; [!note]</code>), 코드 블록을 고유 UUID 토큰으로 마스킹한 후 AI 처리를 수행하여 서식을 보호합니다.
+            YAML 프론트매터, <code>[[위키링크]]</code>, <code>#태그</code>, LaTeX 수식(<code>$...$</code>), 콜아웃(<code>&gt; [!note]</code>), 코드 블록, 형광펜(<code>==단어==</code>), 태스크(<code>- [ ]</code>)를 UUID 토큰으로 완벽 보존하며, 헤딩 전후 개행 보정 및 콜아웃 부호 연속성을 자가 치유합니다.
           </p>
         </article>
 
@@ -467,9 +467,9 @@ updated: 2026-09-14
         <!-- Feature 3 -->
         <article class="feature-card">
           <div class="feature-icon">🌐</div>
-          <h3 class="feature-title">맥락 인식 번역 모드</h3>
+          <h3 class="feature-title">맥락 인식 번역 모드 (기본: 전체 번역)</h3>
           <p class="feature-desc">
-            선택 영역 번역, 문서 전체 번역, <strong>단락별 1:1 대조 병렬 번역(Paragraph Bilingual)</strong>을 지원합니다. 출발어와 도착어가 같을 경우 스타일 편집 모드로 자동 전환됩니다.
+            기본값으로 최적화된 <strong>전체 문서 번역</strong>, 선택 영역 번역, <strong>단락별 1:1 대조 병렬 번역(Paragraph Bilingual)</strong>을 지원합니다. 출발어와 도착어가 같을 경우 스타일 편집 모드로 자동 전환됩니다.
           </p>
         </article>
 
@@ -533,6 +533,24 @@ updated: 2026-09-14
           <h3 class="feature-title">2,500자 분할 청킹 및 무결성 보존 가드</h3>
           <p class="feature-desc">
             모델의 단일 출력 토큰 제한에 대비해 긴 문서를 2,500자 단위로 분할하여 번역합니다. 빈 청크 생성 방지 및 결과 검증 단계를 포함합니다.
+          </p>
+        </article>
+
+        <!-- Feature 11 -->
+        <article class="feature-card">
+          <div class="feature-icon">⏱️</div>
+          <h3 class="feature-title">영상 타임스탬프 제거 &amp; 중국어 유출 방지</h3>
+          <p class="feature-desc">
+            유튜브/스크립트의 <code>18:11·</code> 등 복합 타임스탬프를 코드 레벨에서 선제적으로 완전 제거하며, 다국어 LLM에서 발생하는 중국어 간체 어휘를 자동 치환하는 순수 한국어 가드레일을 적용합니다.
+          </p>
+        </article>
+
+        <!-- Feature 12 -->
+        <article class="feature-card">
+          <div class="feature-icon">🔌</div>
+          <h3 class="feature-title">LLM Proxy 연결 보호 &amp; 직관적 실패 안내</h3>
+          <p class="feature-desc">
+            LLM Proxy 사용 중 502 Bad Gateway 등 통신 장애 발생 시 상단 팝업 알람(Notice)을 선제적으로 억제하고, 사이드바 에러 카드와 타임라인에 프록시 점검 가이드를 명확히 표시합니다.
           </p>
         </article>
       </div>
