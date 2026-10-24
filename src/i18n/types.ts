@@ -306,6 +306,7 @@ export interface TranslationStrings {
     statusError: string;
     errorOccurredTitle: string;
     contextLimitTitle: string;
+    proxyErrorTitle: string;
     cancelSuccess: string;
     noTargetDocNotice: string;
     emptyDocNotice: string;
@@ -373,11 +374,13 @@ export interface TranslationStrings {
     proofreadCancelNotice: string;
     contextLimitDesc: string;
     genericErrorDesc: string;
+    proxyErrorDesc: string;
     systemErrorMsg: string;
     contextLimitUserNotice: string;
     taskFailedUserNotice: string;
     stepInitErrorMsg: string;
     stepOperationErrorMsg: string;
+    stepProxyErrorMsg: string;
     stepSyncErrorMsg: string;
     detectDoneDesc: string;
     runningChunkDesc: string;

@@ -1750,19 +1750,23 @@ export class EmilySidebarView extends ItemView {
       const rawMsg = err instanceof Error ? err.message : String(err);
       console.error('[Assistant Emily] 작업 실패 (Pipeline execution failed):', rawMsg);
       const isContextOrSizeError = /context|chunk|memory|token|length|too large|413|rate_limit|exceeded|payload|overflow|maximum context/i.test(rawMsg);
+      const isProxyOrNetworkError = /LLM 통신 실패|status 502|status 503|status 504|Bad Gateway|fetch failed|ECONNREFUSED|ETIMEDOUT|Network Error|Gateway Timeout|Service Unavailable|proxy|connect|socket/i.test(rawMsg);
 
-      const userNotice = isContextOrSizeError
-        ? t.sidebar.contextLimitUserNotice.replace('{msg}', rawMsg)
-        : t.sidebar.taskFailedUserNotice.replace('{msg}', rawMsg);
+      // LLM Proxy 도달 실패 및 통신 실패 시에는 방해되는 상단 알람(Notice) 대신 작업 메시지(에러 카드/타임라인)로 상세 안내
+      if (!isProxyOrNetworkError) {
+        const userNotice = isContextOrSizeError
+          ? t.sidebar.contextLimitUserNotice.replace('{msg}', rawMsg)
+          : t.sidebar.taskFailedUserNotice.replace('{msg}', rawMsg);
 
-      new Notice(userNotice, 8000);
+        new Notice(userNotice, 8000);
+      }
 
       // 1. Mark Pipeline Status Badge as Error
       const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
       if (badgeEl) {
         badgeEl.className = 'emily-badge is-error';
         badgeEl.empty();
-        badgeEl.createSpan({ text: t.sidebar.statusError });
+        badgeEl.createSpan({ text: isProxyOrNetworkError ? t.sidebar.statusError : t.sidebar.statusError });
         badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
       }
 
@@ -1772,7 +1776,10 @@ export class EmilySidebarView extends ItemView {
       const step3 = statusBoxEl.querySelector('#step-3') as HTMLElement;
 
       if (step2?.classList.contains('is-active') || (step2?.classList.contains('is-pending') && !step1?.classList.contains('is-active'))) {
-        this.updateTimelineStep(step2, 'error', undefined, t.sidebar.stepOperationErrorMsg.replace('{msg}', rawMsg));
+        const step2ErrorMsg = isProxyOrNetworkError
+          ? t.sidebar.stepProxyErrorMsg.replace('{msg}', rawMsg)
+          : t.sidebar.stepOperationErrorMsg.replace('{msg}', rawMsg);
+        this.updateTimelineStep(step2, 'error', undefined, step2ErrorMsg);
       } else if (step3?.classList.contains('is-active') || step3?.classList.contains('is-pending')) {
         this.updateTimelineStep(step3, 'error', undefined, t.sidebar.stepSyncErrorMsg.replace('{msg}', rawMsg));
       } else if (step1?.classList.contains('is-active')) {
@@ -1781,12 +1788,19 @@ export class EmilySidebarView extends ItemView {
 
       // 3. Render Error Banner with description & raw message
       const errBox = statusBoxEl.createDiv({ cls: 'emily-error-banner' });
-      const errorTitle = isContextOrSizeError
-        ? t.sidebar.contextLimitTitle
-        : t.sidebar.errorOccurredTitle;
-      const errorDesc = isContextOrSizeError
-        ? t.sidebar.contextLimitDesc
-        : t.sidebar.genericErrorDesc;
+      if (isProxyOrNetworkError) {
+        errBox.addClass('is-proxy-error');
+      }
+      const errorTitle = isProxyOrNetworkError
+        ? t.sidebar.proxyErrorTitle
+        : isContextOrSizeError
+          ? t.sidebar.contextLimitTitle
+          : t.sidebar.errorOccurredTitle;
+      const errorDesc = isProxyOrNetworkError
+        ? t.sidebar.proxyErrorDesc
+        : isContextOrSizeError
+          ? t.sidebar.contextLimitDesc
+          : t.sidebar.genericErrorDesc;
 
       errBox.createDiv({ cls: 'emily-error-title', text: errorTitle });
       errBox.createDiv({ cls: 'emily-error-desc', text: errorDesc });

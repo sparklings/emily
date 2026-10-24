@@ -1493,6 +1493,15 @@ select.emily-select-input {
   color: var(--color-red, #e05252);
 }
 
+.emily-error-banner.is-proxy-error {
+  background-color: rgba(234, 153, 53, 0.09);
+  border: 1px solid rgba(234, 153, 53, 0.45);
+}
+
+.emily-error-banner.is-proxy-error .emily-error-title {
+  color: var(--color-orange, #ea9935);
+}
+
 .emily-error-desc {
   font-size: 11px;
   color: var(--text-normal);
