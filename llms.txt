@@ -8,7 +8,7 @@ Assistant Emily is a desktop Obsidian community plugin designed for researchers,
 - Website: https://sparklings.github.io/emily/
 - Documentation: https://github.com/sparklings/emily/tree/main/docs
 - License: MIT
-- Version: 1.1.0
+- Version: 1.1.0a
 
 ## Key Capabilities
 - **Lossless Syntax Masking**: Protects WikiLinks, tags, LaTeX math, code blocks, callouts, highlights, tasks, block IDs, footnotes, and TOC chapter timestamps (`TOCTIME`) via UUID token masking.

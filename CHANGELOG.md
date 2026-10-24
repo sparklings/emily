@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.1.0a] - 2026-10-25
+
+### Fixed
+* **Community Plugin Review Compliance**:
+  * Removed unnecessary escape character `\)` in regex character class (`[^)\n]+`) in `MarkdownFormatter.extractVideoEmbeds`.
+  * Completely eliminated all 8 occurrences of `!important` in `styles.css` using mutually exclusive specificity selectors.
+  * Overhauled `README.md` into comprehensive, professional English to comply with the Obsidian Community Plugin Directory English text requirements.
+
+---
+
 ## [1.1.0] - 2026-10-24
 
 ### Added
