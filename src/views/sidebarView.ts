@@ -86,7 +86,7 @@ export class EmilySidebarView extends ItemView {
     enabled: false,
     sourceLanguage: 'auto',
     targetLanguage: '',
-    scope: 'selection',
+    scope: 'all',
     preservation: 'new_file'
   };
 
@@ -140,7 +140,7 @@ export class EmilySidebarView extends ItemView {
       enabled: this.plugin.settings.defaultTranslationEnabled || false,
       sourceLanguage: getLocalizedLanguageName(rawSrc, t),
       targetLanguage: getLocalizedLanguageName(rawTgt, t),
-      scope: this.plugin.settings.defaultTranslationScope || 'selection',
+      scope: this.plugin.settings.defaultTranslationScope || 'all',
       preservation: this.plugin.settings.defaultPreservationStrategy || 'new_file',
       tone: this.plugin.settings.defaultTranslationTone || 'academic',
       style: this.plugin.settings.defaultTranslationStyle || 'balanced',
@@ -796,7 +796,7 @@ export class EmilySidebarView extends ItemView {
           desc: t.scopes.paragraphBilingualDesc
         }
       ],
-      this.translationOptions.scope || 'selection',
+      this.translationOptions.scope || 'all',
       (val) => {
         this.translationOptions.scope = val;
       }

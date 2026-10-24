@@ -183,7 +183,7 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   defaultTranslationEnabled: false,
   defaultTranslationSource: 'auto',
   defaultTranslationTarget: '',
-  defaultTranslationScope: 'selection',
+  defaultTranslationScope: 'all',
   defaultPreservationStrategy: 'new_file',
   defaultTranslationTone: 'academic',
   defaultTranslationStyle: 'balanced',

@@ -195,7 +195,7 @@ export class EmilySettingTab extends PluginSettingTab {
           dropdown.addOption('all', t.scopes.all);
           dropdown.addOption('paragraph_bilingual', t.scopes.paragraphBilingual);
           dropdown
-            .setValue(this.plugin.settings.defaultTranslationScope || 'selection')
+            .setValue(this.plugin.settings.defaultTranslationScope || 'all')
             .onChange(async (val: TranslationScope) => {
               this.plugin.settings.defaultTranslationScope = val;
               await this.plugin.saveSettings();
