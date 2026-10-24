@@ -17,7 +17,7 @@ export class TranslationEngine {
   private client: LLMProxyClient;
   private app: App;
   private displayLanguage?: string;
-  private readonly CHUNK_SIZE_THRESHOLD = 2500;
+  private readonly CHUNK_SIZE_THRESHOLD = 1800;
 
   constructor(client: LLMProxyClient, app: App, displayLanguage?: string) {
     this.client = client;
@@ -162,12 +162,13 @@ export class TranslationEngine {
         restoredChunk = MarkdownFormatter.cleanChineseLeakage(restoredChunk);
       }
 
-      let isValidTranslation = isTargetKorean ? (/[가-힣]/.test(restoredChunk) && restoredChunk.trim().length > 0) : restoredChunk.trim().length > 0;
+      const validation = this.validateTranslationQuality(chunk, restoredChunk, options.targetLanguage);
+      let isValidTranslation = validation.isValid;
 
-      // 번역 실패 감지 시 1회 엄격한 다이렉트 프롬프트로 자가 치유(Self-Healing) 재시도
+      // 번역 실패 감지 시 (미번역 영어 누출 또는 CoT 독백 등) 1회 엄격한 다이렉트 프롬프트로 자가 치유(Self-Healing) 재시도
       if (!isValidTranslation && chunk.trim().length > 30) {
-        console.warn(`[Assistant Emily] Model '${lastModel}' produced CoT monologue without translation. Initiating self-healing retry...`);
-        const retryUserPrompt = `[CRITICAL - TRANSLATE DIRECTLY NOW]\nTranslate the following text into ${options.targetLanguage} immediately.\nOutput ONLY the final translated markdown without ANY thinking process, thoughts, notes, or preamble.\n\n[Source Text]\n${maskResult.maskedText}`;
+        console.warn(`[Assistant Emily] Model '${lastModel}' produced invalid translation (${validation.reason}). Initiating self-healing retry...`);
+        const retryUserPrompt = `[CRITICAL - TRANSLATE 100% INTO ${options.targetLanguage} NOW]\nYou previously outputted untranslated English text or monologue. That is STRICTLY PROHIBITED.\nYou MUST translate EVERY SINGLE ENGLISH SENTENCE into ${options.targetLanguage}. NEVER copy or output untranslated English text.\nOutput ONLY the complete translated markdown.\n\n[Source Text]\n${maskResult.maskedText}`;
         const retryResponse = await this.client.chatCompletion(
           [
             { role: 'system', content: `You are an exact markdown translator. Output ONLY the translated markdown text in ${options.targetLanguage}. Do NOT write any thoughts, notes, or explanations.` },
@@ -202,7 +203,8 @@ export class TranslationEngine {
           maskResult.frontmatter
         );
 
-        if (isTargetKorean ? /[가-힣]/.test(retryRestored) : retryRestored.trim().length > 0) {
+        const retryCheck = this.validateTranslationQuality(chunk, retryRestored, options.targetLanguage);
+        if (retryCheck.isValid) {
           restoredChunk = retryRestored;
           isValidTranslation = true;
         }
@@ -244,6 +246,9 @@ export class TranslationEngine {
     // 2. Obsidian Flavored Markdown (OFM) 전용 무손실 정규화 및 렌더링 자가 치유 수행
     // (헤딩 개행 보정, 콜아웃 연속성, 테이블 구조 정합, HTML 태그 정제 및 동아시아 볼드 조사 공백 자동 처리)
     let finalTranslatedMarkdown = MarkdownFormatter.normalizeObsidianMarkdown(accumulatedTranslatedMarkdown);
+
+    // 2-0. 원본 동영상 링크 및 임베드(![](https://...), <iframe...>) 100% 무손실 확정 복원
+    finalTranslatedMarkdown = MarkdownFormatter.ensureVideoEmbedsPreserved(markdownContent, finalTranslatedMarkdown);
 
     // 2-1. 사용자 선택 서식 제거 (볼드체, 기울이기, 취소선, 하이라이트)
     if (options.formatStripOptions) {
@@ -288,6 +293,48 @@ export class TranslationEngine {
       providerUsed: 'primary',
       failedOver: false
     };
+  }
+
+  /**
+   * 번역 품질 및 유효성을 다각도로 검증합니다 (미번역 원문 복사, 영어 블록 잔여, CoT 독백 등 검출).
+   */
+  private validateTranslationQuality(
+    originalChunk: string,
+    translatedChunk: string,
+    targetLanguage: string
+  ): { isValid: boolean; reason?: string } {
+    if (!translatedChunk || !translatedChunk.trim()) {
+      return { isValid: false, reason: 'Empty translation output' };
+    }
+
+    const isKorean = (targetLanguage || '').includes('한국어') || (targetLanguage || '').toLowerCase().includes('korean');
+    if (isKorean) {
+      const hangulMatches = translatedChunk.match(/[가-힣]/g) || [];
+      const stripped = translatedChunk.replace(/\s+/g, '');
+
+      // 한글이 아예 없거나 너무 짧은 경우
+      if (hangulMatches.length < 3 && stripped.length > 30) {
+        return { isValid: false, reason: 'No Korean characters found' };
+      }
+
+      // 200자 이상의 거대한 미번역 영어 문단이 남아있는 경우 검출 (원문 복사 누출)
+      const paragraphs = translatedChunk.split(/\n{2,}/);
+      for (const p of paragraphs) {
+        const trimmed = p.trim();
+        // 마크다운 임베드, 코드블록, 링크, 위키링크는 제외
+        if (/^(?:!\[|```|<iframe|https?:\/\/|\[\[)/.test(trimmed)) continue;
+        if (trimmed.length > 200) {
+          const latinLetters = (trimmed.match(/[a-zA-Z]/g) || []).length;
+          const hangulInPara = (trimmed.match(/[가-힣]/g) || []).length;
+          // 영어 알파벳이 75% 이상이고 한글이 10자 미만이면 영어 원문 미번역 누출!
+          if (latinLetters / trimmed.length > 0.75 && hangulInPara < 10) {
+            return { isValid: false, reason: 'Detected untranslated English paragraph block' };
+          }
+        }
+      }
+    }
+
+    return { isValid: true };
   }
 
   /**

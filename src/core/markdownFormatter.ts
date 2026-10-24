@@ -80,8 +80,15 @@ export class MarkdownFormatter {
   }
 
   /**
-   * 유튜브 및 영상 스크립트의 타임스탬프(0:04, 0:27:, **1:29**:, [00:15], (12:34) 등)와 잦은 줄바꿈 정리
-   * 원문의 단어나 내용을 임의로 삭제/요약하지 않고 원문 그대로 단락 단위로 결합(Concatenation)합니다.
+   * 영상 클리핑 문서의 지능적 영역 분할(Section Partitioning) 정제:
+   * 1. [동영상 임베드 및 링크 100% 무손실 보존]:
+   *    - ![](https://www.youtube.com/...), <iframe...>, https://youtu.be/... 등 동영상 플레이어/임베드는 원형 그대로 보존
+   * 2. [메타데이터 & 목차(TOC) 영역 원형 보존]:
+   *    - '## Transcript' 또는 스크립트 본문 이전의 설명, 소개, 연락처(Connect/Newsletter/Email) 줄바꿈은 100% 그대로 유지
+   *    - 'Timestamps:', 'Chapters:' 아래의 목차 타임스탬프(0:00 설명, 1:57 BEGINNER 등)는 절대 지우지 않고 목차 리스트로 100% 원형 보존
+   * 3. [스크립트 본문(Transcript) 영역 전용 정제]:
+   *    - 오직 '## Transcript' 이하의 스크립트 본문에 대해서만 타임스탬프(**0:00** ·, 0:27 - 등)를 제거하고,
+   *      파편화된 자막 줄바꿈을 400~600자 단위의 자연스러운 호흡을 가진 마크다운 문단으로 결합
    * YAML 프론트매터(Frontmatter)는 100% 원본 그대로 완벽하게 보존합니다.
    */
   static cleanScriptTimestamps(text: string): string {
@@ -91,107 +98,181 @@ export class MarkdownFormatter {
     const { frontmatter, body } = this.extractFrontmatter(text);
     if (!body && frontmatter) return frontmatter;
 
-    // 2. 본문(Body) 영역에 대해서만 타임스탬프 패턴 일괄 정리
-    // - 0:00:, 0:27:, **1:29**:, **1:51**, [00:15], (12:34), 1:23:45, 18:11·, 거예요.18:19·, 18:29· 등
-    // - 타임스탬프 뒤 구분자: · (U+00B7), • (U+2022), ・ (U+30FB), -, :, |, – (U+2013), — (U+2014)
-    // - 앞 문장 끝 기호(., !, ?)나 단어 뒤에 공백 없이 바로 붙어있는 타임스탬프도 공백 1칸으로 안전 분리 치환
-    let cleaned = body.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
-
-    // 문장 부호(., !, ?) 뒤 공백 및 다중 공백 정리
-    cleaned = cleaned.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ');
-
-    // 3. 줄 단위 분할 및 문단 단위 Concatination
     const lines = body.split(/\r?\n/);
-    const cleanedParagraphs: string[] = [];
-    let currentParagraph: string[] = [];
-    let currentParagraphLength = 0;
 
-    for (const rawLine of lines) {
+    // 2. Transcript (스크립트 본문) 시작 라인 인덱스 탐색
+    let transcriptLineIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].trim();
+      // '## Transcript', '# Transcript', '### Transcript', '**Transcript**' 등
+      if (/^#{1,4}\s+Transcript\b/i.test(trimmed) || /^(?:\*\*|__)?Transcript(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
+        transcriptLineIdx = i;
+        break;
+      }
+    }
+
+    // 만약 명시적인 Transcript 헤더가 없는 경우:
+    // 타임스탬프로 시작하고 30자 이상 긴 문장이 이어지는 실제 자막 본문 시작점 탐색
+    if (transcriptLineIdx === -1) {
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
+          continue;
+        }
+        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
+          transcriptLineIdx = i;
+          break;
+        }
+      }
+    }
+
+    // 영역 A: 메타데이터 & 목차 (Transcript 이전)
+    // 영역 B: 스크립트 본문 (Transcript 이후)
+    const metaLines = transcriptLineIdx !== -1 ? lines.slice(0, transcriptLineIdx) : [];
+    const transcriptLines = transcriptLineIdx !== -1 ? lines.slice(transcriptLineIdx) : lines;
+
+    // 3. 메타/목차 영역 정제:
+    // - 동영상 링크/임베드 100% 보존
+    // - 목차(Timestamps)의 타임스탬프 100% 보존
+    // - Connect, Newsletter 등 줄바꿈 100% 보존 (절대 문단으로 합치지 않음!)
+    const cleanedMetaLines: string[] = [];
+    for (let i = 0; i < metaLines.length; i++) {
+      const rawLine = metaLines[i];
+      const trimmed = rawLine.trim();
+
+      // 단독 챕터/목차 줄: "0:00 What is Gemini Notebook" -> "- 0:00 What is Gemini Notebook" (타임스탬프 100% 보존!)
+      const chapterMatch = trimmed.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
+      if (chapterMatch) {
+        cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
+        continue;
+      }
+
+      // 목차 헤더 "Timestamps:" -> "### Timestamps"
+      if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) {
+        cleanedMetaLines.push(`### ${trimmed.replace(/:$/, '')}`);
+        continue;
+      }
+
+      // 원본 줄바꿈과 내용 그대로 보존 (공백 줄도 마크다운 구조 보존)
+      cleanedMetaLines.push(rawLine);
+    }
+
+    // 4. 스크립트 본문 영역 정제:
+    // - '## Transcript' 헤더 자체는 보존
+    // - 스크립트 줄에 있는 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
+    const cleanedScriptParagraphs: string[] = [];
+    let currentScriptParagraph: string[] = [];
+    let currentScriptLength = 0;
+
+    for (let i = 0; i < transcriptLines.length; i++) {
+      const rawLine = transcriptLines[i];
       const line = rawLine.trim();
 
-      // 빈 줄이면 현재 단락 flush
       if (!line) {
-        if (currentParagraph.length > 0) {
-          cleanedParagraphs.push(currentParagraph.join(' '));
-          currentParagraph = [];
-          currentParagraphLength = 0;
+        if (currentScriptParagraph.length > 0) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
         }
         continue;
       }
 
-      // 3-1. 마크다운 블록 요소(헤딩, 콜아웃, 구분선, 리스트, 이미지/임베드, 위키링크 등)는 독립 줄로 보존
-      if (/^(?:#{1,6}\s+|>\s*|---\s*$|\*\*\*[^*]+\*\*\*|[-*+]\s+|\d+\.\s+|!\[.*\]\(.*\)|\[\[.*\]\])/.test(line)) {
-        if (currentParagraph.length > 0) {
-          cleanedParagraphs.push(currentParagraph.join(' '));
-          currentParagraph = [];
-          currentParagraphLength = 0;
+      // 헤딩(#)이나 구분선(---)은 독립 줄로 보존
+      if (/^(?:#{1,6}\s+|---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
+        if (currentScriptParagraph.length > 0) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
         }
-        cleanedParagraphs.push(line);
+        cleanedScriptParagraphs.push(line);
         continue;
       }
 
-      // 3-2. 단독 챕터/목차 타임스탬프 라인 (예: "0:00 What is Gemini Notebook", "1:57 BEGINNER")
-      // - 스크립트 본문이 아니라 영상 목차(Table of Contents)이므로 타임스탬프를 보존하며 마크다운 리스트 형태로 구조화
-      const chapterMatch = line.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
-      if (chapterMatch) {
-        if (currentParagraph.length > 0) {
-          cleanedParagraphs.push(currentParagraph.join(' '));
-          currentParagraph = [];
-          currentParagraphLength = 0;
-        }
-        cleanedParagraphs.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
-        continue;
-      }
-
-      // 3-3. "Timestamps:" 또는 "Chapters:" 같은 목차 헤더 라인
-      if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(line)) {
-        if (currentParagraph.length > 0) {
-          cleanedParagraphs.push(currentParagraph.join(' '));
-          currentParagraph = [];
-          currentParagraphLength = 0;
-        }
-        cleanedParagraphs.push(`### ${line.replace(/:$/, '')}`);
-        continue;
-      }
-
-      // 3-4. 일반 영상 스크립트 줄: 타임스탬프 제거 후 본문 문단 결합
+      // 스크립트 타임스탬프 제거: **0:00** ·, 0:27:, [00:15], 18:11· 등
       let cleanedLine = line.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
       cleanedLine = cleanedLine.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ').trim();
 
       if (cleanedLine) {
-        currentParagraph.push(cleanedLine);
-        currentParagraphLength += cleanedLine.length;
+        currentScriptParagraph.push(cleanedLine);
+        currentScriptLength += cleanedLine.length;
 
-        // 적절한 문단 호흡 유지: 400자 이상 누적되고 문장이 종결(., !, ?)되었으면 자연스러운 문단 분할
-        if (currentParagraphLength >= 400 && /[.?!]$/.test(cleanedLine)) {
-          cleanedParagraphs.push(currentParagraph.join(' '));
-          currentParagraph = [];
-          currentParagraphLength = 0;
+        // 자연스러운 문단 호흡: 400~600자 이상이고 문장이 종결(., !, ?)되었을 때 문단 분할
+        if (currentScriptLength >= 400 && /[.?!]$/.test(cleanedLine)) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
         }
       }
     }
 
-    if (currentParagraph.length > 0) {
-      cleanedParagraphs.push(currentParagraph.join(' '));
+    if (currentScriptParagraph.length > 0) {
+      cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
     }
 
-    // 문단 사이는 표준 마크다운 문단 간격(\n\n)으로 결합
-    const cleanedBody = cleanedParagraphs.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
+    const metaPart = cleanedMetaLines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+    const scriptPart = cleanedScriptParagraphs.join('\n\n').replace(/\n{3,}/g, '\n\n').trim();
 
-    // 4. 격리 보존된 원본 프론트매터와 정위된 본문을 안전하게 재결합
+    let combinedBody = '';
+    if (metaPart && scriptPart) {
+      combinedBody = `${metaPart}\n\n${scriptPart}`;
+    } else {
+      combinedBody = metaPart || scriptPart;
+    }
+
     if (frontmatter) {
       const formattedFrontmatter = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
-      return cleanedBody ? `${formattedFrontmatter}\n${cleanedBody}` : formattedFrontmatter.trimEnd();
+      return combinedBody ? `${formattedFrontmatter}\n${combinedBody}` : formattedFrontmatter.trimEnd();
     }
 
-    return cleanedBody;
+    return combinedBody;
   }
 
   /**
-   * 한국어 번역 결과에 LLM 잠재 공간에서 유출된 중국어 간체자/번체자 어휘가 혼용된 경우,
-   * 이를 자연스러운 한국어로 정제 치환합니다.
-   * (예: "我们所拥有的" -> "우리가 가진 것", "我们所没有的" -> "우리에게 없는 것")
+   * 마크다운 텍스트에서 동영상 임베드 및 플레이어 링크 태그를 추출합니다.
    */
+  static extractVideoEmbeds(markdown: string): string[] {
+    if (!markdown) return [];
+    const embeds: string[] = [];
+    const patterns = [
+      /!\[[^\]\n]*\]\((?:https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|vimeo\.com)[^\)\n]+)\)/g,
+      /<iframe[\s\S]*?(?:youtube\.com|youtu\.be|vimeo\.com)[\s\S]*?<\/iframe>/gi,
+      /(?:^|\n)(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[a-zA-Z0-9_-]+|youtu\.be\/[a-zA-Z0-9_-]+)[^\s\n]*)(?=\n|$)/g
+    ];
+    for (const pat of patterns) {
+      let match: RegExpExecArray | null;
+      while ((match = pat.exec(markdown)) !== null) {
+        const item = match[0].trim();
+        if (item && !embeds.includes(item)) {
+          embeds.push(item);
+        }
+      }
+    }
+    return embeds;
+  }
+
+  /**
+   * 번역 완료된 텍스트에 원본 동영상 임베드가 누락된 경우,
+   * 프론트매터 바로 아래 또는 문서 최상단에 100% 무손실로 확정 복원합니다.
+   */
+  static ensureVideoEmbedsPreserved(sourceMarkdown: string, translatedMarkdown: string): string {
+    const embeds = this.extractVideoEmbeds(sourceMarkdown);
+    if (embeds.length === 0) return translatedMarkdown;
+
+    let result = translatedMarkdown;
+    for (const embed of embeds) {
+      if (!result.includes(embed)) {
+        const { frontmatter, body } = this.extractFrontmatter(result);
+        if (frontmatter) {
+          const fm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+          result = `${fm}\n${embed}\n\n${body.trimStart()}`;
+        } else {
+          result = `${embed}\n\n${result.trimStart()}`;
+        }
+      }
+    }
+    return result;
+  }
+
   static cleanChineseLeakage(text: string): string {
     if (!text) return text;
 

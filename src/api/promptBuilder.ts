@@ -276,9 +276,15 @@ ${codeCommentInstruction}${pureKoreanInstruction}
   * 옵시디언 콜아웃(> [!note] 등) 블록 내부의 모든 줄은 '>' 접두사를 연속으로 유지하십시오.
   * HTML 태그(<br>, <b>, <i>, <p>, <span> 등)를 일절 출력하지 말고, 오직 마크다운 문법으로만 작성하십시오.
   * 마크다운 표(Table)의 열 파이프(|)와 구분선(|---|) 구조를 무손실 보존하십시오.
-- 타임스탬프(0:04, 18:11· 등)는 제거하고 자연스러운 문단으로 연결하십시오.
+- [타임스탬프 및 영상 목차 지침]:
+  * 목차나 챕터 목록(Timestamps, Chapters)에 위치한 타임스탬프(예: "0:00 설명", "1:57 BEGINNER")와 줄바꿈 목록 구조는 100% 원형 그대로 보존하십시오.
+  * 오직 스크립트/자막 본문(Transcript) 내부에 등장하는 타임스탬프(0:04, 18:11· 등)만을 제거하고 자연스러운 문단으로 연결하십시오.
+- [동영상 링크/임베드 및 연락처 목록 무손실 보존]:
+  * 유튜브/동영상 임베드 태그(![...](https://...), <iframe...>) 및 메타데이터, 연락처(Newsletter, Email, SNS)의 줄바꿈 목록 구조를 100% 무손실 보존하십시오.
+- [원문 영어 미번역 복사 절대 금지]:
+  * 원문의 영어 문장을 번역하지 않고 그대로 복사하여 출력하는 것은 엄격히 금지됩니다.
+  * 모든 문장을 한 문장도 누락 없이 상세하게 100% ${options.targetLanguage}로 완역하십시오.
 - 마크다운 서식을 손상시키지 마십시오.${PromptBuilder.buildFormatStripInstruction(options.formatStripOptions)}
-- 원문의 내용을 생략하거나 요약하지 말고 상세하게 빠짐없이 번역하십시오.
 
 [출력 절대 원칙 - 즉각적인 번역 본문만 출력]:
 - 어떠한 인사말, 설명, 생각 과정(Thinking/Reasoning), 가이드라인 검토("Let's review..."), 원문 복사("Original text:..."), 초안 메모("Let's write...", "A -> B")도 절대로 출력하지 마십시오.
@@ -291,7 +297,7 @@ ${codeCommentInstruction}${pureKoreanInstruction}
       user += `\n[편집자 특별 요청사항]\n${customInstruction.trim()}\n`;
     }
 
-    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 절대 원칙 - 위반 엄금]:\n1. "The user wants...", "Let's review...", "Original text:", "Let's write...", "A -> B" 등 생각 과정이나 가이드라인 복습, 초안 메모를 일절 출력하지 마십시오.\n2. Do NOT output thoughts, drafts, or preamble. Start directly with the first line of the translated markdown.\n3. 원문의 첫 번째 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.${isKoreanTarget ? '\n4. 중국어 간체자/번체자(한자) 어휘를 절대로 출력하지 마시고 100% 순수 한국어로 번역하십시오.' : ''}`;
+    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 절대 원칙 - 위반 엄금]:\n1. "The user wants...", "Let's review...", "Original text:", "Let's write...", "A -> B" 등 생각 과정이나 가이드라인 복습, 초안 메모를 일절 출력하지 마십시오.\n2. Do NOT output thoughts, drafts, or preamble. Start directly with the first line of the translated markdown.\n3. 원문의 첫 번째 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.${isKoreanTarget ? '\n4. 중국어 간체자/번체자(한자) 어휘를 절대로 출력하지 마시고 100% 순수 한국어로 번역하십시오.\n5. 원문 영어를 번역하지 않고 복사하여 출력하는 행위는 엄격히 금지되며 모든 문장을 100% 한국어로 번역하십시오.' : ''}`;
 
     return { system, user };
   }
