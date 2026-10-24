@@ -292,6 +292,9 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
 ## 📜 변경 이력 (Changelog)
 
 ### [v1.1.0] - 2026-10-24
+* **반응형 라이브 상태 헤더 UI/UX 개선 (좁은 사이드바 텍스트 숨김 및 콤팩트 아이콘 모드)**:
+  * 사이드바 너비가 좁아졌을 때 라이브 파이프라인 상태 헤더의 취소 버튼 텍스트가 잘려 보이는 현상(`X 작업 취:`)을 방지하기 위해, 버튼 내부를 아이콘과 텍스트로 분리하고 좁은 사이드바(<380px)에서 텍스트를 숨겨 깔끔한 22px 정사각형 `❌` 아이콘 전용 버튼으로 자동 전환되도록 개선.
+  * 전체 문구(`❌ 작업 취소`)는 `title` 및 `aria-label` 툴팁으로 온전히 제공되어 직관성과 웹 접근성 동시 충족.
 * **대용량 문서(25,000자+) 문장 단위 강제 스마트 청킹 보장 엔진 탑재**:
   * 단일 문단이 2,500자를 초과하거나 개행이 부족한 대용량 영상 스크립트 번역 시 문장 종결 부호(`. `, `? `, `! `)를 기준으로 2,500자 이하로 강제 분할하여, LLM 과부하로 인한 뒷부분 원문 영어 누출 버그를 100% 원천 해결.
 * **이미지 및 동영상 임베드(`![](...)`) 태그 전체 토큰 마스킹 및 100% 무손실 보존**:
@@ -324,7 +327,7 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
 * **배포 환경 격리 및 안전 가드레일 구축 (`esbuild.config.mjs`)**:
   * 배포 대상을 `PluginVaults`/`PlugVaults`로 제한하고, 실사용 볼트인 `ObsidianVaults`로의 배포를 물리적으로 차단하는 안전 가드레일 적용.
 * **종합 테스트 스위트 확장**:
-  * 신규 테스트 케이스(TC-59, TC-60, TC-61) 추가, 총 61개 테스트 전원 통과 (`100% PASS`).
+  * 신규 테스트 케이스(TC-59 ~ TC-65) 추가, 총 65개 종합 기능 및 UI/회귀 테스트 전원 통과 (`100% PASS`).
 
 ---
 
@@ -621,7 +624,10 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 
 ## 📜 Changelog
 
-### [v1.1.0] - 2026-10-24
+### [v1.1.0] - 2026-10-24
+* **Responsive Live Status Header UI/UX (Narrow Sidebar Compact Icon Mode)**:
+  * Separated the cancel button DOM into icon (`❌`) and text elements, automatically hiding the text and switching to a compact 22px square icon-only button in narrow sidebars (<380px) to prevent layout overflows and truncated text.
+  * Preserved full tooltip (`title` and `aria-label`) for 100% accessibility compliance.
 * **Error Retry Button Immediate Disabling & Visual Lockout UX**:
   * Immediately disables the retry button upon click, updates its label to `⏳ Restarting...`, and displays a restart badge on the error header to eliminate accidental double clicks and clarify execution state.
   * Reinforced CSS safety styles (`pointer-events: none !important`, `opacity: 0.45`) to guarantee visual feedback regardless of parent container execution states.
@@ -642,7 +648,7 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 * **Deployment Target Isolation & Safety Guardrail (`esbuild.config.mjs`)**:
   * Restricts bundle deployment strictly to `PluginVaults`/`PlugVaults`, while hard-blocking any deployment to `ObsidianVaults`.
 * **Test Suite Expansion**:
-  * Added TC-59 and TC-60 for OFM syntax masking and self-healing normalization; all 60 tests passed with `100% PASS`.
+  * Added TC-59 through TC-65 covering OFM syntax masking, self-healing normalization, and responsive UI; all 65 tests passed with `100% PASS`.
 
 ---
 

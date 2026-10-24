@@ -1160,9 +1160,17 @@ export class EmilySidebarView extends ItemView {
     dotsAnim.createSpan({ text: '.' });
 
     const cancelPipelineBtn = headerRight.createEl('button', {
-      text: t.sidebar.cancelBtn,
       cls: 'emily-btn-secondary emily-pipeline-cancel-btn',
-      attr: { type: 'button', 'aria-label': t.sidebar.cancelBtn }
+      attr: {
+        type: 'button',
+        'aria-label': t.sidebar.cancelBtn,
+        title: t.sidebar.cancelBtn
+      }
+    });
+    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({
+      text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
+      cls: 'emily-pipeline-cancel-text'
     });
     cancelPipelineBtn.addEventListener('click', (e) => {
       e.stopPropagation();

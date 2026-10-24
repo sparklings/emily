@@ -1092,15 +1092,17 @@ select.emily-select-input {
 .emily-status-header-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
 }
 
 .emily-pipeline-cancel-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 2px 7px;
+  gap: 3px;
+  padding: 2px 6px;
   border-radius: var(--radius-s, 4px);
   background-color: var(--background-secondary-alt);
   color: var(--text-muted);
@@ -1111,6 +1113,47 @@ select.emily-select-input {
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.emily-cancel-icon {
+  font-size: 10px;
+  line-height: 1;
+}
+
+.emily-pipeline-cancel-text {
+  font-size: 10.5px;
+  line-height: 1;
+}
+
+/* 좁은 사이드바(<380px) 또는 컴팩트 사이드바(<320px)에서는 Text를 숨기고 ❌ 아이콘만 컴팩트 표시 */
+.is-narrow-sidebar .emily-pipeline-cancel-btn .emily-pipeline-cancel-text,
+.is-compact-sidebar .emily-pipeline-cancel-btn .emily-pipeline-cancel-text {
+  display: none !important;
+}
+
+.is-narrow-sidebar .emily-pipeline-cancel-btn,
+.is-compact-sidebar .emily-pipeline-cancel-btn {
+  padding: 2px 5px;
+  min-width: 22px;
+}
+
+.is-narrow-sidebar .emily-badge,
+.is-compact-sidebar .emily-badge {
+  padding: 2px 5px;
+  font-size: 10.5px;
+  gap: 3px;
+}
+
+@media (max-width: 380px) {
+  .emily-pipeline-cancel-btn .emily-pipeline-cancel-text {
+    display: none !important;
+  }
+  .emily-pipeline-cancel-btn {
+    padding: 2px 5px;
+    min-width: 22px;
+  }
 }
 
 .emily-pipeline-cancel-btn:hover:not(:disabled) {
