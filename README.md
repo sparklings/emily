@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.22-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.1.0-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-시스템-아키텍처-및-구조-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -43,7 +43,8 @@
    - [원격 분석 및 광고 배제 (Telemetry & Advertisements)](#원격-분석-및-광고-배제-telemetry--advertisements)
 6. [오픈소스 프로젝트 크레딧 및 감사의 글 (Acknowledgements & Open Source Credits)](#-오픈소스-프로젝트-크레딧-및-감사의-글-acknowledgements--open-source-credits)
 7. [개발 및 배포 브랜치 전략 (Branching & Release Workflow)](#-개발-및-배포-브랜치-전략-branching--release-workflow)
-8. [라이선스 (License)](#-라이선스-license)
+8. [변경 이력 (Changelog)](#-변경-이력-changelog)
+9. [라이선스 (License)](#-라이선스-license)
 
 ---
 
@@ -276,7 +277,7 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
   * 신규 기능 구현, UI 개선 및 설정 화면 개편(개선안 A~D) 작업이 진행되는 개발 전용 브랜치입니다.
   * 커뮤니티 플러그인 심사 과정의 사전 프리뷰(Review Branch) 검토 및 린트/테스트 검증을 통과하는 기준점이 됩니다.
 * **`master` 브랜치**:
-  * `develop` 브랜치에서 프리뷰 심사 및 전체 테스트(58개 TC) 통과가 확인된 후 버전 업그레이드와 함께 최종 병합되는 공식 배포 브랜치입니다.
+  * `develop` 브랜치에서 프리뷰 심사 및 전체 테스트(60개 TC) 통과가 확인된 후 버전 업그레이드와 함께 최종 병합되는 공식 배포 브랜치입니다.
   * 공식 GitHub Release 및 버전 태그(`v1.0.x`) 발행의 기반이 됩니다.
 
 ---
@@ -300,7 +301,7 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
 
 <p align="center">
   <a href="https://sparklings.github.io/emily/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-brightgreen.svg?style=flat-square" alt="Documentation"></a>
-  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.0.22-blue.svg?style=flat-square" alt="Version"></a>
+  <a href="https://github.com/sparklings/emily/releases"><img src="https://img.shields.io/badge/version-1.1.0-blue.svg?style=flat-square" alt="Version"></a>
   <a href="https://obsidian.md"><img src="https://img.shields.io/badge/Obsidian-v1.7.2+-purple.svg?style=flat-square" alt="Obsidian"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg?style=flat-square" alt="License"></a>
   <a href="#-system-architecture"><img src="https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg?style=flat-square" alt="TypeScript"></a>
@@ -336,7 +337,8 @@ Assistant Emily는 **[MIT License](LICENSE)** 에 따라 자유롭게 사용, �
    - [Zero Telemetry & Ad-Free Policy (Telemetry & Advertisements)](#zero-telemetry--ad-free-policy)
 6. [Acknowledgements & Open Source Credits](#-acknowledgements--open-source-credits)
 7. [Branching & Release Workflow](#-branching--release-workflow)
-8. [License](#-license)
+8. [Changelog](#-changelog)
+9. [License](#-license)
 
 ---
 
@@ -568,6 +570,25 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 * **`master` Branch**:
   * Stable production release branch. Merged from `develop` upon passing review validation and all 58 test cases.
   * Serves as the source of truth for official GitHub Release tags (`v1.0.x`).
+
+---
+
+## 📜 Changelog
+
+### [v1.1.0] - 2026-10-24
+* **Obsidian Flavored Markdown (OFM) Self-Healing Normalizer (`normalizeObsidianMarkdown`)**:
+  * **Headings Newline Self-Healing**: Automatically ensures standard empty lines before and after headings (`#`–`######`), completely eliminating parser glitches where headings fuse into adjacent paragraphs.
+  * **Callout Continuity Restoration**: Automatically restores missing `>` quote prefixes across subsequent lines within Obsidian callouts (e.g. `> [!NOTE]`).
+  * **HTML-to-Markdown Inline Transpiler**: Converts leaked HTML tags (`<br>`, `<b>`, `<strong>`, `<i>`, `<em>`, `<mark>`, `<code>`) directly into clean native Markdown and Obsidian highlights (`==...==`).
+  * **GFM Table & Checklist Normalization**: Removes spurious blank lines within table rows to keep tables intact, and formats tight task boxes (`-[]`) into standard `- [ ] `.
+* **OFM Extended Syntax Masking & Lossless Restoration (`MarkdownMasker`)**:
+  * 100% preserves Obsidian highlights (`==text==`), task checkboxes (`- [ ]`, `- [x]`), private comments (`%%...%%`), block IDs (`^block-id`), footnote definitions (`[^1]:`), and standard image URLs.
+* **Prompt Guardrail Hardening (`PromptBuilder`)**:
+  * Integrated strict Obsidian Markdown formatting standards (prohibiting HTML tags, enforcing newline padding around headings) into system and user prompts.
+* **Deployment Target Isolation & Safety Guardrail (`esbuild.config.mjs`)**:
+  * Restricts bundle deployment strictly to `PluginVaults`/`PlugVaults`, while hard-blocking any deployment to `ObsidianVaults`.
+* **Test Suite Expansion**:
+  * Added TC-59 and TC-60 for OFM syntax masking and self-healing normalization; all 60 tests passed with `100% PASS`.
 
 ---
 
