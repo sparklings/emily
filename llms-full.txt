@@ -1,0 +1,56 @@
+# Assistant Emily: Complete Architecture & Engineering Specification
+
+## 1. System Overview
+Assistant Emily (`assistant-emily`) is an Obsidian Community Plugin (desktop only) built in strictly typed TypeScript (Strict Mode). It acts as a specialized pair-assistant for proofreading, translating, and styling markdown notes within Obsidian.
+
+## 2. Core Architecture Components
+1. **`MarkdownMasker` (`src/core/markdownMasker.ts`)**:
+   - Client-side in-memory syntax masking pipeline.
+   - Extracts and replaces syntax tokens with UUID placeholders before passing text to the LLM.
+   - Masked elements:
+     - Frontmatter (`FRONTMATTER`)
+     - Code blocks & inline code (`CODEBLOCK`, `CODEINLINE`)
+     - LaTeX math (`MATHBLOCK`, `MATHINLINE`)
+     - Callout blocks (`CALLOUT`)
+     - WikiLinks (`[[target|alias]]` ➔ `WIKITARGET`)
+     - Tags (`#tag` ➔ `TAG`)
+     - Highlights (`==text==` ➔ `HIGHLIGHT`)
+     - Tasks (`- [ ]`, `- [x]` ➔ `TASK`)
+     - Private comments (`%%...%%` ➔ `COMMENT`)
+     - Footnotes (`[^1]:` ➔ `FOOTNOTEDEF`, `[^1]` ➔ `FOOTNOTE`)
+     - Embeds (`![](...)`, `![[...]]` ➔ `EMBED`, `EMBEDIMG`)
+     - TOC Chapter Timestamps (`TOCTIME`: `- 0:00 Intro`)
+   - Unmasks tokens back to their exact original representation post-translation.
+
+2. **`MarkdownFormatter` (`src/core/markdownFormatter.ts`)**:
+   - Section partitioning for video clipping documents:
+     - Distinguishes video clipping notes (`Transcript` header or timestamps present) from general web articles/news.
+     - Preserves Pre-Transcript Meta (links, timestamps, contact lists) with 100% original line breaks.
+     - Formats chapter lines as standardized `- 0:00 Intro` list items.
+     - Code-level timestamp regex removal (`cleanScriptTimestamps`) on subtitle transcripts and 400~600 character paragraph reflow.
+   - Autonomous OFM Normalizer (`normalizeObsidianMarkdown`):
+     - Injects empty line padding before and after headings (`#`–`######`).
+     - Restores missing `>` quote prefixes in Obsidian callouts.
+     - Transpiles leaked HTML tags (`<br>`, `<b>`, `<strong>`, `<i>`, `<em>`, `<mark>`) into native Markdown and `==highlights==`.
+     - Deterministic Video Embed Restoration (`ensureVideoEmbedsPreserved`).
+
+3. **`TranslationEngine` (`src/core/translationEngine.ts`)**:
+   - Manages chunking, streaming/batch LLM calls, and output assembly.
+   - Chunk size threshold: 1,800 characters (boundary-aware on headings and paragraphs).
+   - Prevents context truncation on lightweight/free models.
+   - Korean Ratio validation & untranslated English block interception (>200 chars, >75% Latin characters).
+   - Chinese cross-lingual token sanitization (`我们所拥有的` ➔ `우리가 가진 것`).
+
+4. **`ProofreadingEngine` (`src/core/proofreadingEngine.ts`)**:
+   - Provides 3 independent tools: Spelling check, Grammar check, Timestamp removal.
+   - Generates diff metadata with exact character offsets (`from`, `to`).
+   - Supports Selection-Scoped Proofreading via atomic `replaceRange`.
+
+5. **`LLMProxyClient` (`src/api/llmProxyClient.ts`)**:
+   - Connects to OpenAI-compatible endpoints, FreeLLMAPI, Ollama, LM Studio, vLLM, and OpenRouter.
+   - Parses telemetry and token usage (`UsageTelemetry`).
+   - Suppresses disruptive UI notices on 502/network failures, routing diagnostic alerts to timeline step 2.
+
+6. **Settings & Storage**:
+   - 4-tab settings layout: AI Providers, Translation, Proofreading & Formatting, General & UI.
+   - Device-specific profile binding avoiding cloud sync conflicts across multiple devices.

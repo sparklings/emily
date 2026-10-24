@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - name: "SUNGWON PARK (sparklings)"
+    website: "https://github.com/sparklings"
+title: "Assistant Emily: Intelligent Lossless Markdown Proofreading & Context-Aware AI Translation for Obsidian"
+version: 1.1.0
+date-released: 2026-10-24
+url: "https://sparklings.github.io/emily/"
+repository-code: "https://github.com/sparklings/emily"
+license: MIT
+keywords:
+  - obsidian
+  - obsidian-plugin
+  - markdown-translation
+  - markdown-proofreading
+  - syntax-masking
+  - ofm-self-healing
+  - local-llm
+  - bilingual-alignment
+  - smart-chunking
+abstract: "Intelligent lossless Markdown proofreading, context-aware AI translation, and Obsidian-Flavored Markdown (OFM) pair-assistant for desktop Obsidian with zero syntax destruction."

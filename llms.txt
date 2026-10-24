@@ -1,0 +1,20 @@
+# Assistant Emily (assistant-emily)
+
+> Intelligent Lossless Markdown Proofreading, Context-Aware AI Translation, and Obsidian-Flavored Markdown (OFM) Pair-Assistant for Desktop Obsidian.
+
+Assistant Emily is a desktop Obsidian community plugin designed for researchers, technical writers, and knowledge workers. It integrates local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud proxies with a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
+
+- Repository: https://github.com/sparklings/emily
+- Website: https://sparklings.github.io/emily/
+- Documentation: https://github.com/sparklings/emily/tree/main/docs
+- License: MIT
+- Version: 1.1.0
+
+## Key Capabilities
+- **Lossless Syntax Masking**: Protects WikiLinks, tags, LaTeX math, code blocks, callouts, highlights, tasks, block IDs, footnotes, and TOC chapter timestamps (`TOCTIME`) via UUID token masking.
+- **OFM Autonomous Self-Healing**: Automatically corrects heading line-padding, callout `>` prefix continuity, and transpiles leaked HTML into native Markdown.
+- **Video Clipping Partitioning & Smart Chunking**: Retains TOC lists and metadata line breaks intact; strips timestamps only in subtitle transcripts; guarantees 1,800-character chunk boundary safety.
+- **Deterministic Video Embed Preservation**: Re-injects dropped video embeds into the translated output.
+- **Context-Aware Translation & Tone Rewriting**: 3 scopes (Full Document, Selection, Paragraph Bilingual) and 3 tones (Academic, Polite, Friendly).
+- **Selection-Scoped Atomic Proofreading**: In-place replacement (`replaceRange`) with interactive diff review.
+- **Device-Profile Provider Management**: Eliminates cloud sync conflicts across multiple workstations.
