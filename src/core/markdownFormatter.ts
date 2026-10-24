@@ -92,8 +92,13 @@ export class MarkdownFormatter {
     if (!body && frontmatter) return frontmatter;
 
     // 2. 본문(Body) 영역에 대해서만 타임스탬프 패턴 일괄 정리
-    // 예: 0:00:, 0:27:, **1:29**:, **1:51**, [00:15], (12:34), 1:23:45 등
-    let cleaned = body.replace(/(?:\*\*|\(|\[)?\b\d{1,2}:\d{2}(?::\d{2})?\b(?:\*\*|\)|\])?:?\s*/g, '');
+    // - 0:00:, 0:27:, **1:29**:, **1:51**, [00:15], (12:34), 1:23:45, 18:11·, 거예요.18:19·, 18:29· 등
+    // - 타임스탬프 뒤 구분자: · (U+00B7), • (U+2022), ・ (U+30FB), -, :, |, – (U+2013), — (U+2014)
+    // - 앞 문장 끝 기호(., !, ?)나 단어 뒤에 공백 없이 바로 붙어있는 타임스탬프도 공백 1칸으로 안전 분리 치환
+    let cleaned = body.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
+
+    // 문장 부호(., !, ?) 뒤 공백 및 다중 공백 정리
+    cleaned = cleaned.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ');
 
     // 3. 줄 단위 분할 및 문단 단위 Concatination
     const lines = cleaned.split(/\r?\n/);
@@ -140,6 +145,48 @@ export class MarkdownFormatter {
     }
 
     return cleanedBody;
+  }
+
+  /**
+   * 한국어 번역 결과에 LLM 잠재 공간에서 유출된 중국어 간체자/번체자 어휘가 혼용된 경우,
+   * 이를 자연스러운 한국어로 정제 치환합니다.
+   * (예: "我们所拥有的" -> "우리가 가진 것", "我们所没有的" -> "우리에게 없는 것")
+   */
+  static cleanChineseLeakage(text: string): string {
+    if (!text) return text;
+
+    const { frontmatter, body } = this.extractFrontmatter(text);
+    let target = body;
+
+    // 대표적인 중국어 간체 표현 사전 매핑 (LLM 교차 언어 누출 빈출 어휘)
+    const chineseToKoreanMap: Array<[RegExp, string]> = [
+      [/我们所拥有的/g, '우리가 가진 것'],
+      [/我们所没有的/g, '우리에게 없는 것'],
+      [/所拥有的/g, '가진 것'],
+      [/所没有的/g, '없는 것'],
+      [/我们/g, '우리'],
+      [/他们/g, '그들'],
+      [/这个/g, '이것'],
+      [/那个/g, '저것'],
+      [/以及/g, '및'],
+      [/可以/g, '할 수 있다'],
+      [/进行/g, '진행'],
+      [/没有/g, '없다'],
+      [/拥有/g, '보유'],
+      [/但是/g, '하지만'],
+      [/因为/g, '왜냐하면'],
+      [/所以/g, '따라서']
+    ];
+
+    for (const [pattern, replacement] of chineseToKoreanMap) {
+      target = target.replace(pattern, replacement);
+    }
+
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${target.trimStart()}`;
+    }
+    return target;
   }
 
   /**

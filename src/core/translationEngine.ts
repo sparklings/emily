@@ -65,8 +65,15 @@ export class TranslationEngine {
       throw abortError;
     }
 
+    // 0. 타임스탬프 선제적 정규식 제거: 원문에 타임스탬프(0:04, 18:11· 등)가 포함된 경우
+    //    LLM에 맡기지 않고 코드 레벨에서 100% 무결하게 사전 제거하여 문단을 자연스럽게 연결한 뒤 번역에 전달합니다.
+    const hasTimestamps = /(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?)/.test(markdownContent);
+    const contentToTranslate = hasTimestamps
+      ? MarkdownFormatter.cleanScriptTimestamps(markdownContent)
+      : markdownContent;
+
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
-    const chunks = this.splitIntoSmartChunks(markdownContent, this.CHUNK_SIZE_THRESHOLD);
+    const chunks = this.splitIntoSmartChunks(contentToTranslate, this.CHUNK_SIZE_THRESHOLD);
     const totalChunks = chunks.length;
 
     let accumulatedTranslatedMarkdown = '';
@@ -149,6 +156,12 @@ export class TranslationEngine {
 
       // 한국어 번역인데 한글이 없거나 번역 본문이 비어있는 경우 (독백만 뱉고 잘린 경우)
       const isTargetKorean = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
+
+      // 한국어 번역인 경우 중국어 간체자/한자 유출(Cross-lingual Leakage) 정제
+      if (isTargetKorean) {
+        restoredChunk = MarkdownFormatter.cleanChineseLeakage(restoredChunk);
+      }
+
       let isValidTranslation = isTargetKorean ? (/[가-힣]/.test(restoredChunk) && restoredChunk.trim().length > 0) : restoredChunk.trim().length > 0;
 
       // 번역 실패 감지 시 1회 엄격한 다이렉트 프롬프트로 자가 치유(Self-Healing) 재시도
@@ -218,6 +231,16 @@ export class TranslationEngine {
       throw abortError;
     }
 
+    const isTargetKoreanGlobal = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
+
+    // 1-1. 잔여 타임스탬프 사후 정규식 정제 (LLM이 우발적으로 생성/보존한 18:11· 등 타임스탬프 원천 제거)
+    accumulatedTranslatedMarkdown = MarkdownFormatter.cleanScriptTimestamps(accumulatedTranslatedMarkdown);
+
+    // 1-2. 한국어 번역 대상 중국어 간체자/한자 누출 사후 정제
+    if (isTargetKoreanGlobal) {
+      accumulatedTranslatedMarkdown = MarkdownFormatter.cleanChineseLeakage(accumulatedTranslatedMarkdown);
+    }
+
     // 2. Obsidian Flavored Markdown (OFM) 전용 무손실 정규화 및 렌더링 자가 치유 수행
     // (헤딩 개행 보정, 콜아웃 연속성, 테이블 구조 정합, HTML 태그 정제 및 동아시아 볼드 조사 공백 자동 처리)
     let finalTranslatedMarkdown = MarkdownFormatter.normalizeObsidianMarkdown(accumulatedTranslatedMarkdown);
@@ -232,7 +255,7 @@ export class TranslationEngine {
 
     // 3. 단락별 원문 병기(paragraph_bilingual) 결정론적 1:1 결합 검증 및 정위
     if (options.scope === 'paragraph_bilingual') {
-      finalTranslatedMarkdown = this.formatDeterministicBilingual(markdownContent, finalTranslatedMarkdown);
+      finalTranslatedMarkdown = this.formatDeterministicBilingual(contentToTranslate, finalTranslatedMarkdown);
     }
 
     const result: TranslationResult = {

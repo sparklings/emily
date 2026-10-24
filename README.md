@@ -277,8 +277,31 @@ Assistant Emily 프로젝트는 옵시디언 커뮤니티 플러그인 심사 �
   * 신규 기능 구현, UI 개선 및 설정 화면 개편(개선안 A~D) 작업이 진행되는 개발 전용 브랜치입니다.
   * 커뮤니티 플러그인 심사 과정의 사전 프리뷰(Review Branch) 검토 및 린트/테스트 검증을 통과하는 기준점이 됩니다.
 * **`master` 브랜치**:
-  * `develop` 브랜치에서 프리뷰 심사 및 전체 테스트(60개 TC) 통과가 확인된 후 버전 업그레이드와 함께 최종 병합되는 공식 배포 브랜치입니다.
+  * `develop` 브랜치에서 프리뷰 심사 및 전체 테스트(61개 TC) 통과가 확인된 후 버전 업그레이드와 함께 최종 병합되는 공식 배포 브랜치입니다.
   * 공식 GitHub Release 및 버전 태그(`v1.0.x`) 발행의 기반이 됩니다.
+
+---
+
+## 📜 변경 이력 (Changelog)
+
+### [v1.1.0] - 2026-10-24
+* **복합 영상 스크립트 타임스탬프(18:11· 등) 코드 레벨 선제적 정규식 제거**:
+  * LLM에게 타임스탬프 제거를 일임하던 기존 방식에서 탈피하여, 번역 및 교열 파이프라인 진입 직전 코드에서 선제적으로 100% 무결하게 타임스탬프를 제거하고 문단을 결합하도록 개선.
+  * `18:11·`, `거예요.18:19·`, `18:29·` 등 마침표 뒤 바로 결합된 형태 및 특수 구분점(`·`, `•`, `-`, `:`)까지 완전 무결하게 정제.
+* **한국어 번역 시 중국어(간체자/한자) 유출(Cross-lingual Leakage) 방지 및 자가 치유**:
+  * DeepSeek, Qwen 등 다국어/중국계 LLM에서 발생하는 중국어 간체 어휘(예: `我们所拥有的` ➔ `우리가 가진 것`, `我们所没有的` ➔ `우리에게 없는 것`)를 코드 레벨에서 자동 치환 및 정제.
+  * 프롬프트에 100% 순수 한국어 강제 가드레일(`Strict Pure Korean`)을 탑재하여 타 언어 혼용 원천 방지.
+* **옵시디언 마크다운(OFM) 무손실 렌더링 자가 치유 정규화 엔진 (`normalizeObsidianMarkdown`) 도입**:
+  * **헤딩 전후 개행 보정**: 헤딩(`#` ~ `######`) 전후 빈 줄을 자동 확보하여 옵시디언 에디터의 문단 병합 파싱 오류 완전 해결.
+  * **콜아웃 연속성 복원**: `> [!NOTE]` 등 옵시디언 콜아웃 블록 내부의 누락된 `>` 인용 부호를 구조 분석을 통해 자동 치유.
+  * **인라인 HTML 정제**: 잔여 `<br>`, `<b>`, `<strong>`, `<i>`, `<em>`, `<mark>`, `<code>` 태그를 순수 마크다운 및 옵시디언 하이라이트(`==...==`)로 자동 변환.
+  * **테이블 및 태스크 규격화**: 마크다운 테이블(GFM Table) 행 간 불필요한 개행을 제거하고 `-[]`를 `- [ ] ` 표준 형태로 자동 정규화.
+* **OFM 전용 문법 마스킹 파이프라인 전면 확장 (`MarkdownMasker`)**:
+  * 옵시디언 형광펜 하이라이트(`==단어==`), 체크리스트 태스크(`- [ ]`), 비공개 주석(`%%...%%`), 고유 블록 ID(`^block-id`), 각주 정의(`[^1]:`), 표준 이미지 URL 100% 무손실 보호 및 원형 복원 지원.
+* **배포 환경 격리 및 안전 가드레일 구축 (`esbuild.config.mjs`)**:
+  * 배포 대상을 `PluginVaults`/`PlugVaults`로 제한하고, 실사용 볼트인 `ObsidianVaults`로의 배포를 물리적으로 차단하는 안전 가드레일 적용.
+* **종합 테스트 스위트 확장**:
+  * 신규 테스트 케이스(TC-59, TC-60, TC-61) 추가, 총 61개 테스트 전원 통과 (`100% PASS`).
 
 ---
 
@@ -575,7 +598,12 @@ Assistant Emily follows a two-tier branch workflow to maintain plugin review com
 
 ## 📜 Changelog
 
-### [v1.1.0] - 2026-10-24
+### [v1.1.0] - 2026-10-24
+* **Deterministic Code-Level Regex Timestamp Stripping**:
+  * Eliminated dependency on LLM prompt obedience by executing deterministic code-level pre-processing regex to strip timestamps (e.g. `18:11·`, `sentence.18:19·`, middle-dots `·`, colons, brackets) and reflow paragraphs before dispatching text to LLM.
+* **Chinese Cross-Lingual Leakage Prevention & Sanitization for Korean Output**:
+  * Intercepts and transliterates leaked Chinese simplified tokens (e.g. `我们所拥有的` ➔ `우리가 가진 것`, `我们所没有的` ➔ `우리에게 없는 것`) caused by latent space cross-lingual leakage in multilingual LLMs.
+  * Reinforced system and user prompts with strict pure Korean output constraints (`Strict Pure Korean`).
 * **Obsidian Flavored Markdown (OFM) Self-Healing Normalizer (`normalizeObsidianMarkdown`)**:
   * **Headings Newline Self-Healing**: Automatically ensures standard empty lines before and after headings (`#`–`######`), completely eliminating parser glitches where headings fuse into adjacent paragraphs.
   * **Callout Continuity Restoration**: Automatically restores missing `>` quote prefixes across subsequent lines within Obsidian callouts (e.g. `> [!NOTE]`).

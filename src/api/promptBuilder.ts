@@ -247,6 +247,12 @@ ${styleInstruction}
       ? '- [코드 블록 주석 번역]: 코드 본체(변수명, 키워드, 함수명, 문법 구조)는 절대 수정하지 말고, 코드 내 주석(//, #, /* */) 및 설명 문자열만을 도착어로 번역하십시오.'
       : '- [코드 블록 보존]: 코드 블록 및 인라인 코드는 100% 원본 그대로 유지하십시오.';
 
+    // 4. 한국어 도착어일 경우 중국어/한자 출력 엄격 금지 가드레일
+    const isKoreanTarget = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
+    const pureKoreanInstruction = isKoreanTarget
+      ? '\n- [한국어 번역 시 중국어/한자 혼용 절대 금지 (Strict Pure Korean)]:\n  * 중국어 간체자/번체자(한자) 어휘(예: 我们, 所, 的, 有, 在, 是, 这, 那, 没 등)나 중국어 문장을 절대로 출력하지 마십시오.\n  * 모든 문장은 100% 완전하고 자연스러운 순수 한국어(한글)로만 번역하십시오. (예: "我们所拥有的" ➔ "우리가 가진 것", "我们所没有的" ➔ "우리에게 없는 것", "他们" ➔ "그들")'
+      : '';
+
     const system = `당신은 전문 마크다운 번역 AI "Assistant Emily"입니다.
 주어진 마크다운 문서의 구조(헤딩, 목록, 코드블록, 링크, 표, 콜아웃, YAML 프론트매터, __EMILY_... 보호 토큰)를 100% 보존하면서 고품질로 번역하십시오.
 
@@ -255,7 +261,7 @@ ${styleInstruction}
 - 도착어: ${options.targetLanguage}
 ${toneInstruction}
 ${styleInstruction}
-${codeCommentInstruction}
+${codeCommentInstruction}${pureKoreanInstruction}
 - 번역 범위 정책:
   ${
     options.scope === 'selection'
@@ -270,7 +276,7 @@ ${codeCommentInstruction}
   * 옵시디언 콜아웃(> [!note] 등) 블록 내부의 모든 줄은 '>' 접두사를 연속으로 유지하십시오.
   * HTML 태그(<br>, <b>, <i>, <p>, <span> 등)를 일절 출력하지 말고, 오직 마크다운 문법으로만 작성하십시오.
   * 마크다운 표(Table)의 열 파이프(|)와 구분선(|---|) 구조를 무손실 보존하십시오.
-- 타임스탬프(0:04, 1:29 등)는 제거하고 자연스러운 문단으로 연결하십시오.
+- 타임스탬프(0:04, 18:11· 등)는 제거하고 자연스러운 문단으로 연결하십시오.
 - 마크다운 서식을 손상시키지 마십시오.${PromptBuilder.buildFormatStripInstruction(options.formatStripOptions)}
 - 원문의 내용을 생략하거나 요약하지 말고 상세하게 빠짐없이 번역하십시오.
 
@@ -285,7 +291,7 @@ ${codeCommentInstruction}
       user += `\n[편집자 특별 요청사항]\n${customInstruction.trim()}\n`;
     }
 
-    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 절대 원칙 - 위반 엄금]:\n1. "The user wants...", "Let's review...", "Original text:", "Let's write...", "A -> B" 등 생각 과정이나 가이드라인 복습, 초안 메모를 일절 출력하지 마십시오.\n2. Do NOT output thoughts, drafts, or preamble. Start directly with the first line of the translated markdown.\n3. 원문의 첫 번째 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.`;
+    user += `\n[마크다운 원문]\n${markdownContent}\n\n[출력 절대 원칙 - 위반 엄금]:\n1. "The user wants...", "Let's review...", "Original text:", "Let's write...", "A -> B" 등 생각 과정이나 가이드라인 복습, 초안 메모를 일절 출력하지 마십시오.\n2. Do NOT output thoughts, drafts, or preamble. Start directly with the first line of the translated markdown.\n3. 원문의 첫 번째 줄부터 시작하는 완성된 ${options.targetLanguage} 마크다운 본문만을 곧바로 출력하십시오.${isKoreanTarget ? '\n4. 중국어 간체자/번체자(한자) 어휘를 절대로 출력하지 마시고 100% 순수 한국어로 번역하십시오.' : ''}`;
 
     return { system, user };
   }

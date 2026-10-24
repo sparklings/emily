@@ -1604,6 +1604,11 @@ export class EmilySidebarView extends ItemView {
             editedDoc = MarkdownFormatter.stripMarkdownDecorations(editedDoc, this.formatStripOptions);
           }
 
+          // Clean leaked Chinese terms if Korean
+          if (this.plugin.settings.language === 'ko' || /[가-힣]/.test(editedDoc)) {
+            editedDoc = MarkdownFormatter.cleanChineseLeakage(editedDoc);
+          }
+
           // Apply Obsidian Flavored Markdown normalization and East Asian bold spacing
           editedDoc = MarkdownFormatter.normalizeObsidianMarkdown(editedDoc);
 
