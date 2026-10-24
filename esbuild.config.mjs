@@ -73,17 +73,29 @@ const context = await esbuild.context({
 function copyToVaults() {
 	const userProfile = process.env.USERPROFILE || '';
 	const customVault = process.env.OBSIDIAN_VAULT_PATH;
-	// 배포 타깃을 PlugVaults로 제한 (ObsidianVaults 배포 완전 배제)
+	
+	// 엄격한 배포 안전 가드: ObsidianVaults 배포 절대 금지 (PluginVaults / PlugVaults 전용)
+	const forbiddenVaultPattern = /ObsidianVaults/i;
+
 	const candidateVaults = [
 		...(customVault ? [customVault] : []),
 		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
 		path.join(userProfile, 'OneDrive', 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
+		path.join(userProfile, 'OneDrive', 'PluginVaults', '.obsidian', 'plugins', 'assistant-emily'),
+		path.join(userProfile, 'OneDrive', 'PluginVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily'),
 		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'assistant-emily'),
-		path.join(userProfile, 'PlugVaults', '.obsidian', 'plugins', 'obsidian-assistant-emily')
+		path.join(userProfile, 'PluginVaults', '.obsidian', 'plugins', 'assistant-emily')
 	];
 
-	// 중복 경로 제거
-	const uniqueDestDirs = [...new Set(candidateVaults.map(p => path.resolve(p)))];
+	// 중복 경로 제거 및 ObsidianVaults 원천 차단 필터링
+	const uniqueDestDirs = [...new Set(candidateVaults.map(p => path.resolve(p)))]
+		.filter(destDir => {
+			if (forbiddenVaultPattern.test(destDir)) {
+				console.error(`[Deploy BLOCKED] FORBIDDEN TARGET: ${destDir} (ObsidianVaults 배포는 엄격히 금지되어 있습니다)`);
+				return false;
+			}
+			return true;
+		});
 
 	for (const destDir of uniqueDestDirs) {
 		if (fs.existsSync(destDir)) {
