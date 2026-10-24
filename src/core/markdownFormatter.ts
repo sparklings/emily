@@ -241,7 +241,7 @@ export class MarkdownFormatter {
     if (!markdown) return [];
     const embeds: string[] = [];
     const patterns = [
-      /!\[[^\]\n]*\]\((?:https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|vimeo\.com)[^\)\n]+)\)/g,
+      /!\[[^\]\n]*\]\((?:https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|vimeo\.com)[^)\n]+)\)/g,
       /<iframe[\s\S]*?(?:youtube\.com|youtu\.be|vimeo\.com)[\s\S]*?<\/iframe>/gi,
       /(?:^|\n)(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=[a-zA-Z0-9_-]+|youtu\.be\/[a-zA-Z0-9_-]+)[^\s\n]*)(?=\n|$)/g
     ];

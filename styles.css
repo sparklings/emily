@@ -996,12 +996,12 @@ select.emily-select-input {
 .emily-error-actions button.is-disabled,
 .emily-active-form-container.is-form-executing .emily-error-actions button:disabled,
 .emily-active-form-container.is-form-executing .emily-error-actions button.is-disabled {
-  opacity: 0.45 !important;
-  pointer-events: none !important;
-  cursor: not-allowed !important;
-  filter: grayscale(0.7) !important;
-  box-shadow: none !important;
-  transform: none !important;
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+  box-shadow: none;
+  transform: none;
 }
 
 .emily-restarted-badge {
@@ -1130,7 +1130,7 @@ select.emily-select-input {
 /* 좁은 사이드바(<380px) 또는 컴팩트 사이드바(<320px)에서는 Text를 숨기고 ❌ 아이콘만 컴팩트 표시 */
 .is-narrow-sidebar .emily-pipeline-cancel-btn .emily-pipeline-cancel-text,
 .is-compact-sidebar .emily-pipeline-cancel-btn .emily-pipeline-cancel-text {
-  display: none !important;
+  display: none;
 }
 
 .is-narrow-sidebar .emily-pipeline-cancel-btn,
@@ -1148,7 +1148,7 @@ select.emily-select-input {
 
 @media (max-width: 380px) {
   .emily-pipeline-cancel-btn .emily-pipeline-cancel-text {
-    display: none !important;
+    display: none;
   }
   .emily-pipeline-cancel-btn {
     padding: 2px 5px;
