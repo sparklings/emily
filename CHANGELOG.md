@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 * **Obsidian Native Hotkey & Context Menu Integration**:
-  * Implemented `emily-quick-translate-selection-append` using Obsidian's official `addCommand` with default hotkey `Ctrl+Shift+C` (Mac: `Cmd+Shift+C`).
+  * Implemented `emily-quick-translate-selection-append` using Obsidian's official `addCommand` (customizable in Hotkeys settings, leaving default unassigned to prevent key conflicts per review guidelines).
   * Registered editor context menu (`editor-menu`) item for quick selection translation.
   * Added live inline status block (`> ⏳ [Assistant Emily] 번역 진행 중...`) directly beneath the selected editor text during background translation.
 * **Synchronized Live Pipeline & User Cancellation**:

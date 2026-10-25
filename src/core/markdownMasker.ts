@@ -137,14 +137,14 @@ export class MarkdownMasker {
     });
 
     // 9-1. 마크다운 링크 URL 보호 ([텍스트](https://...)) - 링크 텍스트는 번역되도록 두고 목적지 URL만 마스킹 보호
-    target = target.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s\)]+)\)/g, (match: string, linkText: string, url: string) => {
+    target = target.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, (match: string, linkText: string, url: string) => {
       const token = getPlaceholder('LINKURL');
       maskMap.set(token, url);
       return `[${linkText}](${token})`;
     });
 
     // 9-2. 독립형 URL 보호 (Raw URLs: https://... 또는 http://...)
-    target = target.replace(/(?<![\(\[<"'])https?:\/\/[^\s\)\]>]+/g, (match: string) => {
+    target = target.replace(/(?<![([<"'])https?:\/\/[^\s)\]>]+/g, (match: string) => {
       // 문장 끝 구두점(., ,, ;, :, !, ?)이 URL 끝에 붙은 경우 분리하여 본문 문장 부호로 유지
       const punctMatch = match.match(/[.,;:!?]+$/);
       const punct = punctMatch ? punctMatch[0] : '';

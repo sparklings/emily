@@ -6798,8 +6798,8 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
 
     // 2) 옵시디언 공식 HotkeyManager 연동 커맨드(addCommand) 등록 검증
     const hasCommand = mainSrc.includes("'emily-quick-translate-selection-append'") &&
-                       mainSrc.includes("modifiers: ['Mod', 'Shift']") &&
-                       mainSrc.includes("key: 'C'");
+                       !mainSrc.includes("hotkeys:") &&
+                       !mainSrc.includes("modifiers:");
     const tc73_2 = hasCommand;
 
     // 3) 에디터 우클릭 컨텍스트 메뉴(editor-menu) 표준 연동 검증
@@ -6808,7 +6808,7 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     const tc73_3 = hasContextMenu;
 
     console.log('  - 1) 전역 DOM 키 가로채기(보안 위반 코드) 완전 제거 확인: ' + tc73_1);
-    console.log('  - 2) 옵시디언 공식 Hotkey 커맨드(Mod+Shift+C) 표준 등록: ' + tc73_2);
+    console.log('  - 2) 옵시디언 공식 커맨드 등록 및 기본 단축키 미할당(충돌 방지 심사 규정 준수): ' + tc73_2);
     console.log('  - 3) 에디터 우클릭 컨텍스트 메뉴(editor-menu) 연동: ' + tc73_3);
 
     const tc73Passed = tc73_1 && tc73_2 && tc73_3;

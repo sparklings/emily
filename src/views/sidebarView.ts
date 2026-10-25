@@ -3274,7 +3274,7 @@ export class EmilySidebarView extends ItemView {
       return step;
     };
 
-    const step1 = createStepNode('step-1', t.sidebar.pipelineParsing, `${t.scopes.selection} (${cleanSelected.length}자)`, 'is-done');
+    createStepNode('step-1', t.sidebar.pipelineParsing, `${t.scopes.selection} (${cleanSelected.length}자)`, 'is-done');
     const step2 = createStepNode('step-2', `LLM ${opLabel} (${effectiveSrc} ➔ ${targetLang})`, t.sidebar.opRunningDesc.replace('{op}', opLabel), 'is-active');
     const step3 = createStepNode('step-3', isSameLangEdit ? t.sidebar.syncTitleEdit : t.sidebar.syncTitleTrans, t.sidebar.syncAppendTransDone, 'is-pending');
 

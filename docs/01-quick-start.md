@@ -69,7 +69,7 @@ Assistant Emily는 사용자의 요구에 따라 **100% 무료 로컬 AI(Ollama)
 
 ---
 
-## 3단계: 기본 단축키 `Ctrl + Shift + C` 로 실전 번역하기
+## 3단계: 빠른 선택 영역 번역 & 단축키 실습하기
 
 이제 에디터에서 바로 텍스트를 선택하여 번역을 실행해보겠습니다.
 
@@ -79,7 +79,7 @@ Assistant Emily는 사용자의 요구에 따라 **100% 무료 로컬 AI(Ollama)
    Knowledge graphs and linked notes help researchers build compound ideas over time.
    ```
 2. 키보드에서 **`Ctrl + Shift + C`** (Mac: **`Cmd + Shift + C`** )를 누릅니다.
-   *(또는 마우스 우클릭 후 컨텍스트 메뉴에서 `Assistant Emily: 선택 영역 번역 후 바로 아래에 덧붙이기` 선택)*
+   *(마우스 우클릭 후 컨텍스트 메뉴에서 `Assistant Emily: 선택 영역 번역 후 바로 아래에 덧붙이기` 선택, 또는 `설정 > 단축키`에서 원하는 단축키 지정)*
 3. **즉각적인 피드백**: 선택한 텍스트 바로 아래에 실시간 상태 안내 블록이 생성됩니다:
    ```markdown
    > ⏳ **[Assistant Emily] 한국어 번역 진행 중...** 
