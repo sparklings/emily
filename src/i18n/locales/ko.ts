@@ -33,6 +33,8 @@ export const ko: TranslationStrings = {
     quickTranslateTranslating: '⚡ 선택 영역 번역 중...',
     quickTranslateDone: '✓ 선택 영역 아래에 번역문이 추가되었습니다.',
     quickTranslateNoSelection: '선택한 텍스트가 없습니다. 번역할 영역을 먼저 마우스로 드래그해주세요.',
+    quickTranslateInlineStatus: '⏳ **[Assistant Emily] {lang} 번역 진행 중...** ',
+    quickTranslateInlineError: '❌ **[Assistant Emily] 번역 실패: {error}** ',
     ribbonTooltip: 'Assistant Emily 열기'
   },
   settings: {

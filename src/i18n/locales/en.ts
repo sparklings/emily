@@ -33,6 +33,8 @@ export const en: TranslationStrings = {
     quickTranslateTranslating: '⚡ Translating selection...',
     quickTranslateDone: '✓ Translation appended below the selected text.',
     quickTranslateNoSelection: 'No text selected. Please highlight text to translate first.',
+    quickTranslateInlineStatus: '⏳ **[Assistant Emily] Translating into {lang}...** ',
+    quickTranslateInlineError: '❌ **[Assistant Emily] Translation failed: {error}** ',
     ribbonTooltip: 'Open Assistant Emily'
   },
   settings: {

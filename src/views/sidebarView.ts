@@ -24,7 +24,7 @@ import {
   isLocalEndpoint
 } from '../utils/deviceKeyManager';
 
-function getISODateTimeString(date: Date = new Date()): string {
+export function getISODateTimeString(date: Date = new Date()): string {
   const pad = (num: number) => num.toString().padStart(2, '0');
   const yyyy = date.getFullYear();
   const mm = pad(date.getMonth() + 1);
@@ -42,7 +42,7 @@ function getISODateTimeString(date: Date = new Date()): string {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${sign}${offH}:${offM}`;
 }
 
-interface RollingSessionData {
+export interface RollingSessionData {
   id: number;
   timestamp: string;
   fileName: string;
@@ -252,6 +252,7 @@ export class EmilySidebarView extends ItemView {
       this.lastCreatedTempPath = null;
       this.sessions = [];
       this.sessionCounter = 0;
+      this.plugin.clearSessionHistory();
 
       // 3. 플러그인 설정 및 코어 서비스 재초기화
       await this.plugin.loadSettings();
@@ -386,6 +387,17 @@ export class EmilySidebarView extends ItemView {
 
     // Sessions history container
     this.sessionsContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-sessions-history-container' });
+
+    // Sync from plugin global session history if view is reopened/rendered
+    const pluginHistory = this.plugin.getSessionHistory?.() || [];
+    if (this.sessions.length === 0 && pluginHistory.length > 0) {
+      this.sessions = [...pluginHistory];
+      this.sessionCounter = Math.max(...this.sessions.map((s) => s.id), 0);
+    }
+    for (const session of this.sessions) {
+      const card = this.createSessionCard(this.sessionsContainerEl, session);
+      session.sessionEl = card;
+    }
 
     // Active Form container (Where the current/next form lives)
     this.activeFormContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-active-form-container' });
@@ -2087,6 +2099,7 @@ export class EmilySidebarView extends ItemView {
       sessionData.sessionEl = card;
       this.sessions.push(sessionData);
     }
+    this.plugin.recordSessionFromSidebar?.(sessionData);
 
     // Release execution lock and restore controls
     this.isExecuting = false;
@@ -2312,8 +2325,29 @@ export class EmilySidebarView extends ItemView {
     }
   }
 
+  /**
+   * 외부 명령(단축키 등)으로 완료된 세션을 사이드바 히스토리에 기록하고 카드를 실시간 렌더링합니다.
+   */
+  public recordCompletedSession(sessionData: RollingSessionData): void {
+    this.sessionCounter = Math.max(this.sessionCounter, sessionData.id);
+    if (!this.sessions.some((s) => s.id === sessionData.id)) {
+      this.sessions.push(sessionData);
+    }
+    if (this.sessionsContainerEl) {
+      const existingEl = this.sessionsContainerEl.querySelector(`[data-session-id="${sessionData.id}"]`);
+      if (!existingEl) {
+        const card = this.createSessionCard(this.sessionsContainerEl, sessionData);
+        sessionData.sessionEl = card;
+        window.setTimeout(() => {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    }
+  }
+
   private createSessionCard(parent: HTMLElement, session: RollingSessionData): HTMLElement {
     const card = parent.createDiv({ cls: 'emily-session-card' });
+    card.setAttribute('data-session-id', String(session.id));
     const t = getTranslation(this.plugin.settings.language);
 
     // 1. Header: Left = Status Badge, Right = ISO datetime + chevron

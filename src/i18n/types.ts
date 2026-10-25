@@ -31,6 +31,8 @@ export interface TranslationStrings {
     quickTranslateTranslating: string;
     quickTranslateDone: string;
     quickTranslateNoSelection: string;
+    quickTranslateInlineStatus: string;
+    quickTranslateInlineError: string;
     ribbonTooltip: string;
   };
   settings: {
