@@ -91,7 +91,7 @@ def create_og_image():
     badge_x = title_x + 325
     badge_y = top_y + 12
     draw.rounded_rectangle([badge_x, badge_y, badge_x + 185, badge_y + 26], radius=13, fill=(124, 58, 237, 45), outline=(139, 92, 246, 120), width=1)
-    draw.text((badge_x + 14, badge_y + 4), "Obsidian Plugin · v1.1.1", font=font_tag, fill=(196, 181, 253, 255))
+    draw.text((badge_x + 14, badge_y + 4), "Obsidian Plugin · v1.1.2", font=font_tag, fill=(196, 181, 253, 255))
 
     # Subtitle Line
     draw.text((title_x, top_y + 54), "Obsidian AI Translation & Markdown Polish", font=font_sub_en, fill=(226, 232, 240, 240))
