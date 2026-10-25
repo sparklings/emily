@@ -164,6 +164,49 @@ export class EmilySidebarView extends ItemView {
   }
 
   /**
+   * 사용자가 사이드바 UI에서 조작한 모든 활성 옵션(교열, 서식 제거, 번역 등)을
+   * Obsidian 플러그인 전역 설정(data.json)에 즉시 영구 저장(Persistence)합니다.
+   * 이를 통해 다음 작업 및 옵시디언 재시작 후에도 사용자가 선택한 옵션이 100% 유지됩니다.
+   */
+  public async persistActiveOptions(): Promise<void> {
+    try {
+      this.plugin.settings.defaultProofreadSpelling = Boolean(this.proofreadOptions.checkSpelling);
+      this.plugin.settings.defaultProofreadGrammar = Boolean(this.proofreadOptions.checkGrammar);
+      this.plugin.settings.defaultProofreadTimestamp = Boolean(this.proofreadOptions.removeTimestamps);
+
+      this.plugin.settings.defaultStripBold = Boolean(this.formatStripOptions.stripBold);
+      this.plugin.settings.defaultStripItalic = Boolean(this.formatStripOptions.stripItalic);
+      this.plugin.settings.defaultStripStrikethrough = Boolean(this.formatStripOptions.stripStrikethrough);
+      this.plugin.settings.defaultStripHighlight = Boolean(this.formatStripOptions.stripHighlight);
+
+      this.plugin.settings.defaultTranslationEnabled = Boolean(this.translationOptions.enabled);
+      if (this.translationOptions.sourceLanguage) {
+        this.plugin.settings.defaultTranslationSource = normalizeLanguageCode(this.translationOptions.sourceLanguage);
+      }
+      if (this.translationOptions.targetLanguage) {
+        this.plugin.settings.defaultTranslationTarget = normalizeLanguageCode(this.translationOptions.targetLanguage);
+      }
+      if (this.translationOptions.scope) {
+        this.plugin.settings.defaultTranslationScope = this.translationOptions.scope;
+      }
+      if (this.translationOptions.preservation) {
+        this.plugin.settings.defaultPreservationStrategy = this.translationOptions.preservation;
+      }
+      if (this.translationOptions.tone) {
+        this.plugin.settings.defaultTranslationTone = this.translationOptions.tone;
+      }
+      if (this.translationOptions.style) {
+        this.plugin.settings.defaultTranslationStyle = this.translationOptions.style;
+      }
+      this.plugin.settings.defaultTranslateCodeComments = Boolean(this.translationOptions.translateCodeComments);
+
+      await this.plugin.saveSettings();
+    } catch (err) {
+      console.error('[Assistant Emily] Failed to persist active options:', err);
+    }
+  }
+
+  /**
    * 작업 상태를 새로고침하고 UI 요소를 최초 실행 상태로 완전 클린징합니다.
    * 1. 진행 중인 비동기 작업(LLM 스트리밍) 즉시 중단 (Abort)
    * 2. 세션 기록, 커스텀 프롬프트, 대상 파일 락 등 내부 상태 초기화
@@ -526,6 +569,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.checkSpelling = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -539,6 +583,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.checkGrammar = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -552,6 +597,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.removeTimestamps = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -576,6 +622,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripBold = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -589,6 +636,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripItalic = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -602,6 +650,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripStrikethrough = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -615,6 +664,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripHighlight = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
   }
@@ -696,6 +746,7 @@ export class EmilySidebarView extends ItemView {
       if (isChecked && !header.hasClass('is-expanded')) {
         this.toggleAccordion(header, body);
       }
+      void this.persistActiveOptions();
     });
 
     // 3. 타이틀바(아코디언 헤더) 클릭 이벤트: 스위치 영역을 제외한 타이틀바 영역 클릭 시에만 아코디언 접기/펼치기
@@ -743,6 +794,7 @@ export class EmilySidebarView extends ItemView {
     });
     srcSelect.addEventListener('change', () => {
       this.translationOptions.sourceLanguage = srcSelect.value;
+      void this.persistActiveOptions();
     });
 
     // Arrow in middle indicating translation direction
@@ -770,6 +822,7 @@ export class EmilySidebarView extends ItemView {
     });
     tgtSelect.addEventListener('change', () => {
       this.translationOptions.targetLanguage = tgtSelect.value;
+      void this.persistActiveOptions();
     });
 
     // 1. 번역 범위 (Scope: 3-Button Segmented Grid with Icons & Rich Tooltips)
@@ -799,6 +852,7 @@ export class EmilySidebarView extends ItemView {
       this.translationOptions.scope || 'all',
       (val) => {
         this.translationOptions.scope = val;
+        void this.persistActiveOptions();
       }
     );
 
@@ -829,6 +883,7 @@ export class EmilySidebarView extends ItemView {
       this.translationOptions.preservation || 'new_file',
       (val) => {
         this.translationOptions.preservation = val;
+        void this.persistActiveOptions();
       }
     );
 
@@ -859,6 +914,7 @@ export class EmilySidebarView extends ItemView {
       this.translationOptions.tone || 'academic',
       (val: TranslationTone) => {
         this.translationOptions.tone = val;
+        void this.persistActiveOptions();
       }
     );
 
@@ -889,6 +945,7 @@ export class EmilySidebarView extends ItemView {
       this.translationOptions.style || 'balanced',
       (val: TranslationStyle) => {
         this.translationOptions.style = val;
+        void this.persistActiveOptions();
       }
     );
 
@@ -902,6 +959,7 @@ export class EmilySidebarView extends ItemView {
     codeCommentCheckbox.checked = Boolean(this.translationOptions.translateCodeComments);
     codeCommentCheckbox.addEventListener('change', () => {
       this.translationOptions.translateCodeComments = codeCommentCheckbox.checked;
+      void this.persistActiveOptions();
     });
     codeCommentRow.createSpan({
       text: t.sidebar.translateCodeComments,
@@ -1117,6 +1175,8 @@ export class EmilySidebarView extends ItemView {
         return;
       }
     }
+
+    void this.persistActiveOptions();
 
     // Set UI to Loading & Disabled State (Lock target document & all options during execution)
     this.lockedTargetFile = activeFile;
@@ -2038,6 +2098,7 @@ export class EmilySidebarView extends ItemView {
     this.isExecuting = false;
     this.currentAbortController = null;
     this.lockedTargetFile = null;
+    void this.persistActiveOptions();
     this.lockedTargetView = null;
     this.setFormDisabledState(false);
 
