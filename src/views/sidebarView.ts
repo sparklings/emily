@@ -579,7 +579,7 @@ export class EmilySidebarView extends ItemView {
     });
 
     const groupWrap = body.createDiv({ cls: 'emily-field-group' });
-    this.renderFieldLabelWithInfo(groupWrap, t.sidebar.proofreadScope, t.sidebar.proofreadGroupInfo);
+    groupWrap.createSpan({ text: t.sidebar.proofreadScope, cls: 'emily-field-label font-semibold' });
 
     const grid = groupWrap.createDiv({ cls: 'emily-segmented-grid' });
 
@@ -627,7 +627,7 @@ export class EmilySidebarView extends ItemView {
 
     // Format Stripping Options (4 Toggle Segmented Buttons: Bold, Italic, Strikethrough, Highlight)
     const formatStripGroup = body.createDiv({ cls: 'emily-field-group' });
-    this.renderFieldLabelWithInfo(formatStripGroup, t.sidebar.formatStripTitle, t.sidebar.formatStripGroupInfo);
+    formatStripGroup.createSpan({ text: t.sidebar.formatStripTitle, cls: 'emily-field-label font-semibold' });
 
     const formatStripGrid = formatStripGroup.createDiv({
       cls: 'emily-segmented-grid emily-format-strip-grid'
@@ -877,8 +877,7 @@ export class EmilySidebarView extends ItemView {
         this.translationOptions.scope = val;
         void this.persistActiveOptions();
         updatePreservationControls();
-      },
-      t.sidebar.transScopeGroupInfo
+      }
     );
 
     // 2. 결과 반영 방식 (Preservation: Context-Aware Dynamic Labels)
@@ -897,8 +896,7 @@ export class EmilySidebarView extends ItemView {
         (val) => {
           this.translationOptions.preservation = val;
           void this.persistActiveOptions();
-        },
-        t.sidebar.preservationGroupInfo
+        }
       );
     };
 
@@ -909,7 +907,7 @@ export class EmilySidebarView extends ItemView {
 
     // Tone Column
     const toneCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
-    this.renderFieldLabelWithInfo(toneCol, t.tones.title, t.sidebar.toneGroupInfo);
+    toneCol.createSpan({ text: t.tones.title, cls: 'emily-field-label font-semibold' });
     const toneSelect = toneCol.createEl('select', { cls: 'dropdown emily-select-input' });
     const toneOpts: Array<{ value: TranslationTone; label: string }> = [
       { value: 'academic', label: t.tones.academic },
@@ -927,7 +925,7 @@ export class EmilySidebarView extends ItemView {
 
     // Style Column
     const styleCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
-    this.renderFieldLabelWithInfo(styleCol, t.styles.title, t.sidebar.styleGroupInfo);
+    styleCol.createSpan({ text: t.styles.title, cls: 'emily-field-label font-semibold' });
     const styleSelect = styleCol.createEl('select', { cls: 'dropdown emily-select-input' });
     const styleOpts: Array<{ value: TranslationStyle; label: string }> = [
       { value: 'balanced', label: t.styles.balanced },
@@ -959,9 +957,6 @@ export class EmilySidebarView extends ItemView {
       text: t.sidebar.translateCodeComments,
       cls: 'emily-checkbox-label emily-field-label font-semibold'
     });
-    const infoSpan = codeCommentRow.createSpan({ cls: 'emily-info-icon' });
-    setIcon(infoSpan, 'info');
-    setTooltip(infoSpan, t.sidebar.translateCodeCommentsInfo);
   }
 
   private renderCustomPromptSection(parent: HTMLElement, t: TranslationKeys) {
@@ -2870,22 +2865,6 @@ export class EmilySidebarView extends ItemView {
     return labelSpan;
   }
 
-  private renderFieldLabelWithInfo(
-    parent: HTMLElement,
-    label: string,
-    infoTooltip?: string,
-    extraClass: string = 'emily-field-label font-semibold'
-  ): HTMLElement {
-    const row = parent.createDiv({ cls: 'emily-field-label-row' });
-    row.createSpan({ text: label, cls: extraClass });
-    if (infoTooltip) {
-      const infoSpan = row.createSpan({ cls: 'emily-info-icon' });
-      setIcon(infoSpan, 'info');
-      setTooltip(infoSpan, infoTooltip);
-    }
-    return row;
-  }
-
   private getPreservationGroupTitleForScope(scope: TranslationScope, t: TranslationKeys): string {
     if (scope === 'selection') {
       return t.preservation.groupTitleSelection || t.sidebar.preservation;
@@ -2981,11 +2960,10 @@ export class EmilySidebarView extends ItemView {
       desc?: string;
     }>,
     currentValue: T,
-    onSelect: (val: T) => void,
-    groupInfo?: string
+    onSelect: (val: T) => void
   ): (val: T) => void {
     const groupWrap = parent.createDiv({ cls: 'emily-field-group' });
-    this.renderFieldLabelWithInfo(groupWrap, label, groupInfo);
+    groupWrap.createSpan({ text: label, cls: 'emily-field-label font-semibold' });
 
     const grid = groupWrap.createDiv({ cls: 'emily-segmented-grid' });
     const btnEls: Map<T, HTMLElement> = new Map();
