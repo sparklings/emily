@@ -69,7 +69,37 @@ flowchart TD
 
 ---
 
-## 4. 자막 타임스탬프 정제 및 문단 리플로우 알고리즘
+## 4. Transcript 대제목 및 구간별 주제(Sub-title) H3 구조화
+
+옵시디언 웹 클리퍼(Obsidian Web Clipper)를 통해 유튜브 영상을 클리핑하면, `Transcript` 영역 내부가 단순 타임스탬프와 음성 전사 텍스트만으로 구성되지 않고 챕터별 소주제(Sub-title)가 중간중간 삽입되어 있습니다:
+
+```markdown
+Transcript
+
+75 days left in 2026
+
+0:00 · There are 75 days left in 2026.
+0:04 · If you want a real AI skill on your resume...
+
+What changed since June (18 → 27 courses)
+
+0:44 · Quick context, back in June...
+```
+
+기존 단순 결합 방식에서는 이러한 주제 라인(`75 days left in 2026`)이 자막 본문 문단 속에 일반 문장처럼 파묻혀 병합되거나 LLM 번역 시 문맥이 왜곡되는 문제가 있었습니다.
+
+**Assistant Emily** 는 2단계 구간 감지 알고리즘을 통해 이를 완벽히 구조화합니다:
+1. **Transcript 대제목 표준화**: `Transcript`, `**Transcript**`, `스크립트`, `전사록` 등의 시작 라인을 감지하여 표준 `## Transcript` (H2) 헤딩으로 정합화합니다.
+2. **구간별 주제(Sub-title) 자동 감지**:
+   * 마크다운 헤딩(`### ...`)이나 볼드체 단독 라인(`**...**`)
+   * 타임스탬프로 시작하지 않으면서 바로 다음 유효 라인이 타임스탬프(`0:00 · ...`)로 시작하는 150자 이하의 독립 제목 라인
+3. **독립 H3 소제목 변환**: 이전 음성 단락을 즉시 종결 및 출력하고, 해당 주제를 `### 주제명` 형태의 H3 마크다운 헤딩으로 독립 승격시킵니다.
+
+이로써 옵시디언의 우측 아웃라인(Outline) 패널에서 챕터별 즉시 이동이 가능해지며, LLM 번역 시에도 각 주제가 마크다운 헤딩으로 명확히 인식되어 고품질로 번역됩니다.
+
+---
+
+## 5. 자막 타임스탬프 정제 및 문단 리플로우 알고리즘
 
 스크립트 본문 구역에서 `cleanScriptTimestamps`는 다음 알고리즘을 통해 자막 파편을 매끄러운 단락으로 재결합합니다:
 
@@ -93,9 +123,9 @@ if (currentScriptLength >= 400 && /[.?!]$/.test(cleanedLine)) {
 
 ---
 
-## 5. 1,800자 스마트 청킹 (Smart Chunking Engine)
+## 6. 1,800자 스마트 청킹 (Smart Chunking Engine)
 
-### 5.1 청킹 임계값 설정 배경 (1,800자)
+### 6.1 청킹 임계값 설정 배경 (1,800자)
 기존의 2,500자 청킹은 OpenAI GPT-4o와 같은 고용량 모델에서는 안정적이었으나, 다음과 같은 환경에서 간헐적 컨텍스트 절단이 발생했습니다:
 * **경량 로컬 모델** (`llama3.2:3b`, `qwen2.5:7b`, Ollama 환경): 출력 토큰 한계(2,048 토큰) 및 캐시 부족.
 * **무료 프록시 티어** (`dots-3-note-preview:free`, FreeLLMAPI): 분당 토큰(TPM) 또는 단일 요청 크기 제한.

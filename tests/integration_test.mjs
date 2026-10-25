@@ -81,43 +81,68 @@ class MarkdownFormatter {
   static cleanScriptTimestamps(text) {
     if (!text) return text;
 
+    // 1. 프론트매터(Frontmatter) 분리 및 100% 원본 격리
     const { frontmatter, body } = this.extractFrontmatter(text);
     if (!body && frontmatter) return frontmatter;
 
+    // 2. 영상 클리핑 문서인지 확인 (Transcript 헤더 또는 타임스탬프 패턴 존재 여부)
     const isVideoNote = /^#{1,4}\s+Transcript\b/im.test(body) ||
       /(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?)/.test(body);
 
     if (!isVideoNote) {
+      // 일반 신문기사, 기술 블로그 등은 자막 타임스탬프 정제를 건너뛰고 원문 줄바꿈을 100% 보존
       return text;
     }
 
     const lines = body.split(/\r?\n/);
 
+    // 3. Transcript (스크립트 본문) 시작 라인 인덱스 탐색
     let transcriptLineIdx = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      if (/^#{1,4}\s+Transcript\b/i.test(trimmed) || /^(?:\*\*|__)?Transcript(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(trimmed) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
         transcriptLineIdx = i;
         break;
       }
     }
 
+    // 만약 명시적인 Transcript 헤더가 없는 경우:
+    // 타임스탬프로 시작하고 30자 이상 긴 문장이 이어지는 실제 자막 본문 시작점 탐색
     if (transcriptLineIdx === -1) {
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
         if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) continue;
-        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
-          transcriptLineIdx = i;
+        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
+          // 혹시 바로 앞의 non-empty 라인이 첫 번째 소제목(Sub-title)인지 확인
+          let subtitleStart = i;
+          for (let prev = i - 1; prev >= 0; prev--) {
+            const prevTrimmed = lines[prev].trim();
+            if (!prevTrimmed) continue;
+            // 타임스탬프로 시작하는 목차(TOC) 항목이 아니고, 링크나 임베드가 아닌 150자 이하 짧은 제목인 경우
+            if (!/^(?:https?:\/\/|!\[|#+\s*(?:Timestamps|Chapters|타임스탬프|목차)|---\s*$)/i.test(prevTrimmed) &&
+                !/^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/i.test(prevTrimmed) &&
+                prevTrimmed.length <= 150) {
+              subtitleStart = prev;
+            }
+            break;
+          }
+          transcriptLineIdx = subtitleStart;
           break;
         }
       }
     }
 
+    // 영역 A: 메타데이터 & 목차 (Transcript 이전)
+    // 영역 B: 스크립트 본문 (Transcript 이후)
     const metaLines = transcriptLineIdx !== -1 ? lines.slice(0, transcriptLineIdx) : [];
     const transcriptLines = transcriptLineIdx !== -1 ? lines.slice(transcriptLineIdx) : lines;
 
+    // 4. 메타/목차 영역 정제:
+    // - 동영상 링크/임베드 100% 보존
+    // - 목차(Timestamps)의 타임스탬프 100% 보존 (불릿 리스트로 표준화)
+    // - Connect, Newsletter 등 줄바꿈 100% 보존
     const cleanedMetaLines = [];
-
     for (let i = 0; i < metaLines.length; i++) {
       const rawLine = metaLines[i];
       const trimmed = rawLine.trim();
@@ -133,6 +158,7 @@ class MarkdownFormatter {
         continue;
       }
 
+      // 단독 챕터/목차 줄: "0:00 What is Gemini Notebook" -> "- 0:00 What is Gemini Notebook"
       const chapterMatch = trimmed.match(/^[-*+]?\s*(\d{1,2}:\d{2}(?::\d{2})?)\s+(.+)$/);
       if (chapterMatch) {
         cleanedMetaLines.push(`- ${chapterMatch[1]} ${chapterMatch[2]}`);
@@ -142,6 +168,10 @@ class MarkdownFormatter {
       cleanedMetaLines.push(rawLine);
     }
 
+    // 5. 스크립트 본문 영역 정제:
+    // - 'Transcript' 대제목 헤더 감지 시 '## Transcript'로 표준화
+    // - 중간에 등장하는 구간별 주제(Sub-title)를 '### 주제' 소제목으로 구조화
+    // - 스크립트 본문 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
     const cleanedScriptParagraphs = [];
     let currentScriptParagraph = [];
     let currentScriptLength = 0;
@@ -151,15 +181,37 @@ class MarkdownFormatter {
       const line = rawLine.trim();
 
       if (!line) {
+        continue;
+      }
+
+      // 1) Transcript 대제목 헤더 감지 ("Transcript", "## Transcript", "**Transcript**" 등)
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(line) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
           currentScriptLength = 0;
         }
+        cleanedScriptParagraphs.push('## Transcript');
         continue;
       }
 
-      if (/^(?:#{1,6}\s+|---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
+      // 2) 일반 마크다운 헤딩(#) 또는 구분선(---) 보존
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        if (currentScriptParagraph.length > 0) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
+        }
+        const level = headingMatch[1].length;
+        const headingText = headingMatch[2].trim();
+        const normalizedLevel = level <= 2 ? '###' : headingMatch[1];
+        cleanedScriptParagraphs.push(`${normalizedLevel} ${headingText}`);
+        continue;
+      }
+
+      if (/^(?:---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
@@ -169,6 +221,50 @@ class MarkdownFormatter {
         continue;
       }
 
+      // 3) 볼드체 단독 라인 구간별 주제 (예: **75 days left in 2026**, **What changed since June (18 → 27 courses)**)
+      const boldTitleMatch = line.match(/^(?:\*\*|__)(.+?)(?:\*\*|__)[:：]?$/);
+      if (boldTitleMatch) {
+        const titleCandidate = boldTitleMatch[1].trim();
+        // 타임스탬프 패턴(0:00)으로 시작하지 않는 경우 구간 주제(Sub-title)로 확정
+        if (!/^(?:\d{1,2}:)?\d{1,2}:\d{2}/.test(titleCandidate)) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${titleCandidate}`);
+          continue;
+        }
+      }
+
+      // 4) 타임스탬프가 없는 일반 텍스트 라인 중 구간별 주제(Sub-title) 감지:
+      //    - 타임스탬프 패턴으로 시작하지 않음
+      //    - 뒤이어 나오는 첫 유효 라인이 타임스탬프(0:00 · 등)로 시작함
+      //    - 길이가 적정(150자 이하)하고 일반 긴 문단이 아님
+      const startsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(line);
+      if (!startsWithTimestamp) {
+        // 다음 non-empty 라인 탐색
+        let nextNonEmptyLine = '';
+        for (let j = i + 1; j < transcriptLines.length; j++) {
+          const cand = transcriptLines[j].trim();
+          if (cand) {
+            nextNonEmptyLine = cand;
+            break;
+          }
+        }
+        const nextStartsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(nextNonEmptyLine);
+        if (nextStartsWithTimestamp && line.length <= 150) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${line}`);
+          continue;
+        }
+      }
+
+      // 5) 실제 음성 전사(자막) 라인: 타임스탬프 제거 및 문단 리플로우
       let cleanedLine = line.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
       cleanedLine = cleanedLine.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ').trim();
 
@@ -176,6 +272,7 @@ class MarkdownFormatter {
         currentScriptParagraph.push(cleanedLine);
         currentScriptLength += cleanedLine.length;
 
+        // 자연스러운 문단 호흡: 400~600자 이상이고 문장이 종결(., !, ?)되었을 때 문단 분할
         if (currentScriptLength >= 400 && /[.?!]$/.test(cleanedLine)) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
@@ -6177,7 +6274,72 @@ Instagram: https://www.instagram.com/dpenolopie/
     console.error('  ✗ [TC-68] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 68개 테스트 전원 통과) ===');
+  // [TC-69] 옵시디언 웹 클리퍼 유튜브 Transcript 영역 내 구간별 주제(Sub-title) 구조화 및 자막 타임스탬프 리플로우 검증
+  console.log('\n▶ [TC-69] 유튜브 Transcript 영역 내 구간별 주제(Sub-title) H3 구조화 및 자막 본문 리플로우 검증...');
+  const userWebClipperSample = `
+# Anthropic Built You a FREE AI Degree
+
+Connect:
+Newsletter: https://example.com/newsletter
+
+Transcript
+
+75 days left in 2026
+
+0:00 · There are 75 days left in 2026.
+
+0:04 · If you want a real AI skill on your resume before next year starts, you don't need to pay for a boot camp.
+
+0:10 · Anthropic, the company behind Claude, already built the whole curriculum, and it's free. 27 courses, 425 lessons, over 50 hours.
+
+What changed since June (18 → 27 courses)
+
+0:44 · Quick context, back in June, I reviewed the same academy when it had 18 courses.
+
+0:49 · That video is out of date now. It's 27 courses today. it moved to a new site and five of these courses didn't exist 2 months ago.
+
+How to read a course card (badge vs certificate)
+
+1:44 · Each one tells you three things. How many lessons, whether there's a quiz, and how long Anthropic says it takes.
+
+Track 1: Start your journey
+
+2:17 · Track one is foundational.
+`;
+
+  const cleanedWebClipperDoc = MarkdownFormatter.cleanScriptTimestamps(userWebClipperSample);
+
+  // 1) Transcript 대제목이 '## Transcript'로 정상 표준화되었는지 검증
+  const tc69_1 = cleanedWebClipperDoc.includes('## Transcript');
+
+  // 2) 구간별 주제(Sub-title)들이 '### 소제목' 형태의 독립 마크다운 헤딩으로 구조화되었는지 검증
+  const tc69_2 = cleanedWebClipperDoc.includes('### 75 days left in 2026') &&
+                 cleanedWebClipperDoc.includes('### What changed since June (18 → 27 courses)') &&
+                 cleanedWebClipperDoc.includes('### How to read a course card (badge vs certificate)') &&
+                 cleanedWebClipperDoc.includes('### Track 1: Start your journey');
+
+  // 3) 구간별 주제가 자막 본문 문단 속에 뭉개져 합쳐지지 않고 독립 헤딩으로 분리되었는지 검증
+  const tc69_3 = !cleanedWebClipperDoc.includes('What changed since June (18 → 27 courses) Quick context') &&
+                 !cleanedWebClipperDoc.includes('75 days left in 2026 There are');
+
+  // 4) 자막 음성 전사 본문 내 타임스탬프(0:00 ·, 0:44 · 등)가 완전히 제거되고 자연스러운 단락으로 연결되었는지 검증
+  const tc69_4 = !cleanedWebClipperDoc.includes('0:00 ·') &&
+                 !cleanedWebClipperDoc.includes('0:44 ·') &&
+                 cleanedWebClipperDoc.includes('There are 75 days left in 2026. If you want a real AI skill on your resume before next year starts');
+
+  console.log('  - 1) Transcript 대제목 H2(## Transcript) 표준화: ' + tc69_1);
+  console.log('  - 2) 구간별 주제 4종 H3(###) 독립 헤딩 구조화: ' + tc69_2);
+  console.log('  - 3) 주제가 자막 문단으로 병합되지 않고 독립 라인 보존: ' + tc69_3);
+  console.log('  - 4) 본문 타임스탬프 제거 및 매끄러운 단락 결합: ' + tc69_4);
+
+  const tc69Passed = tc69_1 && tc69_2 && tc69_3 && tc69_4;
+  if (tc69Passed) {
+    console.log('  ✓ [TC-69] 웹 클리퍼 유튜브 Transcript 구간별 주제 H3 구조화 및 자막 리플로우 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-69] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 69개 테스트 전원 통과) ===');
 
 }
 

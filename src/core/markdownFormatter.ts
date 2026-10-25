@@ -113,7 +113,8 @@ export class MarkdownFormatter {
     let transcriptLineIdx = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      if (/^#{1,4}\s+Transcript\b/i.test(trimmed) || /^(?:\*\*|__)?Transcript(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(trimmed) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
         transcriptLineIdx = i;
         break;
       }
@@ -125,8 +126,21 @@ export class MarkdownFormatter {
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
         if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) continue;
-        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
-          transcriptLineIdx = i;
+        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
+          // 혹시 바로 앞의 non-empty 라인이 첫 번째 소제목(Sub-title)인지 확인
+          let subtitleStart = i;
+          for (let prev = i - 1; prev >= 0; prev--) {
+            const prevTrimmed = lines[prev].trim();
+            if (!prevTrimmed) continue;
+            // 타임스탬프로 시작하는 목차(TOC) 항목이 아니고, 링크나 임베드가 아닌 150자 이하 짧은 제목인 경우
+            if (!/^(?:https?:\/\/|!\[|#+\s*(?:Timestamps|Chapters|타임스탬프|목차)|---\s*$)/i.test(prevTrimmed) &&
+                !/^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/i.test(prevTrimmed) &&
+                prevTrimmed.length <= 150) {
+              subtitleStart = prev;
+            }
+            break;
+          }
+          transcriptLineIdx = subtitleStart;
           break;
         }
       }
@@ -168,8 +182,9 @@ export class MarkdownFormatter {
     }
 
     // 5. 스크립트 본문 영역 정제:
-    // - '## Transcript' 헤더 자체는 보존
-    // - 스크립트 줄에 있는 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
+    // - 'Transcript' 대제목 헤더 감지 시 '## Transcript'로 표준화
+    // - 중간에 등장하는 구간별 주제(Sub-title)를 '### 주제' 소제목으로 구조화
+    // - 스크립트 본문 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
     const cleanedScriptParagraphs: string[] = [];
     let currentScriptParagraph: string[] = [];
     let currentScriptLength = 0;
@@ -179,16 +194,37 @@ export class MarkdownFormatter {
       const line = rawLine.trim();
 
       if (!line) {
+        continue;
+      }
+
+      // 1) Transcript 대제목 헤더 감지 ("Transcript", "## Transcript", "**Transcript**" 등)
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(line) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
           currentScriptLength = 0;
         }
+        cleanedScriptParagraphs.push('## Transcript');
         continue;
       }
 
-      // 헤딩(#)이나 구분선(---)은 독립 줄로 보존
-      if (/^(?:#{1,6}\s+|---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
+      // 2) 일반 마크다운 헤딩(#) 또는 구분선(---) 보존
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        if (currentScriptParagraph.length > 0) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
+        }
+        const level = headingMatch[1].length;
+        const headingText = headingMatch[2].trim();
+        const normalizedLevel = level <= 2 ? '###' : headingMatch[1];
+        cleanedScriptParagraphs.push(`${normalizedLevel} ${headingText}`);
+        continue;
+      }
+
+      if (/^(?:---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
@@ -198,7 +234,50 @@ export class MarkdownFormatter {
         continue;
       }
 
-      // 스크립트 타임스탬프 제거: **0:00** ·, 0:27:, [00:15], 18:11· 등
+      // 3) 볼드체 단독 라인 구간별 주제 (예: **75 days left in 2026**, **What changed since June (18 → 27 courses)**)
+      const boldTitleMatch = line.match(/^(?:\*\*|__)(.+?)(?:\*\*|__)[:：]?$/);
+      if (boldTitleMatch) {
+        const titleCandidate = boldTitleMatch[1].trim();
+        // 타임스탬프 패턴(0:00)으로 시작하지 않는 경우 구간 주제(Sub-title)로 확정
+        if (!/^(?:\d{1,2}:)?\d{1,2}:\d{2}/.test(titleCandidate)) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${titleCandidate}`);
+          continue;
+        }
+      }
+
+      // 4) 타임스탬프가 없는 일반 텍스트 라인 중 구간별 주제(Sub-title) 감지:
+      //    - 타임스탬프 패턴으로 시작하지 않음
+      //    - 뒤이어 나오는 첫 유효 라인이 타임스탬프(0:00 · 등)로 시작함
+      //    - 길이가 적정(150자 이하)하고 일반 긴 문단이 아님
+      const startsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(line);
+      if (!startsWithTimestamp) {
+        // 다음 non-empty 라인 탐색
+        let nextNonEmptyLine = '';
+        for (let j = i + 1; j < transcriptLines.length; j++) {
+          const cand = transcriptLines[j].trim();
+          if (cand) {
+            nextNonEmptyLine = cand;
+            break;
+          }
+        }
+        const nextStartsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(nextNonEmptyLine);
+        if (nextStartsWithTimestamp && line.length <= 150) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${line}`);
+          continue;
+        }
+      }
+
+      // 5) 실제 음성 전사(자막) 라인: 타임스탬프 제거 및 문단 리플로우
       let cleanedLine = line.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
       cleanedLine = cleanedLine.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ').trim();
 
