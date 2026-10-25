@@ -376,17 +376,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  padding: 2px 8px;
   border-radius: 9999px;
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent, #ffffff);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  background-color: var(--background-secondary-alt);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.2;
   transition: all 0.2s ease;
+}
+
+.emily-count-badge:not(.is-zero) {
+  background-color: rgba(124, 58, 237, 0.14);
+  border-color: rgba(124, 58, 237, 0.35);
+  color: var(--interactive-accent);
 }
 
 .emily-count-badge.is-zero {
@@ -455,12 +460,16 @@
   background-color: #ffffff;
 }
 
-/* 3-Button Segmented Grid */
+/* 3-Button Segmented Grid (Stitch Segmented Container) */
 .emily-segmented-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  gap: 3px;
   width: 100%;
+  background-color: var(--background-secondary-alt);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
   box-sizing: border-box;
 }
 
@@ -469,11 +478,49 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* Tone & Style 2-Column Select Grid (Google Stitch Design) */
+.emily-tone-style-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.emily-select-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.emily-select-col select.emily-select-input {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  font-size: 11.5px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.emily-select-col select.emily-select-input:hover {
+  border-color: var(--interactive-accent);
+}
+
+.emily-select-col select.emily-select-input:focus {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
 /* Tone Consistency Sub-Option Container & Controls */
 .emily-tone-suboption-container {
   background-color: var(--background-secondary-alt);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
   padding: 8px 10px;
   margin-top: 8px;
   transition: all 0.2s ease;
@@ -488,39 +535,42 @@
 
 .emily-segmented-btn {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 8px 4px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
+  gap: 5px;
+  padding: 6px 4px;
+  min-height: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
   color: var(--text-muted);
   cursor: pointer;
   user-select: none;
   transition: all 0.15s ease;
   text-align: center;
-  min-height: 54px;
-  height: 100%;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
 .emily-segmented-btn:hover {
   background-color: var(--background-modifier-hover);
-  border-color: var(--interactive-accent);
   color: var(--text-normal);
-  transform: translateY(-1px);
 }
 
 .emily-segmented-btn.is-active {
-  background-color: var(--background-secondary-alt);
-  border-color: var(--interactive-accent);
-  color: var(--interactive-accent);
-  box-shadow: 0 0 0 1px var(--interactive-accent), 0 2px 6px rgba(0, 0, 0, 0.15);
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent, #ffffff);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   font-weight: 600;
+}
+
+.emily-segmented-btn .emily-label-extra {
+  display: none;
 }
 
 .emily-segmented-icon {
@@ -3337,57 +3387,52 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
    Format Stripping Options (4-Column Responsive Grid)
    ========================================================================== */
 .emily-format-strip-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   width: 100%;
   box-sizing: border-box;
+  background: transparent;
+  padding: 0;
+  border: none;
 }
 
 .emily-format-strip-grid .emily-segmented-btn {
-  min-height: 48px;
-  padding: 6px 2px;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 26px;
+  height: 26px;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  width: auto;
+  flex: none;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.15s ease;
 }
 
-.emily-format-strip-grid .emily-segmented-btn .emily-segmented-label {
-  font-size: 10.5px;
+.emily-format-strip-grid .emily-segmented-btn:hover {
+  border-color: var(--interactive-accent);
+  color: var(--text-normal);
 }
 
-/* Responsive: When sidebar narrows (< 380px or .is-narrow-sidebar / .is-compact-sidebar),
-   hide text strings and switch cleanly to compact edit icon buttons */
-.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-label,
-.is-compact-sidebar .emily-format-strip-grid .emily-segmented-label {
-  display: none;
+.emily-format-strip-grid .emily-segmented-btn.is-active {
+  background-color: rgba(124, 58, 237, 0.18);
+  border-color: rgba(124, 58, 237, 0.5);
+  color: var(--interactive-accent);
+  box-shadow: none;
+  font-weight: 600;
 }
 
-.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-btn,
-.is-compact-sidebar .emily-format-strip-grid .emily-segmented-btn {
-  min-height: 38px;
-  height: 38px;
-  padding: 4px 2px;
-  gap: 0;
-}
-
-.is-narrow-sidebar .emily-format-strip-grid .emily-segmented-icon svg,
-.is-compact-sidebar .emily-format-strip-grid .emily-segmented-icon svg {
-  width: 17px;
-  height: 17px;
-}
-
-@container emily-sidebar (max-width: 380px) {
-  .emily-format-strip-grid .emily-segmented-label {
-    display: none;
-  }
-  .emily-format-strip-grid .emily-segmented-btn {
-    min-height: 38px;
-    height: 38px;
-    padding: 4px 2px;
-    gap: 0;
-  }
-  .emily-format-strip-grid .emily-segmented-icon svg {
-    width: 17px;
-    height: 17px;
-  }
+.emily-format-strip-grid .emily-segmented-btn .emily-segmented-icon svg {
+  width: 12px;
+  height: 12px;
 }
 
 /* ==========================================================================

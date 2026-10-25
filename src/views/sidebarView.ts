@@ -902,67 +902,44 @@ export class EmilySidebarView extends ItemView {
       }
     );
 
-    // 3. 번역 문체 (Tone)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.tones.title,
-      [
-        {
-          value: 'academic',
-          icon: 'book-open',
-          label: t.tones.academic,
-          desc: t.tones.academicDesc
-        },
-        {
-          value: 'polite',
-          icon: 'smile',
-          label: t.tones.polite,
-          desc: t.tones.politeDesc
-        },
-        {
-          value: 'casual',
-          icon: 'message-circle',
-          label: t.tones.casual,
-          desc: t.tones.casualDesc
-        }
-      ],
-      this.translationOptions.tone || 'academic',
-      (val: TranslationTone) => {
-        this.translationOptions.tone = val;
-        void this.persistActiveOptions();
-      }
-    );
+    // 3 & 4. Tone & Style 2-Column Select Grid (Google Stitch Design)
+    const toneStyleRow = bodyContent.createDiv({ cls: 'emily-tone-style-2col' });
 
-    // 4. 번역 스타일 (Style)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.styles.title,
-      [
-        {
-          value: 'balanced',
-          icon: 'scale',
-          label: t.styles.balanced,
-          desc: t.styles.balancedDesc
-        },
-        {
-          value: 'literal',
-          icon: 'type',
-          label: t.styles.literal,
-          desc: t.styles.literalDesc
-        },
-        {
-          value: 'natural',
-          icon: 'feather',
-          label: t.styles.natural,
-          desc: t.styles.naturalDesc
-        }
-      ],
-      this.translationOptions.style || 'balanced',
-      (val: TranslationStyle) => {
-        this.translationOptions.style = val;
-        void this.persistActiveOptions();
-      }
-    );
+    // Tone Column
+    const toneCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
+    toneCol.createSpan({ text: t.tones.title, cls: 'emily-field-label font-semibold' });
+    const toneSelect = toneCol.createEl('select', { cls: 'dropdown emily-select-input' });
+    const toneOpts: Array<{ value: TranslationTone; label: string }> = [
+      { value: 'academic', label: t.tones.academic },
+      { value: 'polite', label: t.tones.polite },
+      { value: 'casual', label: t.tones.casual }
+    ];
+    toneOpts.forEach((opt) => {
+      const el = toneSelect.createEl('option', { value: opt.value, text: opt.label });
+      if ((this.translationOptions.tone || 'academic') === opt.value) el.selected = true;
+    });
+    toneSelect.addEventListener('change', () => {
+      this.translationOptions.tone = toneSelect.value as TranslationTone;
+      void this.persistActiveOptions();
+    });
+
+    // Style Column
+    const styleCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
+    styleCol.createSpan({ text: t.styles.title, cls: 'emily-field-label font-semibold' });
+    const styleSelect = styleCol.createEl('select', { cls: 'dropdown emily-select-input' });
+    const styleOpts: Array<{ value: TranslationStyle; label: string }> = [
+      { value: 'balanced', label: t.styles.balanced },
+      { value: 'literal', label: t.styles.literal },
+      { value: 'natural', label: t.styles.natural }
+    ];
+    styleOpts.forEach((opt) => {
+      const el = styleSelect.createEl('option', { value: opt.value, text: opt.label });
+      if ((this.translationOptions.style || 'balanced') === opt.value) el.selected = true;
+    });
+    styleSelect.addEventListener('change', () => {
+      this.translationOptions.style = styleSelect.value as TranslationStyle;
+      void this.persistActiveOptions();
+    });
 
     // 5. 기타 고급 옵션 (코드 블록 주석 번역)
     const extraOptionsGroup = bodyContent.createDiv({ cls: 'emily-field-group' });
