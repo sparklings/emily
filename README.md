@@ -34,6 +34,7 @@ This project provides exhaustive technical documentation organized by domain and
 | **Lossless Syntax Masking** | `src/core/markdownMasker.ts` | [Lossless Markdown & OFM Masking Technical Guide](docs/syntax-masking-pipeline.md)<br>10-element UUID token taxonomy, TOCTIME chapter locking, OFM self-healing |
 | **Video Clipping & Chunking** | `src/core/markdownFormatter.ts`<br>`src/core/translationEngine.ts` | [Video Clipping Partitioning & Smart Chunking Guide](docs/video-clipping-and-chunking-guide.md)<br>Pre-transcript line break preservation, subtitle cleaning, 1,800-char chunking |
 | **Device Profiles & Settings** | `src/ui/settingsTab.ts`<br>`src/api/llmProxyClient.ts` | [Device Profiles & Provider Endpoint Configuration Manual](docs/settings-and-provider-manual.md)<br>4-tab settings layout, device ID binding, Ollama & FreeLLMAPI setup |
+| **FreeLLMAPI Integration** | `docs/freellmapi-guide.md` | [FreeLLMAPI Architecture & Deployment Guide](docs/freellmapi-guide.md)<br>34 free providers, 635 endpoints, ~7.4B tokens/mo, auto failover & self-hosting |
 | **Troubleshooting & Diagnostics** | Repository-wide | [Troubleshooting & Diagnostics Guide](docs/troubleshooting.md)<br>Proxy 502 handling, token context overflow, cross-lingual leakage remedies |
 | **Version History** | Repository-wide | [Changelog (CHANGELOG.md)](CHANGELOG.md)<br>Version release notes (v1.0.0 through v1.1.0) and 68 automated test cases |
 
@@ -48,7 +49,7 @@ This project provides exhaustive technical documentation organized by domain and
 ### 2) AI Provider Configuration
 Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers** and select your preferred backend:
 * **Local Ollama**: Select preset (`http://127.0.0.1:11434/v1`, model: `qwen2.5:14b` or `llama3.2:3b`).
-* **FreeLLMAPI**: Enter endpoint URL and API key (`dots-3-note-preview:free`).
+* **FreeLLMAPI**: Enter endpoint URL (`http://localhost:3001/v1`), unified key (`freellmapi-...`), and model `auto` (or `auto:smart`, `auto:fast`). See [FreeLLMAPI Guide](docs/freellmapi-guide.md).
 * **OpenAI / OpenRouter**: Enter endpoint URL and API key, then click **[Test connection]** to verify online status.
 
 ### 3) Routine Operations
