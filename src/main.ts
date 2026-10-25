@@ -140,6 +140,32 @@ export default class EmilyPlugin extends Plugin {
         this.notifySidebarViewsDocChange();
       })
     );
+
+    // 12. DeepL 스타일 Ctrl+C+C 연속 키 감지 DOM 이벤트 등록
+    let lastCtrlCTime = 0;
+    this.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
+      if (this.settings.enableDoubleCtrlCTranslate === false) return;
+
+      const isCtrlOrCmd = evt.ctrlKey || evt.metaKey;
+      if (!isCtrlOrCmd || evt.key.toLowerCase() !== 'c') return;
+
+      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+      if (!view || !view.editor) return;
+
+      const editor = view.editor;
+      const selection = editor.getSelection();
+      if (!selection || selection.trim().length === 0) return;
+
+      const now = Date.now();
+      if (now - lastCtrlCTime < 450) {
+        lastCtrlCTime = 0;
+        evt.preventDefault();
+        evt.stopPropagation();
+        void this.handleQuickTranslateSelectionAppend(editor, view);
+      } else {
+        lastCtrlCTime = now;
+      }
+    });
   }
 
   /**

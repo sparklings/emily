@@ -176,6 +176,8 @@ export const en: TranslationStrings = {
     transStyleDesc: 'Configure default balance between literal accuracy and natural fluency.',
     transCodeCommentsTitle: 'Translate Code Comments',
     transCodeCommentsDesc: 'Preserve code structure and variables inside code blocks (```...```) while translating comments (//, #, /* */).',
+    doubleCtrlCTitle: 'DeepL-Style Hotkey (Double Ctrl+C Detection)',
+    doubleCtrlCDesc: 'When text is highlighted, pressing Ctrl+C (Mac: Cmd+C) twice within 0.45s immediately translates and appends it below the selection.',
     editPreferencesHeader: 'Editing & Format Removal Preferences',
     stripBoldTitle: 'Remove Bold (**, __) by Default',
     stripBoldDesc: 'Automatically strip bold markdown syntax (**text**, __text__) to plain text during editing and translation.',

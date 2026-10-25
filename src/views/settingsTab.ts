@@ -263,6 +263,18 @@ export class EmilySettingTab extends PluginSettingTab {
               this.plugin.syncSidebarSettings();
             })
         );
+
+      new Setting(tabContentEl)
+        .setName(t.settings.doubleCtrlCTitle)
+        .setDesc(t.settings.doubleCtrlCDesc)
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.enableDoubleCtrlCTranslate !== false)
+            .onChange(async (val) => {
+              this.plugin.settings.enableDoubleCtrlCTranslate = val;
+              await this.plugin.saveSettings();
+            })
+        );
     }
 
     // =========================================================================

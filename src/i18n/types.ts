@@ -174,6 +174,8 @@ export interface TranslationStrings {
     transStyleDesc: string;
     transCodeCommentsTitle: string;
     transCodeCommentsDesc: string;
+    doubleCtrlCTitle: string;
+    doubleCtrlCDesc: string;
     editPreferencesHeader: string;
     stripBoldTitle: string;
     stripBoldDesc: string;

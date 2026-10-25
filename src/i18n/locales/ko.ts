@@ -176,6 +176,8 @@ export const ko: TranslationStrings = {
     transStyleDesc: '직역과 자연스러운 의역 간의 기본 밸런스를 설정합니다.',
     transCodeCommentsTitle: '코드 블록 내부 주석 번역',
     transCodeCommentsDesc: '코드 블록(```...```) 내부의 소스코드 구조와 변수명은 보존하고 주석(//, #, /* */)만 도착어로 번역합니다.',
+    doubleCtrlCTitle: 'DeepL 스타일 단축키 (Ctrl+C+C 연속 입력 감지)',
+    doubleCtrlCDesc: '에디터에서 텍스트를 선택한 후 Ctrl+C(Mac: Cmd+C)를 0.45초 이내에 연속 두 번 누르면 즉시 선택 영역 아래에 번역문을 덧붙입니다.',
     editPreferencesHeader: '편집 및 서식 제거 기본 설정',
     stripBoldTitle: '볼드체(**, __) 서식 제거 기본값',
     stripBoldDesc: '편집 및 번역 작업 시 마크다운 굵은 글씨(**텍스트**, __텍스트__) 서식을 자동으로 제거하여 일반 텍스트로 반영합니다.',
