@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, setIcon, Notice, MarkdownView, TFile, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, setTooltip, Notice, MarkdownView, TFile, debounce } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
@@ -364,26 +364,20 @@ export class EmilySidebarView extends ItemView {
     this.updateSubtitle();
 
     const actions = header.createDiv({ cls: 'emily-header-actions' });
-    const refreshBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.refreshWorkState }
-    });
+    const refreshBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(refreshBtn, t.sidebar.refreshWorkState);
     setIcon(refreshBtn, 'refresh-cw');
     refreshBtn.addEventListener('click', () => {
       void this.refreshWorkState();
     });
 
-    const collapseControlBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.collapseAll }
-    });
+    const collapseControlBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(collapseControlBtn, t.sidebar.collapseAll);
     setIcon(collapseControlBtn, 'chevrons-up-down');
     collapseControlBtn.addEventListener('click', () => this.toggleControlAccordions());
 
-    const foldHistoryBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.foldHistory }
-    });
+    const foldHistoryBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(foldHistoryBtn, t.sidebar.foldHistory);
     setIcon(foldHistoryBtn, 'history');
     foldHistoryBtn.addEventListener('click', () => this.toggleHistorySessions());
 
@@ -967,8 +961,7 @@ export class EmilySidebarView extends ItemView {
     });
     const infoSpan = codeCommentRow.createSpan({ cls: 'emily-info-icon' });
     setIcon(infoSpan, 'info');
-    infoSpan.setAttribute('title', t.sidebar.translateCodeCommentsInfo);
-    infoSpan.setAttribute('aria-label', t.sidebar.translateCodeCommentsInfo);
+    setTooltip(infoSpan, t.sidebar.translateCodeCommentsInfo);
   }
 
   private renderCustomPromptSection(parent: HTMLElement, t: TranslationKeys) {
@@ -2888,8 +2881,7 @@ export class EmilySidebarView extends ItemView {
     if (infoTooltip) {
       const infoSpan = row.createSpan({ cls: 'emily-info-icon' });
       setIcon(infoSpan, 'info');
-      infoSpan.setAttribute('title', infoTooltip);
-      infoSpan.setAttribute('aria-label', infoTooltip);
+      setTooltip(infoSpan, infoTooltip);
     }
     return row;
   }
@@ -3002,22 +2994,17 @@ export class EmilySidebarView extends ItemView {
       const btn = grid.createEl('button', {
         cls: `emily-segmented-btn ${opt.value === currentValue ? 'is-active' : ''}`,
         attr: {
-          type: 'button',
-          title: opt.desc ? `${opt.label} - ${opt.desc}` : opt.label
+          type: 'button'
         }
       });
+      if (opt.desc) {
+        setTooltip(btn, opt.desc);
+      }
 
       const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
       setIcon(iconSpan, opt.icon);
 
       this.renderSegmentedLabel(btn, opt.label);
-
-      if (opt.desc) {
-        const btnInfo = btn.createSpan({ cls: 'emily-btn-info-icon' });
-        setIcon(btnInfo, 'info');
-        btnInfo.setAttribute('title', opt.desc);
-        btnInfo.setAttribute('aria-label', opt.desc);
-      }
 
       btn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -3050,22 +3037,17 @@ export class EmilySidebarView extends ItemView {
       cls: `emily-segmented-btn ${initialChecked ? 'is-active' : ''}`,
       attr: {
         type: 'button',
-        title: desc ? `${label} - ${desc}` : label,
         'aria-pressed': initialChecked ? 'true' : 'false'
       }
     });
+    if (desc) {
+      setTooltip(btn, desc);
+    }
 
     const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
     setIcon(iconSpan, icon);
 
     this.renderSegmentedLabel(btn, label);
-
-    if (desc) {
-      const btnInfo = btn.createSpan({ cls: 'emily-btn-info-icon' });
-      setIcon(btnInfo, 'info');
-      btnInfo.setAttribute('title', desc);
-      btnInfo.setAttribute('aria-label', desc);
-    }
 
     btn.addEventListener('click', (e) => {
       e.preventDefault();
