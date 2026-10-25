@@ -776,10 +776,67 @@
   gap: 4px;
 }
 
+.emily-field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .emily-field-label {
   font-size: 11.5px;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+.emily-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  color: var(--text-faint);
+  transition: color 0.15s ease, transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.emily-info-icon:hover {
+  color: var(--interactive-accent);
+  transform: scale(1.15);
+}
+
+.emily-info-icon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.emily-btn-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  margin-left: 3px;
+  color: inherit;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.emily-segmented-btn:hover .emily-btn-info-icon {
+  opacity: 0.85;
+}
+
+.emily-btn-info-icon:hover {
+  opacity: 1;
+  transform: scale(1.18);
+}
+
+.emily-btn-info-icon svg {
+  width: 11px;
+  height: 11px;
+}
+
+.emily-format-strip-grid .emily-btn-info-icon svg {
+  width: 10px;
+  height: 10px;
 }
 
 .emily-direction-row {

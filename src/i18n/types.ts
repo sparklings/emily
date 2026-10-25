@@ -310,6 +310,13 @@ export interface TranslationStrings {
     transEnabledTooltipOff: string;
     translateCodeComments: string;
     customPrompt: string;
+    proofreadGroupInfo: string;
+    formatStripGroupInfo: string;
+    transScopeGroupInfo: string;
+    preservationGroupInfo: string;
+    toneGroupInfo: string;
+    styleGroupInfo: string;
+    translateCodeCommentsInfo: string;
     promptLabel: string;
     promptPlaceholder: string;
     promptShortcutHint: string;
