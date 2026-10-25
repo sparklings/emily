@@ -29,6 +29,10 @@ export const en: TranslationStrings = {
   commands: {
     openSidebar: 'Open Sidebar View',
     quickProofread: 'Quick Proofread Current Document',
+    quickTranslateSelectionAppend: 'Translate Selection & Append Below (DeepL Style)',
+    quickTranslateTranslating: '⚡ Translating selection...',
+    quickTranslateDone: '✓ Translation appended below the selected text.',
+    quickTranslateNoSelection: 'No text selected. Please highlight text to translate first.',
     ribbonTooltip: 'Open Assistant Emily'
   },
   settings: {

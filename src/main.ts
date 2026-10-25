@@ -1,4 +1,5 @@
-import { Plugin, WorkspaceLeaf, MarkdownView, Notice } from 'obsidian';
+import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Editor } from 'obsidian';
+import { TranslationOptions } from './types/translation';
 import { EmilySettings, DEFAULT_SETTINGS } from './types/settings';
 import { EMILY_VIEW_TYPE, EMILY_ICON_NAME } from './constants';
 import { EmilySettingTab } from './views/settingsTab';
@@ -6,7 +7,7 @@ import { EmilySidebarView } from './views/sidebarView';
 import { LLMProxyClient } from './api/llmClient';
 import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
-import { getTranslation } from './i18n';
+import { getTranslation, getDefaultTargetLanguageName, getLocalizedLanguageName } from './i18n';
 import { migrateDeviceProfiles, migrateLegacySettingsToProviders, getEffectiveProviderForDevice } from './utils/deviceKeyManager';
 
 /**
@@ -71,6 +72,22 @@ export default class EmilyPlugin extends Plugin {
           return true;
         }
         return false;
+      }
+    });
+
+    // DeepL 스타일 빠른 선택 영역 번역 후 바로 아래에 덧붙이기 단축키 커맨드
+    this.addCommand({
+      id: 'emily-quick-translate-selection-append',
+      name: t.commands.quickTranslateSelectionAppend,
+      icon: 'languages',
+      hotkeys: [
+        {
+          modifiers: ['Mod', 'Alt'],
+          key: 'T'
+        }
+      ],
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        void this.handleQuickTranslateSelectionAppend(editor, view);
       }
     });
 
@@ -243,6 +260,77 @@ export default class EmilyPlugin extends Plugin {
     } catch (err) {
       console.error('[Assistant Emily] 설정 저장 실패:', err);
       new Notice('Assistant Emily: 설정 저장 중 오류가 발생했습니다. (Failed to save settings)');
+    }
+  }
+
+  /**
+   * DeepL 스타일 빠른 선택 영역 번역 후 바로 아래에 덧붙이기 핸들러
+   * - 에디터에서 선택된 텍스트를 감지하여 번역 후 원문 바로 아래에 빈 줄 하나를 두고 덧붙입니다.
+   * - 기본 단축키: Ctrl+Alt+T (Mac: Cmd+Option+T)
+   */
+  public async handleQuickTranslateSelectionAppend(
+    editor: Editor,
+    view: MarkdownView
+  ): Promise<void> {
+    const t = getTranslation(this.settings.language);
+    const selectedText = editor.getSelection();
+
+    if (!selectedText || selectedText.trim().length === 0) {
+      new Notice(t.commands.quickTranslateNoSelection);
+      return;
+    }
+
+    if (!view.file) {
+      new Notice('활성 마크다운 파일이 없습니다.');
+      return;
+    }
+
+    // API 프로바이더 및 엔드포인트 유효성 검사
+    const activeProv = getEffectiveProviderForDevice(this.settings);
+    const baseUrl = (activeProv?.baseUrl || this.settings.apiBaseUrl || '').trim();
+    const apiKey = (activeProv?.apiKey || this.settings.apiKey || '').trim();
+    if (!baseUrl && !apiKey) {
+      new Notice('Assistant Emily: AI 프로바이더 또는 API 설정이 구성되지 않았습니다.');
+      return;
+    }
+
+    const targetLangName = this.settings.defaultTranslationTarget || getDefaultTargetLanguageName(t);
+    const targetLang = getLocalizedLanguageName(targetLangName, t);
+    const sourceLang = getLocalizedLanguageName(this.settings.defaultTranslationSource || 'auto', t);
+
+    const options: TranslationOptions = {
+      enabled: true,
+      sourceLanguage: sourceLang,
+      targetLanguage: targetLang,
+      scope: 'selection',
+      preservation: 'append',
+      tone: this.settings.defaultTranslationTone || 'academic',
+      style: this.settings.defaultTranslationStyle || 'balanced',
+      translateCodeComments: Boolean(this.settings.defaultTranslateCodeComments)
+    };
+
+    const notice = new Notice(`${t.commands.quickTranslateTranslating} (${targetLang})`, 0);
+
+    try {
+      this.llmClient.updateMultiConfig(this.settings);
+      const res = await this.translationEngine.runTranslation(
+        view.file,
+        selectedText,
+        options
+      );
+
+      notice.hide();
+
+      const cleanSelected = selectedText.trimEnd();
+      const cleanTranslated = res.result.translatedMarkdown.trim();
+      editor.replaceSelection(`${cleanSelected}\n\n${cleanTranslated}`);
+
+      new Notice(`${t.commands.quickTranslateDone} (${(res.totalTimeMs / 1000).toFixed(1)}s)`);
+    } catch (err: unknown) {
+      notice.hide();
+      console.error('[Assistant Emily] Quick selection translation failed:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      new Notice(`❌ 번역 실패: ${errMsg}`);
     }
   }
 

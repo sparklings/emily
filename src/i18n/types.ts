@@ -27,6 +27,10 @@ export interface TranslationStrings {
   commands: {
     openSidebar: string;
     quickProofread: string;
+    quickTranslateSelectionAppend: string;
+    quickTranslateTranslating: string;
+    quickTranslateDone: string;
+    quickTranslateNoSelection: string;
     ribbonTooltip: string;
   };
   settings: {

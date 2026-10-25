@@ -29,6 +29,10 @@ export const ko: TranslationStrings = {
   commands: {
     openSidebar: '사이드바 전용 뷰 열기',
     quickProofread: '현재 문서 즉시 교열',
+    quickTranslateSelectionAppend: '선택 영역 번역 후 바로 아래에 덧붙이기 (DeepL 스타일)',
+    quickTranslateTranslating: '⚡ 선택 영역 번역 중...',
+    quickTranslateDone: '✓ 선택 영역 아래에 번역문이 추가되었습니다.',
+    quickTranslateNoSelection: '선택한 텍스트가 없습니다. 번역할 영역을 먼저 마우스로 드래그해주세요.',
     ribbonTooltip: 'Assistant Emily 열기'
   },
   settings: {
