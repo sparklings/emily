@@ -3,7 +3,14 @@ import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
 import { ProofreadOptions, ProofreadDiffItem, ProofreadSelectionRange } from '../types/proofread';
-import { TranslationOptions, TranslationTone, TranslationStyle, MarkdownFormatStripOptions } from '../types/translation';
+import {
+  TranslationOptions,
+  TranslationTone,
+  TranslationStyle,
+  MarkdownFormatStripOptions,
+  PreservationStrategy,
+  TranslationScope
+} from '../types/translation';
 import { ProofreadDiffModal } from './proofreadDiffModal';
 import { TranslationDiffModal } from './translationDiffModal';
 import { detectDocumentLanguage, isSameLanguage } from '../core/languageDetector';
@@ -881,39 +888,31 @@ export class EmilySidebarView extends ItemView {
       (val) => {
         this.translationOptions.scope = val;
         void this.persistActiveOptions();
+        updatePreservationControls();
       }
     );
 
-    // 2. 원문 보존 방식 (Preservation: 3-Button Segmented Grid with Icons & Rich Tooltips)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.sidebar.preservation,
-      [
-        {
-          value: 'new_file',
-          icon: 'file-plus',
-          label: t.preservation.newFile,
-          desc: t.preservation.newFileDesc
-        },
-        {
-          value: 'append',
-          icon: 'file-down',
-          label: t.preservation.append,
-          desc: t.preservation.appendDesc
-        },
-        {
-          value: 'overwrite',
-          icon: 'file-edit',
-          label: t.preservation.overwrite,
-          desc: t.preservation.overwriteDesc
+    // 2. 결과 반영 방식 (Preservation: Context-Aware Dynamic Labels)
+    const preservationContainer = bodyContent.createDiv({ cls: 'emily-preservation-container' });
+    const updatePreservationControls = () => {
+      preservationContainer.empty();
+      const currentScope = this.translationOptions.scope || 'all';
+      const presOptions = this.getPreservationOptionsForScope(currentScope, t);
+      const groupLabel = this.getPreservationGroupTitleForScope(currentScope, t);
+
+      this.createSegmentedGroup(
+        preservationContainer,
+        groupLabel,
+        presOptions,
+        this.translationOptions.preservation || 'new_file',
+        (val) => {
+          this.translationOptions.preservation = val;
+          void this.persistActiveOptions();
         }
-      ],
-      this.translationOptions.preservation || 'new_file',
-      (val) => {
-        this.translationOptions.preservation = val;
-        void this.persistActiveOptions();
-      }
-    );
+      );
+    };
+
+    updatePreservationControls();
 
     // 3 & 4. Tone & Style 2-Column Select Grid (Google Stitch Design)
     const toneStyleRow = bodyContent.createDiv({ cls: 'emily-tone-style-2col' });
@@ -2876,6 +2875,91 @@ export class EmilySidebarView extends ItemView {
       labelSpan.createSpan({ text: extra, cls: 'emily-label-extra' });
     }
     return labelSpan;
+  }
+
+  private getPreservationGroupTitleForScope(scope: TranslationScope, t: TranslationKeys): string {
+    if (scope === 'selection') {
+      return t.preservation.groupTitleSelection || t.sidebar.preservation;
+    } else if (scope === 'paragraph_bilingual') {
+      return t.preservation.groupTitleParagraph || t.sidebar.preservation;
+    } else {
+      return t.preservation.groupTitleAll || t.sidebar.preservation;
+    }
+  }
+
+  private getPreservationOptionsForScope(
+    scope: TranslationScope,
+    t: TranslationKeys
+  ): Array<{
+    value: PreservationStrategy;
+    icon: string;
+    label: string;
+    desc: string;
+  }> {
+    if (scope === 'selection') {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.selectionNewFile || '새 파일로 분리',
+          desc: t.preservation.selectionNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.selectionAppend || '원문 아래 덧붙이기',
+          desc: t.preservation.selectionAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.selectionOverwrite || '선택 영역 바로 교체',
+          desc: t.preservation.selectionOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    } else if (scope === 'paragraph_bilingual') {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.parallelNewFile || '새 대조 파일 생성',
+          desc: t.preservation.parallelNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.parallelAppend || '문서 하단 원문 보관',
+          desc: t.preservation.parallelAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.parallelOverwrite || '현재 파일에 대조 반영',
+          desc: t.preservation.parallelOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    } else {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.allNewFile || t.preservation.newFile,
+          desc: t.preservation.allNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.allAppend || t.preservation.append,
+          desc: t.preservation.allAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.allOverwrite || t.preservation.overwrite,
+          desc: t.preservation.allOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    }
   }
 
   private createSegmentedGroup<T extends string>(

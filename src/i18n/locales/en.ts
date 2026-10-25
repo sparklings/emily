@@ -201,12 +201,37 @@ export const en: TranslationStrings = {
     paragraphBilingualDesc: 'Split the entire document by paragraphs and place the translation directly below each original paragraph.'
   },
   preservation: {
-    newFile: 'Create New File',
+    newFile: 'Save to New File',
     newFileDesc: 'Create a new translated note ({fileName}_{lang}_{time}.md) in the same directory without touching the original.',
-    append: 'Append to Bottom',
+    append: 'Keep Original at Bottom',
     appendDesc: 'In selection mode, appends translation directly below selected paragraph. In full doc mode, preserves original at the bottom.',
-    overwrite: 'Overwrite Original',
-    overwriteDesc: 'Replace current note contents directly with translated result (Caution: original content will be overwritten).'
+    overwrite: 'Overwrite Current File',
+    overwriteDesc: 'Replace current note contents directly with translated result (Caution: original content will be overwritten).',
+
+    groupTitleSelection: 'Result Reflection Mode',
+    groupTitleAll: 'Result Reflection Mode',
+    groupTitleParagraph: 'Result Reflection Mode',
+
+    selectionNewFile: 'Separate to New File',
+    selectionNewFileDesc: 'Creates a new markdown file containing only the translated selection.',
+    selectionAppend: 'Append Below Selection',
+    selectionAppendDesc: 'Keeps the original selected text and appends the translation directly below it.',
+    selectionOverwrite: 'Replace Selected Text',
+    selectionOverwriteDesc: 'Replaces the selected text in place with the translation.',
+
+    allNewFile: 'Save to New File',
+    allNewFileDesc: 'Leaves the original document untouched and creates a new translated file.',
+    allAppend: 'Keep Original at Bottom',
+    allAppendDesc: 'Puts translation at top and preserves full original text in a bottom section.',
+    allOverwrite: 'Overwrite Current File',
+    allOverwriteDesc: 'Replaces the entire current document with the translation.',
+
+    parallelNewFile: 'New Bilingual File',
+    parallelNewFileDesc: 'Generates a new file with paragraph-by-paragraph bilingual alignment.',
+    parallelAppend: 'Keep Original at Bottom',
+    parallelAppendDesc: 'Applies bilingual text with full original preserved at the bottom.',
+    parallelOverwrite: 'Apply to Current File',
+    parallelOverwriteDesc: 'Updates the current file in place with paragraph-by-paragraph bilingual text.'
   },
   tones: {
     title: 'Tone',
@@ -276,7 +301,7 @@ export const en: TranslationStrings = {
     scopeAllDesc: 'Completely translate 100% of the entire document (all headings and body).',
     scopeParagraphBilingual: 'Paragraph Bilingual',
     scopeParagraphBilingualDesc: 'Split the entire document by paragraphs and place the translation directly below each original paragraph.',
-    preservation: 'Preservation Strategy',
+    preservation: 'Result Reflection Mode',
     preserveNewFile: 'Create New File',
     preserveNewFileDesc: 'Create a new translated note ({fileName}_{lang}_{time}.md) in the same directory without touching the original.',
     preserveAppend: 'Append to Bottom',

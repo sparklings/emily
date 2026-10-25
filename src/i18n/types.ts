@@ -205,6 +205,31 @@ export interface TranslationStrings {
     appendDesc: string;
     overwrite: string;
     overwriteDesc: string;
+
+    groupTitleSelection?: string;
+    groupTitleAll?: string;
+    groupTitleParagraph?: string;
+
+    selectionNewFile?: string;
+    selectionNewFileDesc?: string;
+    selectionAppend?: string;
+    selectionAppendDesc?: string;
+    selectionOverwrite?: string;
+    selectionOverwriteDesc?: string;
+
+    allNewFile?: string;
+    allNewFileDesc?: string;
+    allAppend?: string;
+    allAppendDesc?: string;
+    allOverwrite?: string;
+    allOverwriteDesc?: string;
+
+    parallelNewFile?: string;
+    parallelNewFileDesc?: string;
+    parallelAppend?: string;
+    parallelAppendDesc?: string;
+    parallelOverwrite?: string;
+    parallelOverwriteDesc?: string;
   };
   tones: {
     title: string;

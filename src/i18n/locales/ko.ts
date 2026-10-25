@@ -203,10 +203,35 @@ export const ko: TranslationStrings = {
   preservation: {
     newFile: '새 파일에 쓰기',
     newFileDesc: '현재 원본 문서는 전혀 수정하지 않고, 동일한 폴더에 새 번역 파일({파일명}_{언어}_{시간}.md)을 생성하여 저장합니다.',
-    append: '번역 후 원문 보관 (하단 추가)',
+    append: '문서 하단 원문 보관',
     appendDesc: '선택 영역 번역 시 선택한 원문 단락 바로 아래에 번역 단락을 덧붙이고, 전체 문서 번역 시 문서 하단에 원문을 보존합니다.',
-    overwrite: '원본 파일 직접 번역 (덮어쓰기)',
-    overwriteDesc: '현재 열려 있는 문서의 원본 내용을 지우고 번역 결과물로 완전히 대체합니다. (주의: 원본 텍스트가 사라집니다)'
+    overwrite: '현재 파일 덮어쓰기',
+    overwriteDesc: '현재 열려 있는 문서의 원본 내용을 지우고 번역 결과물로 완전히 대체합니다. (주의: 원본 텍스트가 사라집니다)',
+
+    groupTitleSelection: '결과 반영 방식',
+    groupTitleAll: '결과 반영 방식',
+    groupTitleParagraph: '결과 반영 방식',
+
+    selectionNewFile: '새 파일로 분리',
+    selectionNewFileDesc: '선택한 영역의 번역 결과만을 담은 새 마크다운 파일({파일명}_selection_{언어}_{시간}.md)을 생성합니다.',
+    selectionAppend: '원문 아래 덧붙이기',
+    selectionAppendDesc: '선택한 원문 블록은 그대로 유지하고, 바로 다음 줄에 번역문을 덧붙여 나란히 배치합니다.',
+    selectionOverwrite: '선택 영역 바로 교체',
+    selectionOverwriteDesc: '선택한 원문 블록을 지우고, 그 자리에 번역문으로 즉시 대체합니다.',
+
+    allNewFile: '새 파일에 쓰기',
+    allNewFileDesc: '현재 문서는 전혀 수정하지 않고, 동일한 폴더에 새 번역본({파일명}_{언어}_{시간}.md)을 생성합니다.',
+    allAppend: '문서 하단 원문 보관',
+    allAppendDesc: '문서 상단에는 번역문을 배치하고, 문서 맨 하단에 \'## 📄 원문\' 섹션을 두어 원본 전체를 함께 보관합니다.',
+    allOverwrite: '현재 파일 덮어쓰기',
+    allOverwriteDesc: '현재 열려 있는 문서의 원본 내용을 지우고 번역 결과물로 완전히 대체합니다. (주의: 원본 텍스트가 사라집니다)',
+
+    parallelNewFile: '새 대조 파일 생성',
+    parallelNewFileDesc: '현재 문서는 유지하고, 단락별 1:1 대조 번역 결과가 담긴 새 파일을 생성합니다.',
+    parallelAppend: '문서 하단 원문 보관',
+    parallelAppendDesc: '대조 번역문 아래에 원본 전문을 함께 보관합니다.',
+    parallelOverwrite: '현재 파일에 대조 반영',
+    parallelOverwriteDesc: '현재 열려 있는 문서 내용 자체를 원문과 번역문이 교차하는 1:1 대조 형식으로 바로 변경합니다.'
   },
   tones: {
     title: '문체',
@@ -276,7 +301,7 @@ export const ko: TranslationStrings = {
     scopeAllDesc: '문서 전체(제목과 모든 본문)를 대상 언어로 100% 완전하게 번역합니다.',
     scopeParagraphBilingual: '단락별 원문 병기',
     scopeParagraphBilingualDesc: '문서 전체를 단락(문단)별로 분할하여, 각 원문 단락 바로 아래 줄에 번역 단락을 1:1로 추가하여 대조 번역합니다.',
-    preservation: '원문 보존 방식',
+    preservation: '결과 반영 방식',
     preserveNewFile: '새 파일로 저장',
     preserveNewFileDesc: '현재 원본 문서는 전혀 수정하지 않고, 동일한 폴더에 새 번역 파일({파일명}_{언어}_{시간}.md)을 생성하여 저장합니다.',
     preserveAppend: '원문 뒤에 덧붙이기',
