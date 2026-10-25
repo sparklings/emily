@@ -57,7 +57,7 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers**:
 * Click **[Test connection]** to verify online status.
 
 ### 3) Routine Operations
-1. Click the magic wand icon (🪄) on the left ribbon to reveal the **Assistant Emily Sidebar**.
+1. Click the sparkles icon (✨) on the left ribbon to reveal the **Assistant Emily Sidebar**.
 2. Toggle translation on and select your scope (`Full document`, `Selection only`, `Paragraph bilingual`).
 3. Click **[🚀 Start task]** to execute the pipeline with real-time timeline telemetry and restored markdown output.
 
