@@ -178,31 +178,23 @@ export default class EmilyPlugin extends Plugin {
       })
     );
 
-    // 12. DeepL 스타일 Ctrl+C+C 연속 키 감지 DOM 이벤트 등록
-    let lastCtrlCTime = 0;
-    this.registerDomEvent(document, 'keydown', (evt: KeyboardEvent) => {
-      if (this.settings.enableDoubleCtrlCTranslate === false) return;
+    // 12. 에디터 우클릭 컨텍스트 메뉴 등록 (선택 영역 번역 - 옵시디언 표준)
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, editor, view) => {
+        if (!(view instanceof MarkdownView) || !view.file) return;
+        const selection = editor.getSelection();
+        if (!selection || selection.trim().length === 0) return;
 
-      const isCtrlOrCmd = evt.ctrlKey || evt.metaKey;
-      if (!isCtrlOrCmd || evt.key.toLowerCase() !== 'c') return;
-
-      const view = this.app.workspace.getActiveViewOfType(MarkdownView);
-      if (!view || !view.editor) return;
-
-      const editor = view.editor;
-      const selection = editor.getSelection();
-      if (!selection || selection.trim().length === 0) return;
-
-      const now = Date.now();
-      if (now - lastCtrlCTime < 450) {
-        lastCtrlCTime = 0;
-        evt.preventDefault();
-        evt.stopPropagation();
-        void this.handleQuickTranslateSelectionAppend(editor, view);
-      } else {
-        lastCtrlCTime = now;
-      }
-    });
+        menu.addItem((item) => {
+          item
+            .setTitle(`Assistant Emily: ${t.commands.quickTranslateSelectionAppend}`)
+            .setIcon('languages')
+            .onClick(() => {
+              void this.handleQuickTranslateSelectionAppend(editor, view);
+            });
+        });
+      })
+    );
   }
 
   /**
