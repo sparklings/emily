@@ -50,12 +50,18 @@ jobs:
             manifest.json
             styles.css
 
-      - name: Create GitHub Release
+      - name: Create or update GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          gh release create "$tag" \
-            --title="$tag" \
-            --generate-notes \
-            main.js manifest.json styles.css
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists. Updating release assets..."
+            gh release upload "$tag" main.js manifest.json styles.css --clobber
+          else
+            echo "Creating new release $tag..."
+            gh release create "$tag" \
+              --title="$tag" \
+              --generate-notes \
+              main.js manifest.json styles.css
+          fi
