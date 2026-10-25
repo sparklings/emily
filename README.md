@@ -9,7 +9,7 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Desktop Only](https://img.shields.io/badge/Platform-Desktop%20Only-orange.svg)]()
 [![Obsidian: v1.7.2+](https://img.shields.io/badge/Obsidian-v1.7.2%2B-purple.svg)](https://obsidian.md)
-[![Version: v1.1.0](https://img.shields.io/badge/Version-v1.1.1-green.svg)](CHANGELOG.md)
+[![Version: v1.1.2](https://img.shields.io/badge/Version-v1.1.2-green.svg)](CHANGELOG.md)
 [![TypeScript: Strict Mode](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg)]()
 [![Privacy: Direct Connection](https://img.shields.io/badge/Privacy-Direct%20Connection-success.svg)](SECURITY.md)
 
@@ -75,13 +75,13 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers** and select your 
 
 ---
 
-## Latest Release Information (v1.1.1)
+## Latest Release Information (v1.1.2)
 
-* **TOC Chapter Timestamp Masking Lock (`TOCTIME`)**: Preserves chapter timestamps (`1:57 BEGINNER`) and formats them into structured bullet list items.
-* **Video Clipping Note Section Partitioning**: Strictly preserves pre-transcript metadata line breaks while cleaning timestamps and reflowing subtitle paragraphs.
-* **Deterministic Video Embed Restoration**: Deterministically re-injects video embed tags into output even if dropped by LLMs.
-* **1,800-Character Smart Chunking & Resilience**: Guarantees complete document translation without fatal interrupts on lightweight models.
-* **Responsive Live Status Header**: Automatically collapses the cancel button into a 22px compact icon in sidebars narrower than 380px.
+* **Community Plugin Security & Native Hotkey Compliance**: Fully integrated with Obsidian's native `addCommand` system (`Ctrl+Shift+C` / Mac: `Cmd+Shift+C`) and editor context menu (`editor-menu`), removing rogue global DOM listeners.
+* **Synchronized Live Pipeline & User Cancellation**: Quick translation immediately activates the sidebar's live progress box, elapsed timer, and Cancel (`❌`) button via `AbortController`, with automatic inline placeholder rollback upon cancellation.
+* **Live In-Place Document Replacement**: Edits saved in the Translation Diff Review Modal (`TranslationDiffModal`) are immediately reflected directly in the active Markdown editor and synchronized across sidebar session history.
+* **Audio Transcript STT Disambiguation**: Prevents and auto-heals number concatenation distortion in speech-to-text transcripts (e.g., `101 13 lessons` ➔ `101: 13 lessons`).
+* **Minimalist UI Refinement**: Eliminated redundant information icons and tooltip collisions to provide a clean, professional sidebar interface.
 
 For complete release details, see [CHANGELOG.md](CHANGELOG.md).
 

@@ -4,7 +4,7 @@ authors:
   - name: "SUNGWON PARK (sparklings)"
     website: "https://github.com/sparklings"
 title: "Assistant Emily: Intelligent Lossless Markdown Proofreading & Context-Aware AI Translation for Obsidian"
-version: 1.1.1
+version: 1.1.2
 date-released: 2026-10-25
 url: "https://sparklings.github.io/emily/"
 repository-code: "https://github.com/sparklings/emily"

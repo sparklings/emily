@@ -6,6 +6,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.1.2] - 2026-10-25
+
+### Added
+* **Obsidian Native Hotkey & Context Menu Integration**:
+  * Implemented `emily-quick-translate-selection-append` using Obsidian's official `addCommand` with default hotkey `Ctrl+Shift+C` (Mac: `Cmd+Shift+C`).
+  * Registered editor context menu (`editor-menu`) item for quick selection translation.
+  * Added live inline status block (`> ⏳ [Assistant Emily] 번역 진행 중...`) directly beneath the selected editor text during background translation.
+* **Synchronized Live Pipeline & User Cancellation**:
+  * Connected quick translation directly to `EmilySidebarView`, rendering a live streaming status box, 3-step progress timeline, and millisecond elapsed timer.
+  * Added live `❌ 작업 취소` (Cancel) button powered by `AbortController.signal`, enabling instant cancellation of in-flight LLM requests.
+  * Implemented deterministic rollback of the editor inline placeholder upon cancellation, restoring the document to its original state without residue.
+* **Live In-Place Document Replacement in Translation Diff Modal**:
+  * Directly synchronizes edits saved in `TranslationDiffModal` into the active Markdown editor view buffer and vault file.
+  * Dynamically updates the primary modal action button according to preservation strategy (`문서에 수정 내용 저장` for append, `문서에 수정 내용 덮어쓰기` for overwrite).
+  * Automatically synchronizes modal edits with sidebar session cards (`RollingSessionData`) and plugin session cache.
+* **YouTube Transcript Chapter Sub-titles (H3) & Reflow**:
+  * Segments YouTube video transcripts into H3 sub-headings based on chapter boundaries while cleaning timestamps and reflowing subtitle sentences into cohesive paragraphs.
+* **Comprehensive Test Suite Expansion (TC-69 ~ TC-75)**:
+  * Expanded automated test suite from 68 to 75 comprehensive tests covering STT disambiguation, hotkey safety, live diff replacement, and pipeline cancellation.
+
+### Fixed
+* **Security & Platform Compliance (Rogue Keydown Hook Removal)**:
+  * Completely eliminated global DOM `keydown` listener, removing security violation risk and fully complying with Obsidian Community Plugin developer guidelines.
+* **STT Number Concatenation Disambiguation**:
+  * Added pre-processing disambiguation and auto-healing regex to prevent spoken numbers without punctuation from merging (e.g. `101 13 lessons` ➔ `101: 13 lessons` instead of `10113 lessons`).
+* **UI/UX Visual Noise & Tooltip Collisions**:
+  * Eliminated excessive information icons across sidebar categories and buttons to achieve a clean, distraction-free minimalist interface.
+  * Resolved duplicate `alt`/`title` and tooltip hover collisions on action buttons.
+
+### Changed
+* **Homepage Reset**:
+  * Replaced GitHub Pages landing page (`docs/index.html`) with a blank page pending project roadmap review.
+
+---
+
 ## [1.1.1] - 2026-10-25
 
 ### Fixed
