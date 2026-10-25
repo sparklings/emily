@@ -328,9 +328,20 @@ export class EmilySidebarView extends ItemView {
     // 1. Sidebar Header
     const header = container.createDiv({ cls: 'emily-sidebar-header' });
     const titleWrap = header.createDiv({ cls: 'emily-sidebar-title' });
-    const iconSpan = titleWrap.createSpan();
+    const logoBadge = titleWrap.createDiv({ cls: 'emily-sidebar-logo-badge' });
+    const iconSpan = logoBadge.createSpan({ cls: 'emily-sidebar-logo-icon' });
     setIcon(iconSpan, 'sparkles');
-    titleWrap.createSpan({ text: t.sidebar.title });
+
+    const titleCol = titleWrap.createDiv({ cls: 'emily-sidebar-title-col' });
+    const titleRow = titleCol.createDiv({ cls: 'emily-sidebar-title-row' });
+    titleRow.createSpan({ text: t.sidebar.title, cls: 'emily-sidebar-title-text' });
+    const onlineDot = titleRow.createSpan({ cls: 'emily-header-online-dot' });
+    onlineDot.setAttribute('title', 'Online');
+
+    const activeProfile = getEffectiveProviderForDevice(this.plugin.settings);
+    const providerName = activeProfile ? (activeProfile.name || activeProfile.id) : 'Local LLM';
+    const subTitleEl = titleCol.createDiv({ cls: 'emily-sidebar-subtitle' });
+    subTitleEl.setText(`v${this.plugin.manifest.version} · ${providerName}`);
 
     const actions = header.createDiv({ cls: 'emily-header-actions' });
     const refreshBtn = actions.createEl('button', {
@@ -518,6 +529,8 @@ export class EmilySidebarView extends ItemView {
     const titleWrap = header.createDiv({ cls: 'emily-accordion-title-wrap' });
     const chevron = titleWrap.createSpan({ cls: 'emily-chevron-icon' });
     setIcon(chevron, 'chevron-right');
+    const catIcon = titleWrap.createSpan({ cls: 'emily-accordion-cat-icon is-proofread' });
+    setIcon(catIcon, 'check-check');
     titleWrap.createSpan({ text: t.sidebar.proofreading });
 
     // Circular Count Badge
@@ -679,6 +692,8 @@ export class EmilySidebarView extends ItemView {
     const titleWrap = header.createDiv({ cls: 'emily-accordion-title-wrap' });
     const chevron = titleWrap.createSpan({ cls: 'emily-chevron-icon' });
     setIcon(chevron, 'chevron-right');
+    const catIcon = titleWrap.createSpan({ cls: 'emily-accordion-cat-icon is-translation' });
+    setIcon(catIcon, 'languages');
     titleWrap.createSpan({ text: t.sidebar.translation });
 
     // Right Action Area: Switch UI (No count badge since translation has no multiple sub-options)
@@ -1013,8 +1028,10 @@ export class EmilySidebarView extends ItemView {
     // Left spacer for perfect centering
     applyBtn.createSpan({ cls: 'emily-btn-spacer' });
 
-    // Center content: Start Task (clean label without shortcut hint text)
+    // Center content: Start Task (clean label with sparkle icon)
     const btnCenter = applyBtn.createSpan({ cls: 'emily-btn-center-wrap' });
+    const btnIcon = btnCenter.createSpan({ cls: 'emily-btn-sparkle-icon' });
+    setIcon(btnIcon, 'sparkles');
     btnCenter.createSpan({ text: t.sidebar.applyBtn, cls: 'emily-btn-main-label' });
 
     // Far-right content: character count
