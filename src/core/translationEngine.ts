@@ -65,8 +65,9 @@ export class TranslationEngine {
       throw abortError;
     }
 
-    // 웹 클리핑 메타데이터, 요약 서식 및 자막 타임스탬프를 100% 무손실 보존하며 번역에 전달
-    const contentToTranslate = markdownContent;
+    // 0-1. 음성 전사(STT) 구두점 누락으로 인한 숫자 연쇄 병합 왜곡 선제 방지
+    // (예: "Claude 101 13 lessons" -> "Claude 101: 13 lessons")
+    const contentToTranslate = MarkdownFormatter.disambiguateSpokenNumberSequences(markdownContent);
 
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(contentToTranslate, this.CHUNK_SIZE_THRESHOLD);
@@ -224,6 +225,12 @@ export class TranslationEngine {
     }
 
     const isTargetKoreanGlobal = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
+
+    // 1-0. 번역 결과물에서 띄어쓰기 생략으로 인해 숫자가 왜곡된 경우(예: '10113개 강의') 원본 대조 자동 자가 치유
+    accumulatedTranslatedMarkdown = MarkdownFormatter.fixMergedNumberSequences(
+      accumulatedTranslatedMarkdown,
+      markdownContent
+    );
 
     // 1-1. 웹 클리핑 타임스탬프는 제거하지 않고 원형 및 문장 단위 유지
 

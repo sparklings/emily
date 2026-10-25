@@ -397,6 +397,46 @@ export class MarkdownFormatter {
   }
 
   /**
+   * 음성 전사(STT) 자막에서 구두점 없이 연속된 강좌/모델 번호와 수량 단위 사이에
+   * 콜론(: )을 선제 삽입하여 LLM이 숫자를 '10113개' 등으로 붙여 쓰며
+   * 숫자가 왜곡되는 현상(예: 13개 강의 -> 10,113개 강의)을 원천 방지합니다.
+   * 예: "Claude 101 13 lessons" -> "Claude 101: 13 lessons"
+   * 예: "Claude platform 101 13 lessons" -> "Claude platform 101: 13 lessons"
+   */
+  static disambiguateSpokenNumberSequences(text: string): string {
+    if (!text) return text;
+
+    return text.replace(
+      /(\b[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*\s+\d{1,4})\s+(\d{1,4}\s+(?:lessons?|courses?|hours?|mins?|minutes?|days?|weeks?|months?|years?|items?|parts?|modules?|chapters?|videos?|steps?|lectures?|credits?|sessions?|quizzes?)\b)/gi,
+      '$1: $2'
+    );
+  }
+
+  /**
+   * 번역 완료된 텍스트에서 띄어쓰기 생략으로 인해 2개의 숫자가 하나로 합쳐진 왜곡을
+   * 원문 숫자 쌍과 대조하여 자동으로 복원 및 분리합니다.
+   * 예: 원문 "Claude 101 13 lessons" ➔ 번역본 "Claude 10113개 강의" ➔ "Claude 101: 13개 강의"로 복원
+   */
+  static fixMergedNumberSequences(translatedText: string, sourceText: string): string {
+    if (!translatedText || !sourceText) return translatedText;
+
+    const pairRegex = /\b(\d{2,4})\s+(\d{1,3})\b/g;
+    let match: RegExpExecArray | null;
+    let result = translatedText;
+
+    while ((match = pairRegex.exec(sourceText)) !== null) {
+      const num1 = match[1];
+      const num2 = match[2];
+      const mergedPattern = new RegExp(`\\b(${num1})(${num2})(?=[가-힣\\s]|$)`, 'g');
+      if (mergedPattern.test(result)) {
+        result = result.replace(mergedPattern, '$1: $2');
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * 마크다운 문서에서 볼드체(**, __), 기울이기(*, _), 취소선(~~), 하이라이트(==) 서식을
    * 사용자가 선택한 옵션에 따라 선택적으로 제거합니다.
    * - YAML 프론트매터(Frontmatter), 코드 블록(```...```), 인라인 코드(`...`),

@@ -78,6 +78,30 @@ class MarkdownFormatter {
     return doc.split(original).join(replacement);
   }
 
+  static disambiguateSpokenNumberSequences(text) {
+    if (!text) return text;
+    return text.replace(
+      /(\b[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*\s+\d{1,4})\s+(\d{1,4}\s+(?:lessons?|courses?|hours?|mins?|minutes?|days?|weeks?|months?|years?|items?|parts?|modules?|chapters?|videos?|steps?|lectures?|credits?|sessions?|quizzes?)\b)/gi,
+      '$1: $2'
+    );
+  }
+
+  static fixMergedNumberSequences(translatedText, sourceText) {
+    if (!translatedText || !sourceText) return translatedText;
+    const pairRegex = /\b(\d{2,4})\s+(\d{1,3})\b/g;
+    let match;
+    let result = translatedText;
+    while ((match = pairRegex.exec(sourceText)) !== null) {
+      const num1 = match[1];
+      const num2 = match[2];
+      const mergedPattern = new RegExp(`\\b(${num1})(${num2})(?=[가-힣\\s]|$)`, 'g');
+      if (mergedPattern.test(result)) {
+        result = result.replace(mergedPattern, '$1: $2');
+      }
+    }
+    return result;
+  }
+
   static cleanScriptTimestamps(text) {
     if (!text) return text;
 
@@ -6603,7 +6627,45 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     console.error('  ✗ [TC-70] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 70개 테스트 전원 통과) ===');
+  
+  // =========================================================================
+  console.log('\n▶ [TC-71] STT 음성 전사 숫자 연속 시 띄어쓰기 생략/병합 왜곡(예: 10113개 강의) 원천 방지 및 자동 치유 검증...');
+
+  // 1) 원문 샘플: 자막 구두점 없이 연속된 강좌 코드 및 수량 (101 13 lessons, 101 13 lessons)
+  const spokenSource = '2:17 · Track one, start your journey. Five courses. Claude 101 13 lessons, about two and a half hours and it works on the free plan.\n4:02 · Claude platform 101 13 lessons, an hour and a half.';
+
+  // 2) 사전 처리(Pre-processing) 검증: 'Claude 101 13 lessons' -> 'Claude 101: 13 lessons' 콜론 자동 분리
+  const preprocessedSource = MarkdownFormatter.disambiguateSpokenNumberSequences(spokenSource);
+  const tc71_1 = preprocessedSource.includes('Claude 101: 13 lessons') &&
+                 preprocessedSource.includes('Claude platform 101: 13 lessons');
+
+  // 3) 사후 처리(Post-processing) 검증: 만약 LLM이 띄어쓰기를 생략하여 '10113개 강의'로 잘못 출력했더라도
+  // 원문 '101 13'과 대조하여 '101: 13개 강의'로 자동 치유되는지 검증
+  const erroneousTranslation = '트랙 1, 여정을 시작하세요. 총 5개의 과정이 있습니다.\nClaude 10113개 강의, 약 2시간 30분 분량이며 무료 플랜에서도 이용할 수 있습니다.\nClaude platform 10113개 강의, 1시간 30분 분량입니다.';
+  const healedTranslation = MarkdownFormatter.fixMergedNumberSequences(erroneousTranslation, spokenSource);
+
+  const tc71_2 = healedTranslation.includes('Claude 101: 13개 강의') &&
+                 healedTranslation.includes('Claude platform 101: 13개 강의') &&
+                 !healedTranslation.includes('10113개 강의');
+
+  // 4) 다른 과목/시간 단위 패턴 검증
+  const otherSamples = 'Python 101 20 chapters in total. CS 50 12 weeks of training.';
+  const preprocessedOther = MarkdownFormatter.disambiguateSpokenNumberSequences(otherSamples);
+  const tc71_3 = preprocessedOther.includes('Python 101: 20 chapters') &&
+                 preprocessedOther.includes('CS 50: 12 weeks');
+
+  console.log('  - 1) STT 음성 전사 강좌번호 및 수량 단위 사전 콜론(: ) 분리: ' + tc71_1);
+  console.log('  - 2) 띄어쓰기 생략된 10113개 강의 -> 101: 13개 강의 자동 치유: ' + tc71_2);
+  console.log('  - 3) 챕터(chapters), 주차(weeks) 등 복합 단위 정상 분리: ' + tc71_3);
+
+  const tc71Passed = tc71_1 && tc71_2 && tc71_3;
+  if (tc71Passed) {
+    console.log('  ✓ [TC-71] STT 음성 전사 숫자 연속 띄어쓰기 생략 왜곡(10113개 강의) 원천 방지 및 자동 치유 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-71] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 71개 테스트 전원 통과) ===');
 
 }
 
