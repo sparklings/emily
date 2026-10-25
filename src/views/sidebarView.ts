@@ -2585,7 +2585,11 @@ export class EmilySidebarView extends ItemView {
             session.translatedMarkdown || '',
             session.translationOptions,
             this.plugin.getTranslationEngine(),
-            undefined,
+            (finalText: string, action: string, targetPath?: string) => {
+              session.translatedMarkdown = finalText;
+              if (targetPath) session.targetPath = targetPath;
+              this.plugin.recordSessionFromSidebar(session);
+            },
             this.plugin.settings.language
           );
           modal.open();

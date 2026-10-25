@@ -496,6 +496,9 @@ export interface TranslationStrings {
     resultTransHeader: string;
     saveNewFileBtn: string;
     saveNewFileNotice: string;
+    saveEditsToDocBtn: string;
+    saveEditsToDocNotice: string;
+    saveOverwriteBtn: string;
     appendBtn: string;
     appendNotice: string;
     overwriteBtn: string;
