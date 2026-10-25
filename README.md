@@ -77,7 +77,7 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers** and select your 
 
 ## Latest Release Information (v1.1.2)
 
-* **Community Plugin Security & Native Hotkey Compliance**: Fully integrated with Obsidian's native `addCommand` system (`Ctrl+Shift+C` / Mac: `Cmd+Shift+C`) and editor context menu (`editor-menu`), removing rogue global DOM listeners.
+* **Community Plugin Security & Native Hotkey Compliance**: Fully integrated with Obsidian's native `addCommand` system (customizable in Hotkeys settings) and editor context menu (`editor-menu`), removing rogue global DOM listeners with zero default hotkey conflicts.
 * **Synchronized Live Pipeline & User Cancellation**: Quick translation immediately activates the sidebar's live progress box, elapsed timer, and Cancel (`❌`) button via `AbortController`, with automatic inline placeholder rollback upon cancellation.
 * **Live In-Place Document Replacement**: Edits saved in the Translation Diff Review Modal (`TranslationDiffModal`) are immediately reflected directly in the active Markdown editor and synchronized across sidebar session history.
 * **Audio Transcript STT Disambiguation**: Prevents and auto-heals number concatenation distortion in speech-to-text transcripts (e.g., `101 13 lessons` ➔ `101: 13 lessons`).

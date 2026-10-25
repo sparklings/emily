@@ -1,14 +1,12 @@
 import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Editor } from 'obsidian';
-import { TranslationOptions } from './types/translation';
 import { EmilySettings, DEFAULT_SETTINGS } from './types/settings';
 import { EMILY_VIEW_TYPE, EMILY_ICON_NAME } from './constants';
 import { EmilySettingTab } from './views/settingsTab';
-import { EmilySidebarView, RollingSessionData, getISODateTimeString } from './views/sidebarView';
+import { EmilySidebarView, RollingSessionData } from './views/sidebarView';
 import { LLMProxyClient } from './api/llmClient';
 import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
-import { detectDocumentLanguage, isSameLanguage } from './core/languageDetector';
-import { getTranslation, getDefaultTargetLanguageName, getLocalizedLanguageName, normalizeLanguageCode } from './i18n';
+import { getTranslation } from './i18n';
 import { migrateDeviceProfiles, migrateLegacySettingsToProviders, getEffectiveProviderForDevice } from './utils/deviceKeyManager';
 
 /**
@@ -117,12 +115,6 @@ export default class EmilyPlugin extends Plugin {
       id: 'emily-quick-translate-selection-append',
       name: t.commands.quickTranslateSelectionAppend,
       icon: 'languages',
-      hotkeys: [
-        {
-          modifiers: ['Mod', 'Shift'],
-          key: 'C'
-        }
-      ],
       editorCallback: (editor: Editor, view: MarkdownView) => {
         void this.handleQuickTranslateSelectionAppend(editor, view);
       }
@@ -321,7 +313,7 @@ export default class EmilyPlugin extends Plugin {
   /**
    * DeepL 스타일 빠른 선택 영역 번역 후 바로 아래에 덧붙이기 핸들러
    * - 에디터에서 선택된 텍스트를 감지하여 번역 후 원문 바로 아래에 빈 줄 하나를 두고 덧붙입니다.
-   * - 기본 단축키: Ctrl+Shift+C (Mac: Cmd+Shift+C)
+   * - 단축키: 옵시디언 [설정 > 단축키]에서 자유롭게 지정 가능 (플러그인 충돌 방지를 위해 기본 미할당)
    */
   public async handleQuickTranslateSelectionAppend(
     editor: Editor,
