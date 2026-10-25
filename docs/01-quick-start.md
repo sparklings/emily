@@ -33,39 +33,29 @@ flowchart LR
 
 ## 1단계: 플러그인 설치 및 활성화
 
-### 방법 A: 옵시디언 커뮤니티 플러그인 디렉터리 (권장)
-1. 옵시디언 좌측 하단의 톱니바퀴 아이콘(**설정** )을 클릭합니다.
-2. 좌측 메뉴에서 ** 커뮤니티 플러그인(Community Plugins)** 탭을 선택합니다.
-3. [탐색(Browse)] 버튼을 누르고 검색창에 `Assistant Emily` 를 입력합니다.
-4. 검색 결과에서 **Assistant Emily** 카드를 클릭한 뒤 **[설치(Install)]** 버튼을 누릅니다.
-5. 설치가 완료되면 **[활성화(Enable)]** 버튼을 클릭하여 플러그인을 켭니다.
+Assistant Emily는 **[옵시디언 공식 커뮤니티 플러그인 디렉터리](https://community.obsidian.md/plugins/assistant-emily)** 에 정식 등록되어 있습니다. 옵시디언 내부에서 1클릭으로 간편하게 설치하실 수 있습니다.
 
-### 방법 B: 수동 설치 (GitHub Release)
-1. [GitHub Releases](https://github.com/sparklings/emily/releases) 페이지에서 최신 버전의 `assistant-emily.zip` 파일을 다운로드합니다.
-2. 옵시디언 보관함(Vault) 내부의 플러그인 경로인 `.obsidian/plugins/assistant-emily` 폴더를 생성하고 압축을 풉니다.
-   * 필수 파일: `main.js`, `manifest.json`, `styles.css`
-3. 옵시디언의 `설정 > 커뮤니티 플러그인` 에서 [설치된 플러그인 새로고침]을 누른 후 **Assistant Emily** 를 활성화합니다.
+1. 옵시디언 좌측 하단의 톱니바퀴 아이콘(**설정** )을 클릭합니다.
+2. 좌측 메뉴에서 **커뮤니티 플러그인(Community Plugins)** 탭을 선택합니다.
+3. [탐색(Browse)] 버튼을 누르고 검색창에 `Assistant Emily` 를 검색합니다.
+4. 검색 결과에서 **Assistant Emily** 를 선택한 뒤 **[설치(Install)]** ➔ **[활성화(Enable)]** 를 차례로 클릭합니다.
 
 ---
 
-## 2단계: 무료 AI 프로바이더 1분 연결
+## 2단계: FreeLLMAPI 1분 연결
 
-Assistant Emily는 사용자의 요구에 따라 **100% 무료 로컬 AI(Ollama)**  또는 ** 클라우드 API(OpenAI, Gemini, FreeLLMAPI)**  를 유연하게 연결할 수 있습니다.
+Assistant Emily는 **FreeLLMAPI** 전용으로 설계되었습니다. 별도의 고성능 GPU나 복잡한 설정 없이 단 하나의 무료 키로 즉시 연결할 수 있습니다.
 
 1. 옵시디언 설정 창 좌측 하단의 **Assistant Emily** 설정 탭을 클릭합니다.
 2. 첫 번째 서브탭인 **AI 프로바이더(AI Providers)** 로 이동합니다.
-3. 가장 편리한 방식을 선택합니다:
-
-| 연결 방식 | 설정 방법 | 추천 사용자 |
-| :--- | :--- | :--- |
-| **A. Ollama (로컬 무료)** | • Base URL: `http://localhost:11434/v1`<br/>• API Key: 공란<br/>• Model: `qwen2.5:14b` 또는 `llama3.1:8b` | 프라이버시가 중요하고 개인 GPU를 갖춘 사용자 |
-| **B. FreeLLMAPI (통합 무료)** | • Base URL: `https://api.freellmapi.com/v1`<br/>• API Key: FreeLLMAPI 토큰 입력<br/>• Model: `dots-3-note-preview:free` 또는 `gemini-2.5-flash` | 고성능 GPU 없이 무료로 고품질 번역을 원하는 사용자 |
-| **C. OpenAI / Gemini (상용)** | • Base URL: 프로바이더 공식 엔드포인트<br/>• API Key: 발급받은 개인 API 키<br/>• Model: `gpt-4o-mini`, `gemini-2.5-flash` | 안정적인 상용 클라우드 인프라를 원하는 사용자 |
-
+3. 다음과 같이 설정값을 입력합니다:
+   * **API Base URL**: `https://api.freellmapi.com/v1` (로컬 자체 호스팅 시: `http://localhost:3000/v1`)
+   * **API Key**: 발급받은 FreeLLMAPI 인증 키(`flm_...`) 입력
+   * **Model Name**: 원하는 무료 모델 입력 (`dots-3-note-preview:free`, `gemini-2.5-flash`, `deepseek-chat` 등)
 4. 하단의 **[연결 테스트]** 버튼을 클릭합니다. 초록색 체크 뱃지(`✓ 연결 성공`)가 표시되면 정상 연결된 것입니다.
 
 > [!TIP]
-> 기기별 맞춤 설정 및 세부 프로바이더 연결 방법은 [제2편: AI 프로바이더 연결 및 기기별 프로필 설정 매뉴얼](02-ai-providers-setup.md) 에 상세히 설명되어 있습니다.
+> 기기별 맞춤 설정 및 세부 프로필 관리 방법은 [제2편: FreeLLMAPI 연동 및 기기별 프로필 설정 매뉴얼](02-ai-providers-setup.md) 에 상세히 설명되어 있습니다.
 
 ---
 
