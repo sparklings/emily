@@ -11,7 +11,11 @@ import { PromptBuilder } from '../api/promptBuilder';
 import { MarkdownFormatter } from '../core/markdownFormatter';
 import { LLMUsage } from '../api/llmClient';
 import { TranslationKeys } from '../i18n/types';
-import { getEffectiveProviderForDevice, isLocalEndpoint } from '../utils/deviceKeyManager';
+import {
+  getEffectiveModelForDevice,
+  getEffectiveProviderForDevice,
+  isLocalEndpoint
+} from '../utils/deviceKeyManager';
 
 function getISODateTimeString(date: Date = new Date()): string {
   const pad = (num: number) => num.toString().padStart(2, '0');
@@ -114,6 +118,7 @@ export class EmilySidebarView extends ItemView {
   private activeFormContainerEl: HTMLElement | null = null;
   private promptTargetFileEl: HTMLElement | null = null;
   private sidebarNavigatorEl: HTMLElement | null = null;
+  private subTitleEl: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: EmilyPlugin) {
     super(leaf);
@@ -153,10 +158,20 @@ export class EmilySidebarView extends ItemView {
       stripStrikethrough: Boolean(this.plugin.settings.defaultStripStrikethrough),
       stripHighlight: Boolean(this.plugin.settings.defaultStripHighlight)
     };
+  }  private updateSubtitle(): void {
+    if (!this.subTitleEl) return;
+    const activeProfile = getEffectiveProviderForDevice(this.plugin.settings);
+    const providerName = activeProfile ? (activeProfile.name || activeProfile.id) : 'Local LLM';
+    const effectiveModel = getEffectiveModelForDevice(this.plugin.settings) || this.plugin.settings.modelName || 'auto';
+    this.subTitleEl.setText(`${providerName} · ${effectiveModel}`);
+    this.subTitleEl.setAttribute('title', `${providerName} (${effectiveModel})`);
   }
+
+
 
   public syncWithOptionsFromSettings() {
     this.initOptionsFromSettings();
+    this.updateSubtitle();
     if (this.activeFormContainerEl) {
       const t = getTranslation(this.plugin.settings.language);
       this.renderActiveForm(this.activeFormContainerEl, t);
@@ -338,10 +353,8 @@ export class EmilySidebarView extends ItemView {
     const onlineDot = titleRow.createSpan({ cls: 'emily-header-online-dot' });
     onlineDot.setAttribute('title', 'Online');
 
-    const activeProfile = getEffectiveProviderForDevice(this.plugin.settings);
-    const providerName = activeProfile ? (activeProfile.name || activeProfile.id) : 'Local LLM';
-    const subTitleEl = titleCol.createDiv({ cls: 'emily-sidebar-subtitle' });
-    subTitleEl.setText(`v${this.plugin.manifest.version} · ${providerName}`);
+    this.subTitleEl = titleCol.createDiv({ cls: 'emily-sidebar-subtitle' });
+    this.updateSubtitle();
 
     const actions = header.createDiv({ cls: 'emily-header-actions' });
     const refreshBtn = actions.createEl('button', {
