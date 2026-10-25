@@ -1,17 +1,17 @@
 # Assistant Emily: Lossless Markdown Proofreading & Context-Aware AI Translation for Obsidian
 
-> Assistant Emily is a desktop Obsidian community plugin built natively around FreeLLMAPI as its primary AI proxy, with auxiliary support for local Ollama and OpenAI-compatible endpoints. It features a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
+> Assistant Emily is an official Obsidian community plugin (https://community.obsidian.md/plugins/assistant-emily) built exclusively for FreeLLMAPI. It features a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
 
 - Repository: https://github.com/sparklings/emily
+- Community Plugin Directory: https://community.obsidian.md/plugins/assistant-emily
 - Documentation: https://github.com/sparklings/emily/tree/master/docs
 - Wiki: https://github.com/sparklings/emily/wiki
 - License: MIT
 - Version: 1.1.2
-- Primary Backend: FreeLLMAPI (https://api.freellmapi.com/v1)
+- AI Backend: FreeLLMAPI (https://api.freellmapi.com/v1)
 
 ## Core Capabilities
 - Lossless Syntax Masking: 10-element UUID token taxonomy safeguarding Obsidian Flavored Markdown (OFM)
-- Primary FreeLLMAPI Integration: 34+ providers, 635 endpoints, ~7.4B tokens/month
-- Local Ollama & OpenAI-compatible support
+- FreeLLMAPI Dedicated Integration: 34+ providers, 635 endpoints, ~7.4B tokens/month at zero cost
 - Selection and Full Document Translation with 1,800-character Smart Chunking
 - Side-by-Side Proofreading Diff Modal with interactive line-by-line sync

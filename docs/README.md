@@ -24,7 +24,7 @@ type: documentation-hub
 ```mermaid
 flowchart TD
     M1["제1편: 3분 빠른 시작 & 설치<br/>(01-quick-start.md)"]
-    M2["제2편: AI 프로바이더 연결 설정<br/>(02-ai-providers-setup.md)"]
+    M2["제2편: FreeLLMAPI 연동 및 설정<br/>(02-ai-providers-setup.md)"]
     M3["제3편: 번역 & 단축키 실전 활용<br/>(03-translation-and-hotkeys.md)"]
     M4["제4편: AI 교열 & 실시간 대조 검토<br/>(04-proofreading-and-diff-review.md)"]
     M5["제5편: 유튜브 자막 & 웹클리핑 정제<br/>(05-video-clipping-and-transcripts.md)"]
@@ -42,19 +42,18 @@ flowchart TD
 ---
 
 ### [제1편: 3분 빠른 시작 & 플러그인 설치 가이드](01-quick-start.md)
-* **대상**: Assistant Emily를 처음 설치하고 즉시 사용해보고자 하는 초보 사용자
+* **대상**: Assistant Emily를 처음 설치하고 즉시 사용해보고자 하는 사용자
 * **핵심 내용**:
-  * 옵시디언 커뮤니티 플러그인 디렉터리 검색 및 1클릭 설치
-  * 무료 AI 엔드포인트 1분 연결 및 연결 테스트
+  * [옵시디언 공식 커뮤니티 플러그인 디렉터리](https://community.obsidian.md/plugins/assistant-emily) 검색 및 1클릭 설치
+  * FreeLLMAPI 1분 연결 및 연결 테스트
   * 에디터 컨텍스트 메뉴 및 단축키로 선택 영역 즉시 번역 실습
   * 우측 사이드바 활성화 및 실시간 진행 상태 제어 요령
 
-### [제2편: FreeLLMAPI 연동 및 AI 프로바이더·기기별 프로필 설정 매뉴얼](02-ai-providers-setup.md)
-* **대상**: 로컬 LLM 또는 클라우드 API를 연결하고 멀티 디바이스 환경을 구축하려는 사용자
+### [제2편: FreeLLMAPI 연동 및 기기별 프로필 설정 매뉴얼](02-ai-providers-setup.md)
+* **대상**: FreeLLMAPI를 연결하고 멀티 디바이스 환경을 구축하려는 사용자
 * **핵심 내용**:
-  * Ollama를 활용한 100% 무료 로컬 온디바이스 AI 구동법
-  * FreeLLMAPI(34개 이상 무료 LLM 통합 프록시) 연결 가이드
-  * OpenAI, Google Gemini, OpenRouter 상용 API 연결
+  * FreeLLMAPI(34개 이상 무료 LLM 통합 프록시) 전용 연결 가이드
+  * 무제한 제로 비용 모델 선택 및 연결 헬스 체크
   * Obsidian Sync / 클라우드 볼트 동기화 시 설정 충돌을 방지하는 **기기 프로필(Device Profile)** 운용법
 
 ### [제3편: 스마트 마크다운 번역 & 단축키 실전 활용 매뉴얼](03-translation-and-hotkeys.md)

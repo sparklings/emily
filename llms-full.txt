@@ -47,7 +47,7 @@ Assistant Emily (`assistant-emily`) is an Obsidian Community Plugin (desktop onl
    - Supports Selection-Scoped Proofreading via atomic `replaceRange`.
 
 5. **`LLMProxyClient` (`src/api/llmProxyClient.ts`)**:
-   - Connects natively to FreeLLMAPI as primary AI backend, with support for local Ollama and OpenAI-compatible endpoints.
+   - Connects exclusively to FreeLLMAPI as its dedicated AI backend.
    - Parses telemetry and token usage (`UsageTelemetry`).
    - Suppresses disruptive UI notices on 502/network failures, routing diagnostic alerts to timeline step 2.
 
