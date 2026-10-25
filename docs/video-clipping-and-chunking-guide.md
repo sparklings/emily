@@ -38,7 +38,7 @@ flowchart TD
     Split --> ScriptSec["(2) 스크립트 본문 구역 (## Transcript 이하)"]
 
     subgraph MetaProcessing ["메타데이터 구역 보존"]
-        Meta1["동영상 임베드 태그 100% 보존"]
+        Meta1["동영상 임베드 태그 보존"]
         Meta2["목차 챕터 시간: '- 0:00 설명' 리스트 보존"]
         Meta3["연락처 (Connect / Email) 원본 줄바꿈 100% 보존"]
     end

@@ -1,7 +1,7 @@
-# Lossless Markdown & OFM Syntax Masking Pipeline Technical Guide
-### 옵시디언 마크다운 문법 무손실 마스킹 및 자가 치유 파이프라인
+# Markdown & OFM Syntax Masking Pipeline Technical Guide
+### 옵시디언 마크다운 문법 토큰 마스킹 및 자가 치유 파이프라인
 
-본 문서는 **Assistant Emily** 에서 대형 언어 모델(LLM)을 거치면서도 옵시디언 고유 문법(OFM, Obsidian Flavored Markdown), 수식, 코드, 링크, 목차 타임스탬프를 100% 무손실로 보존하기 위해 설계된 **문법 마스킹 파이프라인(Syntax Masking Pipeline)** 의 수학적·정규식적 설계 명세를 기술합니다.
+본 문서는 **Assistant Emily** 에서 대형 언어 모델(LLM)을 거치면서도 옵시디언 고유 문법(OFM, Obsidian Flavored Markdown), 수식, 코드, 링크, 목차 타임스탬프를 문법 구조의 훼손을 최소화하기 위해 설계된 **문법 마스킹 파이프라인(Syntax Masking Pipeline)** 의 수학적·정규식적 설계 명세를 기술합니다.
 
 ---
 
@@ -25,7 +25,7 @@ Assistant Emily의 `MarkdownMasker`는 10대 핵심 문법 요소를 순차적�
 
 | 분류 (Syntax Type) | 정규식 패턴 (Regex Specification) | 마스킹 토큰 형식 | 복원 불변성 (Invariant) |
 | :--- | :--- | :--- | :--- |
-| **YAML 프론트매터** | `^---\r?\n([\s\S]*?\r?\n)---(?:\r?\n|$)` | 본문 분리 격리 | 최상단 원형 100% 유지 |
+| **YAML 프론트매터** | `^---\r?\n([\s\S]*?\r?\n)---(?:\r?\n|$)` | 본문 분리 격리 | 최상단 원형 보존 |
 | **코드 블록** | ```` ```[\s\S]*?``` ```` | `__EMILY_CODEBLOCK_n__` | 코드 로직·언어 식별자 보존 |
 | **인라인 코드** | `` `[^`\n]+` `` | `__EMILY_CODEINLINE_n__` | 백틱 내부 식별자 보존 |
 | **블록 LaTeX 수식** | `\$\$[\s\S]*?\$\$` | `__EMILY_MATHBLOCK_n__` | 수식 기호·백슬래시 보존 |
@@ -63,7 +63,7 @@ flowchart TD
         L3["- __EMILY_TOCTIME_2__ 요약"]
     end
 
-    subgraph RestoreStep ["3단계: 무손실 복원 (Restoration)"]
+    subgraph RestoreStep ["3단계: 토큰 복원 (Restoration)"]
         R1["- 0:00 제미나이 노트북이란 무엇인가"]
         R2["- 1:57 초보자 가이드"]
         R3["- 25:17 요약"]

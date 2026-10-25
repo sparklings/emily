@@ -94,8 +94,8 @@ def create_og_image():
     draw.text((badge_x + 14, badge_y + 4), "Obsidian Plugin · v1.1.1", font=font_tag, fill=(196, 181, 253, 255))
 
     # Subtitle Line
-    draw.text((title_x, top_y + 54), "Obsidian AI Translation & Markdown Lossless Polish", font=font_sub_en, fill=(226, 232, 240, 240))
-    draw.text((title_x + 490, top_y + 58), "· 위키링크, YAML, 수식 100% 무손실 보존", font=font_sub_ko, fill=(148, 163, 184, 220))
+    draw.text((title_x, top_y + 54), "Obsidian AI Translation & Markdown Polish", font=font_sub_en, fill=(226, 232, 240, 240))
+    draw.text((title_x + 430, top_y + 58), "· 위키링크, YAML, 수식 토큰 마스킹 보호", font=font_sub_ko, fill=(148, 163, 184, 220))
 
     # =========================================================================
     # Central Comparison Mockup Cards (Original vs Emily Output)
@@ -182,9 +182,9 @@ def create_og_image():
     draw.ellipse([card_r_x + 18, card_top + 14, card_r_x + 28, card_top + 24], fill=(16, 185, 129, 255))
     draw.text((card_r_x + 36, card_top + 11), "Assistant Emily 번역 및 교열 결과 (KO)", font=font_card_head, fill=(255, 255, 255, 255))
     
-    # "Lossless" badge in top right of card
+    # "Token Protected" badge in top right of card
     draw.rounded_rectangle([card_r_x + card_w - 110, card_top + 8, card_r_x + card_w - 14, card_top + 30], radius=10, fill=(16, 185, 129, 30), outline=(16, 185, 129, 120), width=1)
-    draw.text((card_r_x + card_w - 98, card_top + 11), "100% 무손실", font=font_chip, fill=(52, 211, 153, 255))
+    draw.text((card_r_x + card_w - 92, card_top + 11), "토큰 보호", font=font_chip, fill=(52, 211, 153, 255))
 
     # Right Card Content
     rx = card_r_x + 22
@@ -239,7 +239,7 @@ def create_og_image():
     start_pill_x = 70
 
     pill_data = [
-        ("🛡️ 100% 무손실 서식 보호", "YAML, [[WikiLink]], LaTeX, 동영상/URL 보호"),
+        ("🛡️ 마크다운 문법 토큰 보호", "YAML, [[WikiLink]], LaTeX 수식 마스킹 격리"),
         ("⚡ 로컬 LLM & 클라우드 프록시", "Ollama · LM Studio · FreeLLMAPI · Gemini"),
         ("🌐 단락별 1:1 대조 번역", "학술체·경어체 정합 & 맞춤법·문법 스마트 교열")
     ]

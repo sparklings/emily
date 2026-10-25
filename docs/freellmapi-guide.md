@@ -27,7 +27,7 @@ sources:
 ## 1. 개요 및 기술 선정 배경 (Overview & Architectural Rationale)
 
 ### 1.1 로컬 LLM 환경의 이상과 현실적 한계
-옵시디언과 같은 개인 지식 관리(PKM) 환경에서 가장 이상적인 AI 파트너십은 **Ollama** 나 **LM Studio** 를 이용한 완전한 온디바이스(On-device) 로컬 LLM 구동입니다. 데이터가 로컬 머신을 벗어나지 않으므로 프라이버시가 완벽하게 보장되기 때문입니다.
+옵시디언과 같은 개인 지식 관리(PKM) 환경에서 가장 이상적인 AI 파트너십은 **Ollama** 나 **LM Studio** 를 이용한 완전한 온디바이스(On-device) 로컬 LLM 구동입니다. 데이터가 로컬 머신을 벗어나지 않으므로 프라이버시가 보장되기 때문입니다.
 
 그러나 실무 환경에서는 다음과 같은 공학적 한계에 직면합니다:
 1. **하드웨어 가속 한계**: 14B~70B 수준의 파라미터를 가진 고성능 모델을 원활하게 실행하려면 최소 16GB~24GB 이상의 전용 VRAM(NVIDIA RTX 4080/4090 이상 또는 Apple Silicon Unified Memory 36GB 이상)이 요구됩니다.
@@ -38,7 +38,7 @@ sources:
 오픈소스 생태계에는 다양한 LLM 게이트웨이(LiteLLM, One-API, Portkey 등)가 존재하지만, **Assistant Emily** 팀이 공식 권장 및 1순위 프록시 솔루션으로 **FreeLLMAPI** 를 선정한 이유는 명확합니다:
 
 * **방대한 무료 자원의 극대화**: 전 세계 34개 AI 연구소 및 클라우드 기업(Google Gemini, Groq, Cerebras, Mistral, OpenRouter, Cloudflare, Cohere, Zhipu 등)이 제공하는 무료 티어를 하나로 결합하여 **월간 약 74억 토큰(7.4 Billion Tokens/month)**, **635개 이상의 무료 엔드포인트** 를 단 하나의 엔드포인트로 노출합니다.
-* **OpenAI 완벽 호환 인터페이스**: 표준 `/v1/chat/completions`, `/v1/models` 규격을 준수하므로, Assistant Emily의 기존 커스텀 OpenAI 드라이버를 단 1줄의 코드 변경 없이 그대로 연결할 수 있습니다.
+* **OpenAI 표준 호환 인터페이스**: 표준 `/v1/chat/completions`, `/v1/models` 규격을 준수하므로, Assistant Emily의 기존 커스텀 OpenAI 드라이버를 단 1줄의 코드 변경 없이 그대로 연결할 수 있습니다.
 * **지능형 다중 장애 극복 (Smart Failover & Cooldown)**: 특정 프로바이더가 429(Too Many Requests) 또는 5xx 서버 에러를 반환하면, 사용자의 개입 없이 즉시 다음 우선순위 모델로 요청을 투명하게 재라우팅합니다.
 * **로컬 우선 보안 아키텍처**: 모든 프로바이더 API 키는 로컬 SQLite 데이터베이스에 **AES-256-GCM** 으로 암호화되어 보관되며, 클라이언트 앱에는 오직 하나의 내부 통합 토큰(`freellmapi-...`)만 발급됩니다.
 * **경량성 및 플랫폼 독립성**: Node.js 20+ 기반으로 유휴 메모리 사용량이 약 40MB에 불과하며, Windows 데스크톱 무설치 트레이 앱, Docker Compose, Linux 데몬 등 어떤 환경에서도 단 1분 만에 배포할 수 있습니다.
@@ -53,7 +53,7 @@ FreeLLMAPI는 클라이언트와 외부 상용 LLM 무료 티어 프로바이더
 flowchart TD
     subgraph ObsidianClient ["옵시디언 클라이언트 (Obsidian Desktop)"]
         AE["Assistant Emily 플러그인"]
-        Masker["무손실 문법 마스킹 엔진 (MarkdownMasker)"]
+        Masker["문법 토큰 마스킹 엔진 (MarkdownMasker)"]
         Chunker["스마트 텍스트 청커 (Token/Regex Chunker)"]
         AE --> Masker
         Masker --> Chunker
@@ -252,11 +252,11 @@ FreeLLMAPI 대시보드는 전 세계 60개 언어를 기본 지원합니다. �
 ### 5.2 대용량 유튜브 스크립트(##Transcript) 번역 및 교열 실증
 유튜브 클리핑 노트의 대용량 텍스트 번역 시 Assistant Emily와 FreeLLMAPI의 결합 동작 방식:
 1. 사용자가 `## Transcript` 블록을 지정하고 번역 명령 실행.
-2. **Assistant Emily** 가 마크다운 문법(타임스탬프 `03:45`, 위키링크, 코드 블록)을 고유 UUID 토큰으로 무손실 마스킹.
+2. **Assistant Emily** 가 마크다운 문법(타임스탬프 `03:45`, 위키링크, 코드 블록)을 고유 UUID 토큰으로 마스킹.
 3. 스마트 청커가 텍스트를 최적 토큰 크기로 분할하여 FreeLLMAPI의 `/v1/chat/completions` 로 동시 전송.
 4. **FreeLLMAPI** 지능형 라우터가 등록된 34개 프로바이더 중 가장 여유롭고 빠른 모델(예: Groq 또는 Gemini 2.5 Flash)로 자동 분배.
 5. 중간에 특정 프로바이더가 429 쿼터 초과를 일으켜도 즉각 다음 프로바이더(Cerebras 등)로 매끄럽게 페일오버.
-6. 응답 텍스트를 수신한 Assistant Emily가 UUID 토큰을 본래 마크다운 구문으로 100% 무손실 복원하고 서식을 정규화.
+6. 응답 텍스트를 수신한 Assistant Emily가 UUID 토큰을 본래 마크다운 구문으로 복원하고 서식을 정규화.
 
 ---
 
@@ -327,6 +327,6 @@ FreeLLMAPI의 모든 설정, 등록된 키, 통계 데이터는 SQLite 데이터
 
 ## 8. 결론 (Conclusion)
 
-**FreeLLMAPI** 는 로컬 VRAM의 물리적 한계로 고성능 대형 모델을 상시 구동하기 어려운 환경에서, 전 세계 무료 LLM 자원을 단 하나의 고신뢰성 엔드포인트로 묶어주는 가장 완벽한 대안 인프라입니다.
+**FreeLLMAPI** 는 로컬 VRAM의 물리적 한계로 고성능 대형 모델을 상시 구동하기 어려운 환경에서, 전 세계 무료 LLM 자원을 단 하나의 고신뢰성 엔드포인트로 묶어주는 실무적 대안 인프라입니다.
 
-**Assistant Emily** 의 **무손실 마크다운 문법 마스킹 파이프라인(Syntax Masking Pipeline)** 과 **FreeLLMAPI** 의 **지능형 다중 프로바이더 자동 우회 라우팅** 을 결합함으로써, 사용자는 비용 걱정이나 레이트 리밋 중단 없이 옵시디언 노트의 대용량 번역, 교열, 서식 자가 치유를 최고 수준의 품질로 누릴 수 있습니다.
+**Assistant Emily** 의 **마크다운 문법 마스킹 파이프라인(Syntax Masking Pipeline)** 과 **FreeLLMAPI** 의 **지능형 다중 프로바이더 자동 우회 라우팅** 을 결합함으로써, 사용자는 비용 걱정이나 레이트 리밋 중단 없이 옵시디언 노트의 대용량 번역, 교열, 서식 자가 치유를 최고 수준의 품질로 누릴 수 있습니다.
