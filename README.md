@@ -26,17 +26,18 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 
 ## Documentation Hub
 
-This project provides exhaustive technical documentation organized by domain and architecture. For deep-dive specifications, refer to the individual reports below:
+Assistant Emily provides comprehensive, step-by-step user manuals and technical guides in the [`/docs`](docs/README.md) directory and the [GitHub Wiki](https://github.com/sparklings/emily/wiki).
 
-| Domain / Architecture | Target File | Core Contents & Link |
+| Part | User Manual / Technical Guide | Core Contents & Link |
 | :--- | :--- | :--- |
-| **System Architecture** | `src/core/*`<br>`src/api/*` | [System Architecture & Pipeline Specification](docs/architecture.md)<br>UI Sidecar layer, component data flow, single-responsibility principle |
-| **Syntax Token Masking** | `src/core/markdownMasker.ts` | [Markdown & OFM Masking Technical Guide](docs/syntax-masking-pipeline.md)<br>10-element UUID token taxonomy, TOCTIME chapter locking, OFM self-healing |
-| **Video Clipping & Chunking** | `src/core/markdownFormatter.ts`<br>`src/core/translationEngine.ts` | [Video Clipping Partitioning & Smart Chunking Guide](docs/video-clipping-and-chunking-guide.md)<br>Pre-transcript line break preservation, subtitle cleaning, 1,800-char chunking |
-| **Device Profiles & Settings** | `src/ui/settingsTab.ts`<br>`src/api/llmProxyClient.ts` | [Device Profiles & Provider Endpoint Configuration Manual](docs/settings-and-provider-manual.md)<br>4-tab settings layout, device ID binding, Ollama & FreeLLMAPI setup |
-| **FreeLLMAPI Integration** | `docs/freellmapi-guide.md` | [FreeLLMAPI Architecture & Deployment Guide](docs/freellmapi-guide.md)<br>34 free providers, 635 endpoints, ~7.4B tokens/mo, auto failover & self-hosting |
-| **Troubleshooting & Diagnostics** | Repository-wide | [Troubleshooting & Diagnostics Guide](docs/troubleshooting.md)<br>Proxy 502 handling, token context overflow, cross-lingual leakage remedies |
-| **Version History** | Repository-wide | [Changelog (CHANGELOG.md)](CHANGELOG.md)<br>Version release notes (v1.0.0 through v1.1.0) and 68 automated test cases |
+| **Part 1** | [Quick Start & Installation](docs/01-quick-start.md) | 3-minute setup, community plugin installation, hotkey and context menu translation |
+| **Part 2** | [AI Providers & Device Profiles](docs/02-ai-providers-setup.md) | Local Ollama, FreeLLMAPI proxy, OpenAI/Gemini, and isolated multi-device profiles |
+| **Part 3** | [Smart Translation & Hotkeys](docs/03-translation-and-hotkeys.md) | Selection append, 1,800-char chunking, 1:1 paragraph bilingual matching, cancel support |
+| **Part 4** | [Proofreading & Live Diff Review](docs/04-proofreading-and-diff-review.md) | Spelling, grammar, context refinement, interactive diff review, and live document sync |
+| **Part 5** | [Video Clipping & Transcripts](docs/05-video-clipping-and-transcripts.md) | Pre-transcript metadata lock, subtitle cleaning, H3 sub-titles, STT disambiguation |
+| **Part 6** | [OFM Syntax Masking & Safety](docs/06-syntax-masking-and-safety.md) | 10-element UUID token taxonomy, TOCTIME chapter locking, OFM self-healing |
+| **Part 7** | [Troubleshooting & FAQ](docs/07-troubleshooting.md) | Diagnostics, 502/413 error remedies, hotkey customization, and frequently asked questions |
+| **Index** | [Documentation Hub (README.md)](docs/README.md) | Complete documentation index, reading roadmap, and architecture overview |
 
 ---
 
@@ -49,7 +50,7 @@ This project provides exhaustive technical documentation organized by domain and
 ### 2) AI Provider Configuration
 Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers** and select your preferred backend:
 * **Local Ollama**: Select preset (`http://127.0.0.1:11434/v1`, model: `qwen2.5:14b` or `llama3.2:3b`).
-* **FreeLLMAPI**: Enter endpoint URL (`http://localhost:3001/v1`), unified key (`freellmapi-...`), and model `auto` (or `auto:smart`, `auto:fast`). See [FreeLLMAPI Guide](docs/freellmapi-guide.md).
+* **FreeLLMAPI**: Enter endpoint URL (`https://api.freellmapi.com/v1`), unified key, and model. See [AI Providers Guide](docs/02-ai-providers-setup.md).
 * **OpenAI / OpenRouter**: Enter endpoint URL and API key, then click **[Test connection]** to verify online status.
 
 ### 3) Routine Operations
@@ -118,4 +119,4 @@ Assistant Emily is open-source software licensed under the [MIT License](LICENSE
 
 ## 🇰🇷 한국어 요약 안내 (Korean Summary)
 
-Assistant Emily는 옵시디언 데스크톱 환경에서 위키링크, 태그, 수식, 콜아웃 등 옵시디언 고유 문법 요소를 토큰 마스킹으로 보호하며 AI 번역과 교열을 수행하는 플러그인입니다. 상세한 한국어 튜토리얼과 기술 리포트는 [공식 웹사이트](https://sparklings.github.io/emily/) 및 [GitHub Wiki](https://github.com/sparklings/emily/wiki)에서 확인하실 수 있습니다.
+Assistant Emily는 옵시디언 데스크톱 환경에서 위키링크, 태그, 수식, 콜아웃 등 옵시디언 고유 문법 요소를 토큰 마스킹으로 보호하며 AI 번역과 교열을 수행하는 플러그인입니다. 단계별 한국어 사용자 매뉴얼 및 가이드는 [/docs 문서 모음](docs/README.md) 및 [GitHub Wiki](https://github.com/sparklings/emily/wiki)에서 확인하실 수 있습니다.

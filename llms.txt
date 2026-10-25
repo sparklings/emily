@@ -5,7 +5,8 @@
 Assistant Emily is a desktop Obsidian community plugin designed for researchers, technical writers, and knowledge workers. It integrates local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud proxies with a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
 
 - Repository: https://github.com/sparklings/emily
-- Website: https://sparklings.github.io/emily/
+- Documentation: https://github.com/sparklings/emily/tree/master/docs
+- Wiki: https://github.com/sparklings/emily/wiki
 - Documentation: https://github.com/sparklings/emily/tree/main/docs
 - License: MIT
 - Version: 1.1.2
