@@ -1,9 +1,16 @@
-import { ItemView, WorkspaceLeaf, setIcon, Notice, MarkdownView, TFile, debounce } from 'obsidian';
+import { ItemView, WorkspaceLeaf, setIcon, setTooltip, Notice, MarkdownView, TFile, debounce, Editor } from 'obsidian';
 import type EmilyPlugin from '../main';
 import { EMILY_VIEW_TYPE } from '../constants';
 import { getTranslation, getDefaultTargetLanguageName, getSourceLanguages, getSupportedLanguages, getLocalizedLanguageName, normalizeLanguageCode } from '../i18n';
 import { ProofreadOptions, ProofreadDiffItem, ProofreadSelectionRange } from '../types/proofread';
-import { TranslationOptions, TranslationTone, TranslationStyle, MarkdownFormatStripOptions } from '../types/translation';
+import {
+  TranslationOptions,
+  TranslationTone,
+  TranslationStyle,
+  MarkdownFormatStripOptions,
+  PreservationStrategy,
+  TranslationScope
+} from '../types/translation';
 import { ProofreadDiffModal } from './proofreadDiffModal';
 import { TranslationDiffModal } from './translationDiffModal';
 import { detectDocumentLanguage, isSameLanguage } from '../core/languageDetector';
@@ -11,9 +18,13 @@ import { PromptBuilder } from '../api/promptBuilder';
 import { MarkdownFormatter } from '../core/markdownFormatter';
 import { LLMUsage } from '../api/llmClient';
 import { TranslationKeys } from '../i18n/types';
-import { getEffectiveProviderForDevice, isLocalEndpoint } from '../utils/deviceKeyManager';
+import {
+  getEffectiveModelForDevice,
+  getEffectiveProviderForDevice,
+  isLocalEndpoint
+} from '../utils/deviceKeyManager';
 
-function getISODateTimeString(date: Date = new Date()): string {
+export function getISODateTimeString(date: Date = new Date()): string {
   const pad = (num: number) => num.toString().padStart(2, '0');
   const yyyy = date.getFullYear();
   const mm = pad(date.getMonth() + 1);
@@ -31,7 +42,7 @@ function getISODateTimeString(date: Date = new Date()): string {
   return `${yyyy}-${mm}-${dd}T${hh}:${mi}:${ss}${sign}${offH}:${offM}`;
 }
 
-interface RollingSessionData {
+export interface RollingSessionData {
   id: number;
   timestamp: string;
   fileName: string;
@@ -114,6 +125,10 @@ export class EmilySidebarView extends ItemView {
   private activeFormContainerEl: HTMLElement | null = null;
   private promptTargetFileEl: HTMLElement | null = null;
   private sidebarNavigatorEl: HTMLElement | null = null;
+  private subTitleEl: HTMLElement | null = null;
+  private currentApplyBtn: HTMLButtonElement | null = null;
+  private currentStatusBoxEl: HTMLElement | null = null;
+  private currentTextareaEl: HTMLTextAreaElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: EmilyPlugin) {
     super(leaf);
@@ -153,13 +168,66 @@ export class EmilySidebarView extends ItemView {
       stripStrikethrough: Boolean(this.plugin.settings.defaultStripStrikethrough),
       stripHighlight: Boolean(this.plugin.settings.defaultStripHighlight)
     };
+  }  private updateSubtitle(): void {
+    if (!this.subTitleEl) return;
+    const activeProfile = getEffectiveProviderForDevice(this.plugin.settings);
+    const providerName = activeProfile ? (activeProfile.name || activeProfile.id) : 'Local LLM';
+    const effectiveModel = getEffectiveModelForDevice(this.plugin.settings) || this.plugin.settings.modelName || 'auto';
+    this.subTitleEl.setText(`${providerName} · ${effectiveModel}`);
+    this.subTitleEl.setAttribute('title', `${providerName} (${effectiveModel})`);
   }
+
+
 
   public syncWithOptionsFromSettings() {
     this.initOptionsFromSettings();
+    this.updateSubtitle();
     if (this.activeFormContainerEl) {
       const t = getTranslation(this.plugin.settings.language);
       this.renderActiveForm(this.activeFormContainerEl, t);
+    }
+  }
+
+  /**
+   * 사용자가 사이드바 UI에서 조작한 모든 활성 옵션(교열, 서식 제거, 번역 등)을
+   * Obsidian 플러그인 전역 설정(data.json)에 즉시 영구 저장(Persistence)합니다.
+   * 이를 통해 다음 작업 및 옵시디언 재시작 후에도 사용자가 선택한 옵션이 100% 유지됩니다.
+   */
+  public async persistActiveOptions(): Promise<void> {
+    try {
+      this.plugin.settings.defaultProofreadSpelling = Boolean(this.proofreadOptions.checkSpelling);
+      this.plugin.settings.defaultProofreadGrammar = Boolean(this.proofreadOptions.checkGrammar);
+      this.plugin.settings.defaultProofreadTimestamp = Boolean(this.proofreadOptions.removeTimestamps);
+
+      this.plugin.settings.defaultStripBold = Boolean(this.formatStripOptions.stripBold);
+      this.plugin.settings.defaultStripItalic = Boolean(this.formatStripOptions.stripItalic);
+      this.plugin.settings.defaultStripStrikethrough = Boolean(this.formatStripOptions.stripStrikethrough);
+      this.plugin.settings.defaultStripHighlight = Boolean(this.formatStripOptions.stripHighlight);
+
+      this.plugin.settings.defaultTranslationEnabled = Boolean(this.translationOptions.enabled);
+      if (this.translationOptions.sourceLanguage) {
+        this.plugin.settings.defaultTranslationSource = normalizeLanguageCode(this.translationOptions.sourceLanguage);
+      }
+      if (this.translationOptions.targetLanguage) {
+        this.plugin.settings.defaultTranslationTarget = normalizeLanguageCode(this.translationOptions.targetLanguage);
+      }
+      if (this.translationOptions.scope) {
+        this.plugin.settings.defaultTranslationScope = this.translationOptions.scope;
+      }
+      if (this.translationOptions.preservation) {
+        this.plugin.settings.defaultPreservationStrategy = this.translationOptions.preservation;
+      }
+      if (this.translationOptions.tone) {
+        this.plugin.settings.defaultTranslationTone = this.translationOptions.tone;
+      }
+      if (this.translationOptions.style) {
+        this.plugin.settings.defaultTranslationStyle = this.translationOptions.style;
+      }
+      this.plugin.settings.defaultTranslateCodeComments = Boolean(this.translationOptions.translateCodeComments);
+
+      await this.plugin.saveSettings();
+    } catch (err) {
+      console.error('[Assistant Emily] Failed to persist active options:', err);
     }
   }
 
@@ -187,6 +255,7 @@ export class EmilySidebarView extends ItemView {
       this.lastCreatedTempPath = null;
       this.sessions = [];
       this.sessionCounter = 0;
+      this.plugin.clearSessionHistory();
 
       // 3. 플러그인 설정 및 코어 서비스 재초기화
       await this.plugin.loadSettings();
@@ -285,31 +354,34 @@ export class EmilySidebarView extends ItemView {
     // 1. Sidebar Header
     const header = container.createDiv({ cls: 'emily-sidebar-header' });
     const titleWrap = header.createDiv({ cls: 'emily-sidebar-title' });
-    const iconSpan = titleWrap.createSpan();
+    const logoBadge = titleWrap.createDiv({ cls: 'emily-sidebar-logo-badge' });
+    const iconSpan = logoBadge.createSpan({ cls: 'emily-sidebar-logo-icon' });
     setIcon(iconSpan, 'sparkles');
-    titleWrap.createSpan({ text: t.sidebar.title });
+
+    const titleCol = titleWrap.createDiv({ cls: 'emily-sidebar-title-col' });
+    const titleRow = titleCol.createDiv({ cls: 'emily-sidebar-title-row' });
+    titleRow.createSpan({ text: t.sidebar.title, cls: 'emily-sidebar-title-text' });
+    const onlineDot = titleRow.createSpan({ cls: 'emily-header-online-dot' });
+    onlineDot.setAttribute('title', 'Online');
+
+    this.subTitleEl = titleCol.createDiv({ cls: 'emily-sidebar-subtitle' });
+    this.updateSubtitle();
 
     const actions = header.createDiv({ cls: 'emily-header-actions' });
-    const refreshBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.refreshWorkState }
-    });
+    const refreshBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(refreshBtn, t.sidebar.refreshWorkState);
     setIcon(refreshBtn, 'refresh-cw');
     refreshBtn.addEventListener('click', () => {
       void this.refreshWorkState();
     });
 
-    const collapseControlBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.collapseAll }
-    });
+    const collapseControlBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(collapseControlBtn, t.sidebar.collapseAll);
     setIcon(collapseControlBtn, 'chevrons-up-down');
     collapseControlBtn.addEventListener('click', () => this.toggleControlAccordions());
 
-    const foldHistoryBtn = actions.createEl('button', {
-      cls: 'emily-icon-btn',
-      attr: { title: t.sidebar.foldHistory }
-    });
+    const foldHistoryBtn = actions.createEl('button', { cls: 'emily-icon-btn' });
+    setTooltip(foldHistoryBtn, t.sidebar.foldHistory);
     setIcon(foldHistoryBtn, 'history');
     foldHistoryBtn.addEventListener('click', () => this.toggleHistorySessions());
 
@@ -318,6 +390,17 @@ export class EmilySidebarView extends ItemView {
 
     // Sessions history container
     this.sessionsContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-sessions-history-container' });
+
+    // Sync from plugin global session history if view is reopened/rendered
+    const pluginHistory = this.plugin.getSessionHistory?.() || [];
+    if (this.sessions.length === 0 && pluginHistory.length > 0) {
+      this.sessions = [...pluginHistory];
+      this.sessionCounter = Math.max(...this.sessions.map((s) => s.id), 0);
+    }
+    for (const session of this.sessions) {
+      const card = this.createSessionCard(this.sessionsContainerEl, session);
+      session.sessionEl = card;
+    }
 
     // Active Form container (Where the current/next form lives)
     this.activeFormContainerEl = this.contentScrollEl.createDiv({ cls: 'emily-active-form-container' });
@@ -475,6 +558,8 @@ export class EmilySidebarView extends ItemView {
     const titleWrap = header.createDiv({ cls: 'emily-accordion-title-wrap' });
     const chevron = titleWrap.createSpan({ cls: 'emily-chevron-icon' });
     setIcon(chevron, 'chevron-right');
+    const catIcon = titleWrap.createSpan({ cls: 'emily-accordion-cat-icon is-proofread' });
+    setIcon(catIcon, 'check-check');
     titleWrap.createSpan({ text: t.sidebar.proofreading });
 
     // Circular Count Badge
@@ -509,10 +594,7 @@ export class EmilySidebarView extends ItemView {
     });
 
     const groupWrap = body.createDiv({ cls: 'emily-field-group' });
-    groupWrap.createSpan({
-      text: t.sidebar.proofreadScope,
-      cls: 'emily-field-label font-semibold'
-    });
+    groupWrap.createSpan({ text: t.sidebar.proofreadScope, cls: 'emily-field-label font-semibold' });
 
     const grid = groupWrap.createDiv({ cls: 'emily-segmented-grid' });
 
@@ -526,6 +608,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.checkSpelling = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -539,6 +622,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.checkGrammar = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -552,15 +636,13 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.proofreadOptions.removeTimestamps = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
     // Format Stripping Options (4 Toggle Segmented Buttons: Bold, Italic, Strikethrough, Highlight)
     const formatStripGroup = body.createDiv({ cls: 'emily-field-group' });
-    formatStripGroup.createSpan({
-      text: t.sidebar.formatStripTitle,
-      cls: 'emily-field-label font-semibold'
-    });
+    formatStripGroup.createSpan({ text: t.sidebar.formatStripTitle, cls: 'emily-field-label font-semibold' });
 
     const formatStripGrid = formatStripGroup.createDiv({
       cls: 'emily-segmented-grid emily-format-strip-grid'
@@ -576,6 +658,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripBold = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -589,6 +672,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripItalic = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -602,6 +686,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripStrikethrough = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
 
@@ -615,6 +700,7 @@ export class EmilySidebarView extends ItemView {
       (checked) => {
         this.formatStripOptions.stripHighlight = checked;
         updateProofCountBadge();
+        void this.persistActiveOptions();
       }
     );
   }
@@ -629,6 +715,8 @@ export class EmilySidebarView extends ItemView {
     const titleWrap = header.createDiv({ cls: 'emily-accordion-title-wrap' });
     const chevron = titleWrap.createSpan({ cls: 'emily-chevron-icon' });
     setIcon(chevron, 'chevron-right');
+    const catIcon = titleWrap.createSpan({ cls: 'emily-accordion-cat-icon is-translation' });
+    setIcon(catIcon, 'languages');
     titleWrap.createSpan({ text: t.sidebar.translation });
 
     // Right Action Area: Switch UI (No count badge since translation has no multiple sub-options)
@@ -696,6 +784,7 @@ export class EmilySidebarView extends ItemView {
       if (isChecked && !header.hasClass('is-expanded')) {
         this.toggleAccordion(header, body);
       }
+      void this.persistActiveOptions();
     });
 
     // 3. 타이틀바(아코디언 헤더) 클릭 이벤트: 스위치 영역을 제외한 타이틀바 영역 클릭 시에만 아코디언 접기/펼치기
@@ -743,6 +832,7 @@ export class EmilySidebarView extends ItemView {
     });
     srcSelect.addEventListener('change', () => {
       this.translationOptions.sourceLanguage = srcSelect.value;
+      void this.persistActiveOptions();
     });
 
     // Arrow in middle indicating translation direction
@@ -770,6 +860,7 @@ export class EmilySidebarView extends ItemView {
     });
     tgtSelect.addEventListener('change', () => {
       this.translationOptions.targetLanguage = tgtSelect.value;
+      void this.persistActiveOptions();
     });
 
     // 1. 번역 범위 (Scope: 3-Button Segmented Grid with Icons & Rich Tooltips)
@@ -799,98 +890,71 @@ export class EmilySidebarView extends ItemView {
       this.translationOptions.scope || 'all',
       (val) => {
         this.translationOptions.scope = val;
+        void this.persistActiveOptions();
+        updatePreservationControls();
       }
     );
 
-    // 2. 원문 보존 방식 (Preservation: 3-Button Segmented Grid with Icons & Rich Tooltips)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.sidebar.preservation,
-      [
-        {
-          value: 'new_file',
-          icon: 'file-plus',
-          label: t.preservation.newFile,
-          desc: t.preservation.newFileDesc
-        },
-        {
-          value: 'append',
-          icon: 'file-down',
-          label: t.preservation.append,
-          desc: t.preservation.appendDesc
-        },
-        {
-          value: 'overwrite',
-          icon: 'file-edit',
-          label: t.preservation.overwrite,
-          desc: t.preservation.overwriteDesc
-        }
-      ],
-      this.translationOptions.preservation || 'new_file',
-      (val) => {
-        this.translationOptions.preservation = val;
-      }
-    );
+    // 2. 결과 반영 방식 (Preservation: Context-Aware Dynamic Labels)
+    const preservationContainer = bodyContent.createDiv({ cls: 'emily-preservation-container' });
+    const updatePreservationControls = () => {
+      preservationContainer.empty();
+      const currentScope = this.translationOptions.scope || 'all';
+      const presOptions = this.getPreservationOptionsForScope(currentScope, t);
+      const groupLabel = this.getPreservationGroupTitleForScope(currentScope, t);
 
-    // 3. 번역 문체 (Tone)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.tones.title,
-      [
-        {
-          value: 'academic',
-          icon: 'book-open',
-          label: t.tones.academic,
-          desc: t.tones.academicDesc
-        },
-        {
-          value: 'polite',
-          icon: 'smile',
-          label: t.tones.polite,
-          desc: t.tones.politeDesc
-        },
-        {
-          value: 'casual',
-          icon: 'message-circle',
-          label: t.tones.casual,
-          desc: t.tones.casualDesc
+      this.createSegmentedGroup(
+        preservationContainer,
+        groupLabel,
+        presOptions,
+        this.translationOptions.preservation || 'new_file',
+        (val) => {
+          this.translationOptions.preservation = val;
+          void this.persistActiveOptions();
         }
-      ],
-      this.translationOptions.tone || 'academic',
-      (val: TranslationTone) => {
-        this.translationOptions.tone = val;
-      }
-    );
+      );
+    };
 
-    // 4. 번역 스타일 (Style)
-    this.createSegmentedGroup(
-      bodyContent,
-      t.styles.title,
-      [
-        {
-          value: 'balanced',
-          icon: 'scale',
-          label: t.styles.balanced,
-          desc: t.styles.balancedDesc
-        },
-        {
-          value: 'literal',
-          icon: 'type',
-          label: t.styles.literal,
-          desc: t.styles.literalDesc
-        },
-        {
-          value: 'natural',
-          icon: 'feather',
-          label: t.styles.natural,
-          desc: t.styles.naturalDesc
-        }
-      ],
-      this.translationOptions.style || 'balanced',
-      (val: TranslationStyle) => {
-        this.translationOptions.style = val;
-      }
-    );
+    updatePreservationControls();
+
+    // 3 & 4. Tone & Style 2-Column Select Grid (Google Stitch Design)
+    const toneStyleRow = bodyContent.createDiv({ cls: 'emily-tone-style-2col' });
+
+    // Tone Column
+    const toneCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
+    toneCol.createSpan({ text: t.tones.title, cls: 'emily-field-label font-semibold' });
+    const toneSelect = toneCol.createEl('select', { cls: 'dropdown emily-select-input' });
+    const toneOpts: Array<{ value: TranslationTone; label: string }> = [
+      { value: 'academic', label: t.tones.academic },
+      { value: 'polite', label: t.tones.polite },
+      { value: 'casual', label: t.tones.casual }
+    ];
+    toneOpts.forEach((opt) => {
+      const el = toneSelect.createEl('option', { value: opt.value, text: opt.label });
+      if ((this.translationOptions.tone || 'academic') === opt.value) el.selected = true;
+    });
+    toneSelect.addEventListener('change', () => {
+      this.translationOptions.tone = toneSelect.value as TranslationTone;
+      void this.persistActiveOptions();
+    });
+
+    // Style Column
+    const styleCol = toneStyleRow.createDiv({ cls: 'emily-select-col' });
+    styleCol.createSpan({ text: t.styles.title, cls: 'emily-field-label font-semibold' });
+    const styleSelect = styleCol.createEl('select', { cls: 'dropdown emily-select-input' });
+    const styleOpts: Array<{ value: TranslationStyle; label: string }> = [
+      { value: 'balanced', label: t.styles.balanced },
+      { value: 'literal', label: t.styles.literal },
+      { value: 'natural', label: t.styles.natural }
+    ];
+    styleOpts.forEach((opt) => {
+      const el = styleSelect.createEl('option', { value: opt.value, text: opt.label });
+      if ((this.translationOptions.style || 'balanced') === opt.value) el.selected = true;
+    });
+    styleSelect.addEventListener('change', () => {
+      this.translationOptions.style = styleSelect.value as TranslationStyle;
+      void this.persistActiveOptions();
+    });
 
     // 5. 기타 고급 옵션 (코드 블록 주석 번역)
     const extraOptionsGroup = bodyContent.createDiv({ cls: 'emily-field-group' });
@@ -902,6 +966,7 @@ export class EmilySidebarView extends ItemView {
     codeCommentCheckbox.checked = Boolean(this.translationOptions.translateCodeComments);
     codeCommentCheckbox.addEventListener('change', () => {
       this.translationOptions.translateCodeComments = codeCommentCheckbox.checked;
+      void this.persistActiveOptions();
     });
     codeCommentRow.createSpan({
       text: t.sidebar.translateCodeComments,
@@ -955,8 +1020,10 @@ export class EmilySidebarView extends ItemView {
     // Left spacer for perfect centering
     applyBtn.createSpan({ cls: 'emily-btn-spacer' });
 
-    // Center content: Start Task (clean label without shortcut hint text)
+    // Center content: Start Task (clean label with sparkle icon)
     const btnCenter = applyBtn.createSpan({ cls: 'emily-btn-center-wrap' });
+    const btnIcon = btnCenter.createSpan({ cls: 'emily-btn-sparkle-icon' });
+    setIcon(btnIcon, 'sparkles');
     btnCenter.createSpan({ text: t.sidebar.applyBtn, cls: 'emily-btn-main-label' });
 
     // Far-right content: character count
@@ -992,6 +1059,9 @@ export class EmilySidebarView extends ItemView {
 
     // Live Status Output Box (Inside current form during execution)
     const statusBoxEl = section.createDiv({ cls: 'emily-status-box' });
+    this.currentStatusBoxEl = statusBoxEl;
+    this.currentApplyBtn = applyBtn;
+    this.currentTextareaEl = textareaEl;
 
     applyBtn.addEventListener('click', () => {
       void this.executePipeline(applyBtn, statusBoxEl, textareaEl, t);
@@ -1117,6 +1187,8 @@ export class EmilySidebarView extends ItemView {
         return;
       }
     }
+
+    void this.persistActiveOptions();
 
     // Set UI to Loading & Disabled State (Lock target document & all options during execution)
     this.lockedTargetFile = activeFile;
@@ -2033,11 +2105,13 @@ export class EmilySidebarView extends ItemView {
       sessionData.sessionEl = card;
       this.sessions.push(sessionData);
     }
+    this.plugin.recordSessionFromSidebar?.(sessionData);
 
     // Release execution lock and restore controls
     this.isExecuting = false;
     this.currentAbortController = null;
     this.lockedTargetFile = null;
+    void this.persistActiveOptions();
     this.lockedTargetView = null;
     this.setFormDisabledState(false);
 
@@ -2257,8 +2331,29 @@ export class EmilySidebarView extends ItemView {
     }
   }
 
+  /**
+   * 외부 명령(단축키 등)으로 완료된 세션을 사이드바 히스토리에 기록하고 카드를 실시간 렌더링합니다.
+   */
+  public recordCompletedSession(sessionData: RollingSessionData): void {
+    this.sessionCounter = Math.max(this.sessionCounter, sessionData.id);
+    if (!this.sessions.some((s) => s.id === sessionData.id)) {
+      this.sessions.push(sessionData);
+    }
+    if (this.sessionsContainerEl) {
+      const existingEl = this.sessionsContainerEl.querySelector(`[data-session-id="${sessionData.id}"]`);
+      if (!existingEl) {
+        const card = this.createSessionCard(this.sessionsContainerEl, sessionData);
+        sessionData.sessionEl = card;
+        window.setTimeout(() => {
+          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+      }
+    }
+  }
+
   private createSessionCard(parent: HTMLElement, session: RollingSessionData): HTMLElement {
     const card = parent.createDiv({ cls: 'emily-session-card' });
+    card.setAttribute('data-session-id', String(session.id));
     const t = getTranslation(this.plugin.settings.language);
 
     // 1. Header: Left = Status Badge, Right = ISO datetime + chevron
@@ -2496,7 +2591,11 @@ export class EmilySidebarView extends ItemView {
             session.translatedMarkdown || '',
             session.translationOptions,
             this.plugin.getTranslationEngine(),
-            undefined,
+            (finalText: string, action: string, targetPath?: string) => {
+              session.translatedMarkdown = finalText;
+              if (targetPath) session.targetPath = targetPath;
+              this.plugin.recordSessionFromSidebar(session);
+            },
             this.plugin.settings.language
           );
           modal.open();
@@ -2810,6 +2909,91 @@ export class EmilySidebarView extends ItemView {
     return labelSpan;
   }
 
+  private getPreservationGroupTitleForScope(scope: TranslationScope, t: TranslationKeys): string {
+    if (scope === 'selection') {
+      return t.preservation.groupTitleSelection || t.sidebar.preservation;
+    } else if (scope === 'paragraph_bilingual') {
+      return t.preservation.groupTitleParagraph || t.sidebar.preservation;
+    } else {
+      return t.preservation.groupTitleAll || t.sidebar.preservation;
+    }
+  }
+
+  private getPreservationOptionsForScope(
+    scope: TranslationScope,
+    t: TranslationKeys
+  ): Array<{
+    value: PreservationStrategy;
+    icon: string;
+    label: string;
+    desc: string;
+  }> {
+    if (scope === 'selection') {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.selectionNewFile || '새 파일로 분리',
+          desc: t.preservation.selectionNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.selectionAppend || '원문 아래 덧붙이기',
+          desc: t.preservation.selectionAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.selectionOverwrite || '선택 영역 바로 교체',
+          desc: t.preservation.selectionOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    } else if (scope === 'paragraph_bilingual') {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.parallelNewFile || '새 대조 파일 생성',
+          desc: t.preservation.parallelNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.parallelAppend || '문서 하단 원문 보관',
+          desc: t.preservation.parallelAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.parallelOverwrite || '현재 파일에 대조 반영',
+          desc: t.preservation.parallelOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    } else {
+      return [
+        {
+          value: 'new_file',
+          icon: 'file-plus',
+          label: t.preservation.allNewFile || t.preservation.newFile,
+          desc: t.preservation.allNewFileDesc || t.preservation.newFileDesc
+        },
+        {
+          value: 'append',
+          icon: 'file-down',
+          label: t.preservation.allAppend || t.preservation.append,
+          desc: t.preservation.allAppendDesc || t.preservation.appendDesc
+        },
+        {
+          value: 'overwrite',
+          icon: 'file-edit',
+          label: t.preservation.allOverwrite || t.preservation.overwrite,
+          desc: t.preservation.allOverwriteDesc || t.preservation.overwriteDesc
+        }
+      ];
+    }
+  }
+
   private createSegmentedGroup<T extends string>(
     parent: HTMLElement,
     label: string,
@@ -2832,10 +3016,12 @@ export class EmilySidebarView extends ItemView {
       const btn = grid.createEl('button', {
         cls: `emily-segmented-btn ${opt.value === currentValue ? 'is-active' : ''}`,
         attr: {
-          type: 'button',
-          title: opt.desc ? `${opt.label} - ${opt.desc}` : opt.label
+          type: 'button'
         }
       });
+      if (opt.desc) {
+        setTooltip(btn, opt.desc);
+      }
 
       const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
       setIcon(iconSpan, opt.icon);
@@ -2873,10 +3059,12 @@ export class EmilySidebarView extends ItemView {
       cls: `emily-segmented-btn ${initialChecked ? 'is-active' : ''}`,
       attr: {
         type: 'button',
-        title: desc ? `${label} - ${desc}` : label,
         'aria-pressed': initialChecked ? 'true' : 'false'
       }
     });
+    if (desc) {
+      setTooltip(btn, desc);
+    }
 
     const iconSpan = btn.createSpan({ cls: 'emily-segmented-icon' });
     setIcon(iconSpan, icon);
@@ -2960,4 +3148,322 @@ export class EmilySidebarView extends ItemView {
       this.resizeObserver = null;
     }
   }
+
+  /**
+   * 단축키 또는 컨텍스트 메뉴로 트리거된 선택 영역 번역을 사이드바의 실시간 진행 상태 및 취소(Cancel) 파이프라인과 완벽 연동하여 실행합니다.
+   */
+  public async executeQuickSelectionTranslation(
+    editor: Editor,
+    view: MarkdownView,
+    selectedText: string
+  ): Promise<void> {
+    const t = getTranslation(this.plugin.settings.language);
+    const activeFile = view.file;
+    if (!activeFile) return;
+
+    // 1. API 프로바이더 및 엔드포인트 유효성 검사
+    const activeProv = getEffectiveProviderForDevice(this.plugin.settings);
+    const baseUrl = (activeProv?.baseUrl || this.plugin.settings.apiBaseUrl || '').trim();
+    const apiKey = (activeProv?.apiKey || this.plugin.settings.apiKey || '').trim();
+    if (!baseUrl && !apiKey) {
+      new Notice('Assistant Emily: AI 프로바이더 또는 API 설정이 구성되지 않았습니다.');
+      return;
+    }
+
+    const targetLangName = this.plugin.settings.defaultTranslationTarget || getDefaultTargetLanguageName(t);
+    const targetLang = getLocalizedLanguageName(targetLangName, t);
+    const rawSrc = this.plugin.settings.defaultTranslationSource || 'auto';
+    const isAutoSrc = !rawSrc || normalizeLanguageCode(rawSrc) === 'auto';
+    const sourceLang = getLocalizedLanguageName(rawSrc, t) || t.languages.auto;
+
+    const detected = detectDocumentLanguage(selectedText, this.plugin.settings.language);
+    const effectiveSrc = isAutoSrc ? detected.name : sourceLang;
+    const isSameLangEdit = isSameLanguage(effectiveSrc, targetLang);
+    const opLabel = isSameLangEdit ? t.sidebar.opLabelEdit : t.sidebar.opLabelTrans;
+
+    const options: TranslationOptions = {
+      enabled: true,
+      sourceLanguage: effectiveSrc,
+      targetLanguage: targetLangName,
+      scope: 'selection',
+      preservation: 'append',
+      isSameLangEdit,
+      tone: this.plugin.settings.defaultTranslationTone || 'academic',
+      style: this.plugin.settings.defaultTranslationStyle || 'balanced',
+      translateCodeComments: Boolean(this.plugin.settings.defaultTranslateCodeComments)
+    };
+
+    // 2. 에디터 선택 영역 직하단에 실시간 인라인 상태 블록 삽입
+    const cleanSelected = selectedText.trimEnd();
+    const statusTemplate = t.commands.quickTranslateInlineStatus || '⏳ **[Assistant Emily] {lang} 번역 진행 중...** ';
+    const inlineStatusText = statusTemplate.replace('{lang}', targetLang);
+    const placeholderToken = `<!-- emily-translating-${Date.now()} -->`;
+    const placeholderBlock = `\n\n> ${inlineStatusText}\n${placeholderToken}`;
+
+    editor.replaceSelection(`${cleanSelected}${placeholderBlock}`);
+
+    // 3. 사이드바 UI 상태를 실행(Loading & Disabled) 및 취소 가능 상태로 진입
+    this.lockedTargetFile = activeFile;
+    this.lockedTargetView = view;
+    this.isExecuting = true;
+    this.currentAbortController = new AbortController();
+    const signal = this.currentAbortController.signal;
+    this.setFormDisabledState(true);
+    if (this.currentApplyBtn) this.currentApplyBtn.disabled = true;
+
+    // 사이드바의 statusBoxEl 활성화
+    if (!this.currentStatusBoxEl && this.activeFormContainerEl) {
+      this.currentStatusBoxEl = this.activeFormContainerEl.querySelector('.emily-status-box')
+        || this.activeFormContainerEl.createDiv({ cls: 'emily-status-box' });
+    }
+    const statusBoxEl = this.currentStatusBoxEl;
+    if (!statusBoxEl) return;
+
+    statusBoxEl.addClass('is-visible');
+    statusBoxEl.empty();
+    window.setTimeout(() => {
+      statusBoxEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 50);
+
+    // 사이드바 상태 헤더 (실행 뱃지 + 타이머 + 작업 취소 버튼)
+    const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
+    const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
+    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+
+    const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
+    const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
+    badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
+    badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
+    const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
+    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
+    dotsAnim.createSpan({ text: '.' });
+    dotsAnim.createSpan({ text: '.' });
+    dotsAnim.createSpan({ text: '.' });
+
+    // 작업 취소 버튼 (Cancel Pipeline Button)
+    const cancelPipelineBtn = headerRight.createEl('button', {
+      cls: 'emily-btn-secondary emily-pipeline-cancel-btn',
+      attr: {
+        type: 'button',
+        'aria-label': t.sidebar.cancelBtn,
+        title: t.sidebar.cancelBtn
+      }
+    });
+    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({
+      text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
+      cls: 'emily-pipeline-cancel-text'
+    });
+    cancelPipelineBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cancelPipelineBtn.disabled = true;
+      if (this.currentAbortController) {
+        this.currentAbortController.abort();
+      }
+    });
+
+    // 타임라인 스텝 렌더링
+    const timelineContainer = statusBoxEl.createDiv({ cls: 'emily-timeline-steps' });
+    const createStepNode = (id: string, title: string, desc: string, status: 'is-active' | 'is-pending' | 'is-done' = 'is-pending') => {
+      const step = timelineContainer.createDiv({ cls: `emily-timeline-step ${status}`, attr: { id } });
+      const node = step.createDiv({ cls: 'emily-timeline-node' });
+      node.createSpan({ cls: 'emily-timeline-dot' });
+      const b = step.createDiv({ cls: 'emily-timeline-body' });
+      b.createDiv({ text: title, cls: 'emily-timeline-title' });
+      b.createDiv({ text: desc, cls: 'emily-timeline-desc' });
+      return step;
+    };
+
+    const step1 = createStepNode('step-1', t.sidebar.pipelineParsing, `${t.scopes.selection} (${cleanSelected.length}자)`, 'is-done');
+    const step2 = createStepNode('step-2', `LLM ${opLabel} (${effectiveSrc} ➔ ${targetLang})`, t.sidebar.opRunningDesc.replace('{op}', opLabel), 'is-active');
+    const step3 = createStepNode('step-3', isSameLangEdit ? t.sidebar.syncTitleEdit : t.sidebar.syncTitleTrans, t.sidebar.syncAppendTransDone, 'is-pending');
+
+    const pipelineStartTime = Date.now();
+    let timerInterval: number | null = window.setInterval(() => {
+      const elapsed = ((Date.now() - pipelineStartTime) / 1000).toFixed(1);
+      timerTextEl.textContent = `${elapsed}s`;
+    }, 100);
+
+    const stopPipelineTimer = () => {
+      if (timerInterval !== null) {
+        window.clearInterval(timerInterval);
+        timerInterval = null;
+      }
+    };
+
+    try {
+      this.plugin.getLLMClient().updateMultiConfig(this.plugin.settings);
+      const transResult = await this.plugin.getTranslationEngine().runTranslation(
+        activeFile,
+        selectedText,
+        options,
+        undefined,
+        (current, total) => {
+          if (total > 1) {
+            this.updateTimelineStep(
+              step2,
+              'active',
+              `LLM ${opLabel} (${effectiveSrc} ➔ ${targetLang})`,
+              t.sidebar.runningChunkDesc.replace('{op}', opLabel).replace('{current}', String(current)).replace('{total}', String(total)),
+              undefined,
+              `[${current}/${total}]`
+            );
+          }
+        },
+        signal
+      );
+
+      stopPipelineTimer();
+
+      const cleanTranslated = transResult.result.translatedMarkdown.trim();
+
+      // 4. 에디터 인라인 플레이스홀더를 번역문으로 정밀 교체
+      const currentDoc = editor.getValue();
+      const tokenIndex = currentDoc.indexOf(placeholderToken);
+      if (tokenIndex !== -1) {
+        const blockStartIndex = currentDoc.lastIndexOf('\n\n> ', tokenIndex);
+        const startOffset = blockStartIndex !== -1 ? blockStartIndex : tokenIndex;
+        const endOffset = tokenIndex + placeholderToken.length;
+        const fromPos = editor.offsetToPos(startOffset);
+        const toPos = editor.offsetToPos(endOffset);
+        editor.replaceRange(`\n\n${cleanTranslated}`, fromPos, toPos);
+      } else {
+        editor.replaceSelection(`\n\n${cleanTranslated}`);
+      }
+
+      // 5. 사이드바 스텝 완료 표시
+      this.updateTimelineStep(step2, 'done');
+      this.updateTimelineStep(step3, 'done');
+
+      const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
+      if (badgeEl) {
+        badgeEl.className = 'emily-badge is-done';
+        badgeEl.empty();
+        badgeEl.createSpan({ text: t.sidebar.pipelineDone });
+        badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
+      }
+
+      cancelPipelineBtn.remove();
+
+      // 6. 사이드바 히스토리 세션 카드 생성 및 동기화
+      this.finalizeCompletedSession({
+        activeFile,
+        sessionType: 'translation',
+        proofreadScope: 'selection',
+        status: 'completed',
+        isSameLangEdit,
+        model: transResult.model,
+        totalTimeMs: transResult.totalTimeMs,
+        tokensPerSec: transResult.tokensPerSec,
+        usage: transResult.usage,
+        responseId: transResult.id,
+        finishReason: transResult.finish_reason,
+        systemFingerprint: transResult.system_fingerprint,
+        createdTimestamp: transResult.created,
+        providerUsed: transResult.providerUsed,
+        failedOver: transResult.failedOver,
+        items: [],
+        originalMarkdown: cleanSelected,
+        translatedMarkdown: cleanTranslated,
+        effectiveSrc,
+        t
+      });
+
+      this.isExecuting = false;
+      this.currentAbortController = null;
+      this.setFormDisabledState(false);
+      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
+      this.lockedTargetFile = null;
+      this.lockedTargetView = null;
+      this.updateTargetDocument();
+
+      new Notice(`${t.commands.quickTranslateDone} (${(transResult.totalTimeMs / 1000).toFixed(1)}s)`);
+    } catch (err: unknown) {
+      stopPipelineTimer();
+      const isAbort = (err instanceof Error && err.name === 'AbortError') || Boolean(signal?.aborted);
+
+      if (isAbort) {
+        // [사용자 취소 시]
+        // A. 에디터의 인라인 플레이스홀더를 완전 제거하여 원문 상태로 복구
+        const currentDoc = editor.getValue();
+        const tokenIndex = currentDoc.indexOf(placeholderToken);
+        if (tokenIndex !== -1) {
+          const blockStartIndex = currentDoc.lastIndexOf('\n\n> ', tokenIndex);
+          const startOffset = blockStartIndex !== -1 ? blockStartIndex : tokenIndex;
+          const endOffset = tokenIndex + placeholderToken.length;
+          const fromPos = editor.offsetToPos(startOffset);
+          const toPos = editor.offsetToPos(endOffset);
+          editor.replaceRange('', fromPos, toPos);
+        }
+
+        // B. 사이드바 상태 취소로 전환
+        const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
+        if (badgeEl) {
+          badgeEl.className = 'emily-badge is-warning';
+          badgeEl.empty();
+          badgeEl.createSpan({ text: t.sidebar.pipelineCancelled });
+          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
+        }
+
+        this.updateTimelineStep(step2, 'warning', undefined, t.sidebar.pipelineCancelled);
+
+        cancelPipelineBtn.textContent = `✕ ${t.common.close}`;
+        cancelPipelineBtn.disabled = false;
+        cancelPipelineBtn.onclick = (e) => {
+          e.stopPropagation();
+          statusBoxEl.removeClass('is-visible');
+          statusBoxEl.empty();
+        };
+
+        this.isExecuting = false;
+        this.currentAbortController = null;
+        this.setFormDisabledState(false);
+        if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
+        this.lockedTargetFile = null;
+        this.lockedTargetView = null;
+        this.updateTargetDocument();
+        new Notice(t.sidebar.cancelSuccess);
+        return;
+      }
+
+      // [오류 발생 시]
+      cancelPipelineBtn.remove();
+      this.currentAbortController = null;
+      const rawMsg = err instanceof Error ? err.message : String(err);
+      console.error('[Assistant Emily] Quick selection translation failed:', rawMsg);
+
+      // 에디터 인라인 에러 표시
+      const currentDoc = editor.getValue();
+      const tokenIndex = currentDoc.indexOf(placeholderToken);
+      if (tokenIndex !== -1) {
+        const blockStartIndex = currentDoc.lastIndexOf('\n\n> ', tokenIndex);
+        const startOffset = blockStartIndex !== -1 ? blockStartIndex : tokenIndex;
+        const endOffset = tokenIndex + placeholderToken.length;
+        const fromPos = editor.offsetToPos(startOffset);
+        const toPos = editor.offsetToPos(endOffset);
+        const errorTemplate = t.commands.quickTranslateInlineError || '❌ **[Assistant Emily] 번역 실패: {error}** ';
+        const inlineErrorText = errorTemplate.replace('{error}', rawMsg);
+        editor.replaceRange(`\n\n> ${inlineErrorText}`, fromPos, toPos);
+      }
+
+      // 사이드바 상태 에러 표시
+      const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
+      if (badgeEl) {
+        badgeEl.className = 'emily-badge is-error';
+        badgeEl.empty();
+        badgeEl.createSpan({ text: t.sidebar.statusError });
+      }
+      this.updateTimelineStep(step2, 'error', undefined, rawMsg);
+
+      this.isExecuting = false;
+      this.setFormDisabledState(false);
+      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
+      this.lockedTargetFile = null;
+      this.lockedTargetView = null;
+      this.updateTargetDocument();
+
+      new Notice(`❌ 번역 실패: ${rawMsg}`);
+    }
+  }
+
 }

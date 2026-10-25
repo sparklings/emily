@@ -12,8 +12,8 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://sparklings.github.io/emily/og-image.png</image:loc>
-      <image:title>옵시디언 번역 &amp; AI 무손실 교열 플러그인 - Assistant Emily</image:title>
-      <image:caption>옵시디언 번역 시 YAML 및 위키링크 100% 무손실 보존, 단락별 1:1 대조 번역을 제공하는 공식 AI 플러그인</image:caption>
+      <image:title>옵시디언 번역 &amp; AI 마크다운 교열 플러그인 - Assistant Emily</image:title>
+      <image:caption>옵시디언 번역 시 YAML 및 위키링크 토큰 마스킹 보호, 단락별 1:1 대조 번역을 제공하는 AI 플러그인</image:caption>
     </image:image>
   </url>
 </urlset>

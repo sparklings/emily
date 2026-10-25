@@ -263,6 +263,10 @@ export class EmilySettingTab extends PluginSettingTab {
               this.plugin.syncSidebarSettings();
             })
         );
+
+      new Setting(tabContentEl)
+        .setName(t.settings.quickTranslateHotkeyTitle)
+        .setDesc(t.settings.quickTranslateHotkeyDesc);
     }
 
     // =========================================================================

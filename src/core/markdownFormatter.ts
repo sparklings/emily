@@ -113,7 +113,8 @@ export class MarkdownFormatter {
     let transcriptLineIdx = -1;
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      if (/^#{1,4}\s+Transcript\b/i.test(trimmed) || /^(?:\*\*|__)?Transcript(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(trimmed) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(trimmed)) {
         transcriptLineIdx = i;
         break;
       }
@@ -125,8 +126,21 @@ export class MarkdownFormatter {
       for (let i = 0; i < lines.length; i++) {
         const trimmed = lines[i].trim();
         if (/^(?:Timestamps|Chapters|타임스탬프|목차):?$/i.test(trimmed)) continue;
-        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
-          transcriptLineIdx = i;
+        if (/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*.{30,}/.test(trimmed)) {
+          // 혹시 바로 앞의 non-empty 라인이 첫 번째 소제목(Sub-title)인지 확인
+          let subtitleStart = i;
+          for (let prev = i - 1; prev >= 0; prev--) {
+            const prevTrimmed = lines[prev].trim();
+            if (!prevTrimmed) continue;
+            // 타임스탬프로 시작하는 목차(TOC) 항목이 아니고, 링크나 임베드가 아닌 150자 이하 짧은 제목인 경우
+            if (!/^(?:https?:\/\/|!\[|#+\s*(?:Timestamps|Chapters|타임스탬프|목차)|---\s*$)/i.test(prevTrimmed) &&
+                !/^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/i.test(prevTrimmed) &&
+                prevTrimmed.length <= 150) {
+              subtitleStart = prev;
+            }
+            break;
+          }
+          transcriptLineIdx = subtitleStart;
           break;
         }
       }
@@ -168,8 +182,9 @@ export class MarkdownFormatter {
     }
 
     // 5. 스크립트 본문 영역 정제:
-    // - '## Transcript' 헤더 자체는 보존
-    // - 스크립트 줄에 있는 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
+    // - 'Transcript' 대제목 헤더 감지 시 '## Transcript'로 표준화
+    // - 중간에 등장하는 구간별 주제(Sub-title)를 '### 주제' 소제목으로 구조화
+    // - 스크립트 본문 타임스탬프(**0:00** · 등)를 제거하고 문단으로 리플로우
     const cleanedScriptParagraphs: string[] = [];
     let currentScriptParagraph: string[] = [];
     let currentScriptLength = 0;
@@ -179,16 +194,37 @@ export class MarkdownFormatter {
       const line = rawLine.trim();
 
       if (!line) {
+        continue;
+      }
+
+      // 1) Transcript 대제목 헤더 감지 ("Transcript", "## Transcript", "**Transcript**" 등)
+      if (/^#{1,4}\s+(?:Transcript|스크립트|전사록|자막)\b/i.test(line) ||
+          /^(?:\*\*|__)?(?:Transcript|스크립트|전사록|자막)(?:\*\*|__)?[:：]?$/i.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
           currentScriptLength = 0;
         }
+        cleanedScriptParagraphs.push('## Transcript');
         continue;
       }
 
-      // 헤딩(#)이나 구분선(---)은 독립 줄로 보존
-      if (/^(?:#{1,6}\s+|---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
+      // 2) 일반 마크다운 헤딩(#) 또는 구분선(---) 보존
+      const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+      if (headingMatch) {
+        if (currentScriptParagraph.length > 0) {
+          cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+          currentScriptParagraph = [];
+          currentScriptLength = 0;
+        }
+        const level = headingMatch[1].length;
+        const headingText = headingMatch[2].trim();
+        const normalizedLevel = level <= 2 ? '###' : headingMatch[1];
+        cleanedScriptParagraphs.push(`${normalizedLevel} ${headingText}`);
+        continue;
+      }
+
+      if (/^(?:---\s*$|\*\*\*[^*]+\*\*\*)/.test(line)) {
         if (currentScriptParagraph.length > 0) {
           cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
           currentScriptParagraph = [];
@@ -198,7 +234,50 @@ export class MarkdownFormatter {
         continue;
       }
 
-      // 스크립트 타임스탬프 제거: **0:00** ·, 0:27:, [00:15], 18:11· 등
+      // 3) 볼드체 단독 라인 구간별 주제 (예: **75 days left in 2026**, **What changed since June (18 → 27 courses)**)
+      const boldTitleMatch = line.match(/^(?:\*\*|__)(.+?)(?:\*\*|__)[:：]?$/);
+      if (boldTitleMatch) {
+        const titleCandidate = boldTitleMatch[1].trim();
+        // 타임스탬프 패턴(0:00)으로 시작하지 않는 경우 구간 주제(Sub-title)로 확정
+        if (!/^(?:\d{1,2}:)?\d{1,2}:\d{2}/.test(titleCandidate)) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${titleCandidate}`);
+          continue;
+        }
+      }
+
+      // 4) 타임스탬프가 없는 일반 텍스트 라인 중 구간별 주제(Sub-title) 감지:
+      //    - 타임스탬프 패턴으로 시작하지 않음
+      //    - 뒤이어 나오는 첫 유효 라인이 타임스탬프(0:00 · 등)로 시작함
+      //    - 길이가 적정(150자 이하)하고 일반 긴 문단이 아님
+      const startsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(line);
+      if (!startsWithTimestamp) {
+        // 다음 non-empty 라인 탐색
+        let nextNonEmptyLine = '';
+        for (let j = i + 1; j < transcriptLines.length; j++) {
+          const cand = transcriptLines[j].trim();
+          if (cand) {
+            nextNonEmptyLine = cand;
+            break;
+          }
+        }
+        const nextStartsWithTimestamp = /^(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2})/.test(nextNonEmptyLine);
+        if (nextStartsWithTimestamp && line.length <= 150) {
+          if (currentScriptParagraph.length > 0) {
+            cleanedScriptParagraphs.push(currentScriptParagraph.join(' '));
+            currentScriptParagraph = [];
+            currentScriptLength = 0;
+          }
+          cleanedScriptParagraphs.push(`### ${line}`);
+          continue;
+        }
+      }
+
+      // 5) 실제 음성 전사(자막) 라인: 타임스탬프 제거 및 문단 리플로우
       let cleanedLine = line.replace(/(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*/g, ' ');
       cleanedLine = cleanedLine.replace(/([.?!])\s+/g, '$1 ').replace(/[ \t]+/g, ' ').trim();
 
@@ -315,6 +394,69 @@ export class MarkdownFormatter {
       return `${formattedFm}${target.trimStart()}`;
     }
     return target;
+  }
+
+  /**
+   * 음성 전사(STT) 자막에서 구두점 없이 연속된 강좌/모델 번호와 수량 단위 사이에
+   * 콜론(: )을 선제 삽입하여 LLM이 숫자를 '10113개' 등으로 붙여 쓰며
+   * 숫자가 왜곡되는 현상(예: 13개 강의 -> 10,113개 강의)을 원천 방지합니다.
+   * 예: "Claude 101 13 lessons" -> "Claude 101: 13 lessons"
+   * 예: "Claude platform 101 13 lessons" -> "Claude platform 101: 13 lessons"
+   */
+  static disambiguateSpokenNumberSequences(text: string): string {
+    if (!text) return text;
+
+    // YAML 프론트매터 및 코드 블록 보호/격리
+    const { frontmatter, body } = this.extractFrontmatter(text);
+    const codeBlocks: string[] = [];
+    const protectedBody = body.replace(/```[\s\S]*?```/g, (match) => {
+      const token = `__EMILY_FMT_CODE_${codeBlocks.length}__`;
+      codeBlocks.push(match);
+      return token;
+    });
+
+    // 영문 강좌명(식별자) + 강좌 번호(2~4자리) + 교육 수량 단위(1~3자리 + lessons/courses/etc.)에만 정밀하게 콜론 삽입
+    const pattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*\s+\d{2,4})\s+(\d{1,3}\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)\b)/gi;
+    let processed = protectedBody.replace(pattern, '$1: $2');
+
+    // 코드 블록 복원
+    codeBlocks.forEach((code, i) => {
+      processed = processed.replace(`__EMILY_FMT_CODE_${i}__`, code);
+    });
+
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${processed.trimStart()}`;
+    }
+    return processed;
+  }
+
+  /**
+   * 번역 완료된 텍스트에서 띄어쓰기 생략으로 인해 강좌명 번호와 수량이 하나로 합쳐진 왜곡을
+   * 원문의 맥락(식별자 명칭, 번호 쌍, 한글 단위)과 엄격히 대조하여 안전하게 복원 및 분리합니다.
+   * 무차별 전체 숫자 쌍 매칭을 배제하여 연도(2024년)나 일반 번호의 오작동(False Positive)을 100% 방지합니다.
+   * 예: 원문 "Claude 101 13 lessons" ➔ 번역본 "Claude 10113개 강의" ➔ "Claude 101: 13개 강의"로 복원
+   */
+  static fixMergedNumberSequences(translatedText: string, sourceText: string): string {
+    if (!translatedText || !sourceText) return translatedText;
+
+    // 원문에서 (식별자 명칭) (강좌코드 2~4자리) (강의수 1~3자리) (단위) 구조만 정밀 추출
+    const contextPattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d{2,4})\s+(\d{1,3})\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)/gi;
+    let match: RegExpExecArray | null;
+    let result = translatedText;
+
+    while ((match = contextPattern.exec(sourceText)) !== null) {
+      const name = match[1].trim();
+      const num1 = match[2];
+      const num2 = match[3];
+
+      // 번역본에서 해당 명칭 바로 뒤에 '10113개', '10113강' 등 한글 수량 단위가 붙어 있는 경우만 안전하게 매칭
+      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const mergedPattern = new RegExp(`(\\b${escapedName}\\s+)(${num1})(${num2})([개강명권편차])`, 'gi');
+      result = result.replace(mergedPattern, '$1$2: $3$4');
+    }
+
+    return result;
   }
 
   /**

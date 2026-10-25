@@ -27,6 +27,12 @@ export interface TranslationStrings {
   commands: {
     openSidebar: string;
     quickProofread: string;
+    quickTranslateSelectionAppend: string;
+    quickTranslateTranslating: string;
+    quickTranslateDone: string;
+    quickTranslateNoSelection: string;
+    quickTranslateInlineStatus: string;
+    quickTranslateInlineError: string;
     ribbonTooltip: string;
   };
   settings: {
@@ -170,6 +176,8 @@ export interface TranslationStrings {
     transStyleDesc: string;
     transCodeCommentsTitle: string;
     transCodeCommentsDesc: string;
+    quickTranslateHotkeyTitle: string;
+    quickTranslateHotkeyDesc: string;
     editPreferencesHeader: string;
     stripBoldTitle: string;
     stripBoldDesc: string;
@@ -205,6 +213,31 @@ export interface TranslationStrings {
     appendDesc: string;
     overwrite: string;
     overwriteDesc: string;
+
+    groupTitleSelection?: string;
+    groupTitleAll?: string;
+    groupTitleParagraph?: string;
+
+    selectionNewFile?: string;
+    selectionNewFileDesc?: string;
+    selectionAppend?: string;
+    selectionAppendDesc?: string;
+    selectionOverwrite?: string;
+    selectionOverwriteDesc?: string;
+
+    allNewFile?: string;
+    allNewFileDesc?: string;
+    allAppend?: string;
+    allAppendDesc?: string;
+    allOverwrite?: string;
+    allOverwriteDesc?: string;
+
+    parallelNewFile?: string;
+    parallelNewFileDesc?: string;
+    parallelAppend?: string;
+    parallelAppendDesc?: string;
+    parallelOverwrite?: string;
+    parallelOverwriteDesc?: string;
   };
   tones: {
     title: string;
@@ -285,6 +318,13 @@ export interface TranslationStrings {
     transEnabledTooltipOff: string;
     translateCodeComments: string;
     customPrompt: string;
+    proofreadGroupInfo: string;
+    formatStripGroupInfo: string;
+    transScopeGroupInfo: string;
+    preservationGroupInfo: string;
+    toneGroupInfo: string;
+    styleGroupInfo: string;
+    translateCodeCommentsInfo: string;
     promptLabel: string;
     promptPlaceholder: string;
     promptShortcutHint: string;
@@ -456,6 +496,9 @@ export interface TranslationStrings {
     resultTransHeader: string;
     saveNewFileBtn: string;
     saveNewFileNotice: string;
+    saveEditsToDocBtn: string;
+    saveEditsToDocNotice: string;
+    saveOverwriteBtn: string;
     appendBtn: string;
     appendNotice: string;
     overwriteBtn: string;

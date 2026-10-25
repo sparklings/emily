@@ -1,4 +1,4 @@
-import { App, Modal, Notice, TFile } from 'obsidian';
+import { App, Modal, Notice, TFile, MarkdownView } from 'obsidian';
 import { TranslationOptions, TranslationResult } from '../types/translation';
 import { TranslationEngine } from '../core/translationEngine';
 import { isSameLanguage } from '../core/languageDetector';
@@ -29,7 +29,7 @@ export class TranslationDiffModal extends Modal {
   private activeFile: TFile;
   private options: TranslationOptions;
   private translationEngine: TranslationEngine;
-  private onSaveCallback?: (finalText: string, action: string) => void;
+  private onSaveCallback?: (finalText: string, action: string, targetPath?: string) => void;
   private displayLang?: string;
   private backdropClickHandler?: (e: MouseEvent) => void;
   private backdropMouseDownHandler?: (e: MouseEvent) => void;
@@ -46,7 +46,7 @@ export class TranslationDiffModal extends Modal {
     translatedMarkdown: string,
     options: TranslationOptions,
     translationEngine: TranslationEngine,
-    onSave?: (finalText: string, action: string) => void,
+    onSave?: (finalText: string, action: string, targetPath?: string) => void,
     displayLang?: string
   ) {
     super(app);
@@ -177,61 +177,74 @@ export class TranslationDiffModal extends Modal {
 
     // 3. Fixed Footer (Pinned at bottom, always visible)
     const footerEl = contentEl.createDiv({ cls: 'emily-translation-modal-footer' });
-    
     footerEl.createDiv({ cls: 'emily-translation-footer-left' });
 
     const rightActions = footerEl.createDiv({ cls: 'emily-translation-footer-right' });
 
-    const newFileBtn = rightActions.createEl('button', {
-      text: t.transDiffModal.saveNewFileBtn,
-      cls: 'emily-btn-primary emily-translation-save-new-btn'
+    const isSelection = this.options.scope === 'selection';
+    const isAppend = this.options.preservation === 'append';
+    const isOverwrite = this.options.preservation === 'overwrite';
+
+    let primaryBtnText: string;
+    let primaryAction: 'append' | 'overwrite' | 'new_file';
+
+    if (isAppend) {
+      primaryBtnText = isSelection
+        ? (t.transDiffModal.saveEditsToDocBtn || '문서에 수정 내용 저장')
+        : (t.transDiffModal.saveEditsToDocBtn || '문서에 수정 내용 저장');
+      primaryAction = 'append';
+    } else if (isOverwrite) {
+      primaryBtnText = t.transDiffModal.saveOverwriteBtn || '문서에 수정 내용 덮어쓰기';
+      primaryAction = 'overwrite';
+    } else {
+      primaryBtnText = t.transDiffModal.saveNewFileBtn || '새 파일로 저장';
+      primaryAction = 'new_file';
+    }
+
+    const primaryBtn = rightActions.createEl('button', {
+      text: primaryBtnText,
+      cls: 'emily-btn-primary emily-translation-save-primary-btn'
     });
-    newFileBtn.addEventListener('click', () => {
-      void (async () => {
-        const currentText = this.getCurrentText();
-        const opts = { ...this.options, preservation: 'new_file' as const };
-        const res: Partial<TranslationResult> = {};
-        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-        new Notice(t.transDiffModal.saveNewFileNotice.replace('{path}', res.targetPath || ''));
-        if (this.onSaveCallback) this.onSaveCallback(currentText, 'new_file');
-        this.close();
-      })();
+    primaryBtn.addEventListener('click', () => {
+      void this.applyEditedTranslation(primaryAction);
     });
 
     const subRow = rightActions.createDiv({ cls: 'emily-translation-footer-subrow' });
 
-    const appendBtn = subRow.createEl('button', {
-      text: t.transDiffModal.appendBtn,
-      cls: 'emily-btn-secondary emily-translation-append-btn'
-    });
-    appendBtn.addEventListener('click', () => {
-      void (async () => {
-        const currentText = this.getCurrentText();
-        const opts = { ...this.options, preservation: 'append' as const };
-        const res: Partial<TranslationResult> = {};
-        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-        new Notice(t.transDiffModal.appendNotice);
-        if (this.onSaveCallback) this.onSaveCallback(currentText, 'append');
-        this.close();
-      })();
-    });
+    // Secondary 1: 새 파일로 저장 (if primary is not new_file)
+    if (primaryAction !== 'new_file') {
+      const newFileSubBtn = subRow.createEl('button', {
+        text: t.transDiffModal.saveNewFileBtn,
+        cls: 'emily-btn-secondary emily-translation-save-new-btn'
+      });
+      newFileSubBtn.addEventListener('click', () => {
+        void this.applyEditedTranslation('new_file');
+      });
+    }
 
-    const overwriteBtn = subRow.createEl('button', {
-      text: t.transDiffModal.overwriteBtn,
-      cls: 'emily-btn-danger emily-translation-overwrite-btn'
-    });
-    overwriteBtn.addEventListener('click', () => {
-      void (async () => {
-        const currentText = this.getCurrentText();
-        const opts = { ...this.options, preservation: 'overwrite' as const };
-        const res: Partial<TranslationResult> = {};
-        await this.translationEngine.applyPreservationStrategy(this.activeFile, this.originalMarkdown, currentText, opts, res);
-        new Notice(t.transDiffModal.overwriteNotice);
-        if (this.onSaveCallback) this.onSaveCallback(currentText, 'overwrite');
-        this.close();
-      })();
-    });
+    // Secondary 2: 원문 하단 덧붙이기 (if primary is not append)
+    if (primaryAction !== 'append') {
+      const appendSubBtn = subRow.createEl('button', {
+        text: t.transDiffModal.appendBtn,
+        cls: 'emily-btn-secondary emily-translation-append-btn'
+      });
+      appendSubBtn.addEventListener('click', () => {
+        void this.applyEditedTranslation('append');
+      });
+    }
 
+    // Secondary 3: 원문 덮어쓰기 (if primary is not overwrite)
+    if (primaryAction !== 'overwrite') {
+      const overwriteSubBtn = subRow.createEl('button', {
+        text: t.transDiffModal.overwriteBtn,
+        cls: 'emily-btn-danger emily-translation-overwrite-btn'
+      });
+      overwriteSubBtn.addEventListener('click', () => {
+        void this.applyEditedTranslation('overwrite');
+      });
+    }
+
+    // Close button
     const closeBtn = subRow.createEl('button', {
       text: t.transDiffModal.closeBtn,
       cls: 'emily-btn-secondary emily-translation-close-btn'
@@ -669,4 +682,154 @@ export class TranslationDiffModal extends Modal {
     const { contentEl } = this;
     contentEl.empty();
   }
+
+  /**
+   * 사용자가 편집한 번역 텍스트를 문서 또는 새 파일에 정밀 저장 및 화면 실시간 반영
+   */
+  private async applyEditedTranslation(action: 'append' | 'overwrite' | 'new_file'): Promise<void> {
+    const currentText = this.getCurrentText();
+    const t = getTranslation(this.displayLang);
+
+    if (action === 'new_file') {
+      const opts = { ...this.options, preservation: 'new_file' as const };
+      const res: Partial<TranslationResult> = {};
+      await this.translationEngine.applyPreservationStrategy(
+        this.activeFile,
+        this.originalMarkdown,
+        currentText,
+        opts,
+        res
+      );
+      new Notice(t.transDiffModal.saveNewFileNotice.replace('{path}', res.targetPath || ''));
+      if (this.onSaveCallback) this.onSaveCallback(currentText, 'new_file', res.targetPath);
+      this.close();
+      return;
+    }
+
+    await this.updateDocumentContent(currentText, action);
+
+    if (action === 'append') {
+      new Notice(t.transDiffModal.saveEditsToDocNotice || t.transDiffModal.appendNotice);
+    } else {
+      new Notice(t.transDiffModal.overwriteNotice);
+    }
+
+    if (this.onSaveCallback) {
+      this.onSaveCallback(currentText, action);
+    }
+    this.close();
+  }
+
+  /**
+   * 문서 본문 갱신 및 활성 마크다운 에디터 화면에 즉각 실시간 반영
+   */
+  private async updateDocumentContent(newTranslation: string, action: 'append' | 'overwrite'): Promise<void> {
+    const isSelectionScope = this.options.scope === 'selection';
+    const oldTranslation = this.translatedMarkdown;
+    const originalText = this.originalMarkdown;
+    const t = getTranslation(this.displayLang);
+
+    // 1. 활성 에디터 뷰(MarkdownView Leaf)가 열려있는 경우 에디터 버퍼에 즉각 렌더링 반영
+    let editorUpdated = false;
+    const leaves = this.app.workspace.getLeavesOfType('markdown');
+    for (const leaf of leaves) {
+      if (leaf.view instanceof MarkdownView && leaf.view.file?.path === this.activeFile.path) {
+        const editor = leaf.view.editor;
+        const currentDoc = editor.getValue();
+        const updatedDoc = this.calculateUpdatedDoc(
+          currentDoc,
+          originalText,
+          oldTranslation,
+          newTranslation,
+          action,
+          isSelectionScope,
+          t
+        );
+        if (updatedDoc !== currentDoc) {
+          editor.setValue(updatedDoc);
+          editorUpdated = true;
+        }
+      }
+    }
+
+    // 2. 에디터가 열려있지 않거나 에디터 갱신 후 vault 디스크 파일에 영구 저장 보장
+    const currentDoc = await this.app.vault.read(this.activeFile);
+    const updatedDoc = this.calculateUpdatedDoc(
+      currentDoc,
+      originalText,
+      oldTranslation,
+      newTranslation,
+      action,
+      isSelectionScope,
+      t
+    );
+    if (!editorUpdated || updatedDoc !== currentDoc) {
+      await this.app.vault.modify(this.activeFile, updatedDoc);
+    }
+  }
+
+  /**
+   * 기존 문서 내용에서 이전 번역문 또는 대상 영역을 찾아 수정된 새 번역문으로 치환/정렬
+   */
+  private calculateUpdatedDoc(
+    doc: string,
+    originalText: string,
+    oldTrans: string,
+    newTrans: string,
+    action: 'append' | 'overwrite',
+    isSelectionScope: boolean,
+    t: TranslationKeys
+  ): string {
+    const cleanOld = (oldTrans || '').trim();
+    const cleanNew = (newTrans || '').trim();
+    const cleanOrig = (originalText || '').trim();
+
+    if (isSelectionScope) {
+      if (action === 'append') {
+        // 1. 이전 번역문이 정확히 존재하는 경우 -> 새 번역문으로 교체
+        if (cleanOld && doc.includes(cleanOld)) {
+          return doc.replace(cleanOld, cleanNew);
+        }
+        // 2. 줄바꿈 정규화 후 매칭 시도
+        const normalizedDoc = doc.replace(/\r\n/g, '\n');
+        const normalizedOld = cleanOld.replace(/\r\n/g, '\n');
+        if (normalizedOld && normalizedDoc.includes(normalizedOld)) {
+          return normalizedDoc.replace(normalizedOld, cleanNew);
+        }
+        // 3. 원문 바로 뒤에 덧붙여진 구조 탐색
+        if (cleanOrig && doc.includes(cleanOrig)) {
+          return doc.replace(cleanOrig, `${cleanOrig}\n\n${cleanNew}`);
+        }
+        // 4. 폴백: 문서 끝에 덧붙이기
+        return `${doc}\n\n${cleanNew}`;
+      } else {
+        // action === 'overwrite' (선택 영역을 새 번역문으로 덮어쓰기)
+        if (cleanOrig && cleanOld && doc.includes(`${cleanOrig}\n\n${cleanOld}`)) {
+          return doc.replace(`${cleanOrig}\n\n${cleanOld}`, cleanNew);
+        }
+        if (cleanOld && doc.includes(cleanOld)) {
+          return doc.replace(cleanOld, cleanNew);
+        }
+        if (cleanOrig && doc.includes(cleanOrig)) {
+          return doc.replace(cleanOrig, cleanNew);
+        }
+        return `${doc}\n\n${cleanNew}`;
+      }
+    } else {
+      // 전체 문서 번역의 경우:
+      if (action === 'append') {
+        const header = `## 📄 ${t.common.originalDocHeader}`;
+        const headerIdx = doc.indexOf(header);
+        if (headerIdx !== -1) {
+          const origPart = doc.slice(headerIdx);
+          return `${cleanNew}\n\n---\n\n${origPart}`;
+        }
+        return `${cleanNew}\n\n---\n\n## 📄 ${t.common.originalDocHeader}\n\n${cleanOrig || doc}`;
+      } else {
+        // 전체 문서 덮어쓰기
+        return cleanNew;
+      }
+    }
+  }
+
 }

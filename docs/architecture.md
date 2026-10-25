@@ -56,7 +56,7 @@ flowchart TD
 ## 3. 핵심 서브시스템별 상세 명세
 
 ### 3.1 마크다운 마스커 (`MarkdownMasker`)
-* **역할**: LLM에 전달하기 전, 보호해야 할 마크다운 문법 요소를 안전한 UUID 형태의 토큰(`__EMILY_TOKEN_n__`)으로 치환하고 번역 완료 후 100% 무손실 복원합니다.
+* **역할**: LLM에 전달하기 전, 보호해야 할 마크다운 문법 요소를 안전한 UUID 형태의 토큰(`__EMILY_TOKEN_n__`)으로 치환하고 번역 완료 후 원형 복원합니다.
 * **주요 보호 대상**:
   * YAML 프론트매터 (`--- ... ---`)
   * 옵시디언 위키링크 (`[[Note]]`, `[[Note|Alias]]`)
@@ -71,7 +71,7 @@ flowchart TD
 ### 3.2 포매터 및 정규화 엔진 (`MarkdownFormatter`)
 * **역할**: 마크다운 서식 정제 및 옵시디언 마크다운(OFM) 표준 렌더링 자가 치유를 담당합니다.
 * **구역 분할 정제 (Section Partitioning)**:
-  * 일반 기사/웹 문서는 원형을 100% 보존합니다.
+  * 일반 기사/웹 문서는 원형 레이아웃을 최대한 보존합니다.
   * 유튜브 클리핑 문서는 `## Transcript` 이전 메타데이터(동영상 링크, 목차, `Connect:`) 구역의 줄바꿈을 원형 보존하고, `## Transcript` 이하 본문만 타임스탬프를 제거하여 400~600자 단위 유려한 단락으로 결합합니다.
 * **OFM 자가 치유 (`normalizeObsidianMarkdown`)**:
   * 헤딩(`#`–`######`) 전후 빈 줄 자동 삽입으로 단락 융합 방지.
@@ -114,7 +114,7 @@ sequenceDiagram
         Engine->>Engine: 한글 비율 검증 & 중국어 누출 치환
     end
     Engine->>Formatter: 동영상 임베드 사후 확정 복원
-    Engine->>Masker: 4단계 마스킹 토큰 100% 무손실 복원
+    Engine->>Masker: 4단계 마스킹 토큰 원형 복원
     Masker->>Formatter: 5단계 OFM 자가 치유 정규화
     Formatter->>View: 최종 정제 텍스트 전달
     alt 원본 파일 직접 번역

@@ -136,12 +136,30 @@ export class MarkdownMasker {
       return token;
     });
 
-    // 10. 목차/챕터 타임스탬프 (- 0:00 설명, 1:57 BEGINNER 등)
-    target = target.replace(/^(\s*[-*+]?\s*)(\d{1,2}:\d{2}(?::\d{2})?)(?=\s)/gm, (match: string, prefix: string, timeStr: string) => {
-      const token = getPlaceholder('TOCTIME');
-      maskMap.set(token, timeStr);
-      const listPrefix = prefix.trim() ? prefix : '- ';
-      return `${listPrefix}${token}`;
+    // 9-1. 마크다운 링크 URL 보호 ([텍스트](https://...)) - 링크 텍스트는 번역되도록 두고 목적지 URL만 마스킹 보호
+    target = target.replace(/(?<!!)\[([^\]\n]+)\]\((https?:\/\/[^\s\)]+)\)/g, (match: string, linkText: string, url: string) => {
+      const token = getPlaceholder('LINKURL');
+      maskMap.set(token, url);
+      return `[${linkText}](${token})`;
+    });
+
+    // 9-2. 독립형 URL 보호 (Raw URLs: https://... 또는 http://...)
+    target = target.replace(/(?<![\(\[<"'])https?:\/\/[^\s\)\]>]+/g, (match: string) => {
+      // 문장 끝 구두점(., ,, ;, :, !, ?)이 URL 끝에 붙은 경우 분리하여 본문 문장 부호로 유지
+      const punctMatch = match.match(/[.,;:!?]+$/);
+      const punct = punctMatch ? punctMatch[0] : '';
+      const cleanUrl = punct ? match.slice(0, -punct.length) : match;
+      const token = getPlaceholder('RAWURL');
+      maskMap.set(token, cleanUrl);
+      return `${token}${punct}`;
+    });
+
+    // 10. 타임스탬프 (유튜브/팟캐스트 스크립트 및 챕터 목차: 0:00 ·, **0:00** ·, 1:57, [00:15], - 0:00 등)
+    target = target.replace(/^([ \t]*(?:[-*+•]\s+)?(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?\s*))/gm, (match: string) => {
+      if (!match.trim()) return match;
+      const token = getPlaceholder('TIMESTAMP');
+      maskMap.set(token, match);
+      return token;
     });
 
     return {

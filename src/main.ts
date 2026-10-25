@@ -1,12 +1,14 @@
-import { Plugin, WorkspaceLeaf, MarkdownView, Notice } from 'obsidian';
+import { Plugin, WorkspaceLeaf, MarkdownView, Notice, Editor } from 'obsidian';
+import { TranslationOptions } from './types/translation';
 import { EmilySettings, DEFAULT_SETTINGS } from './types/settings';
 import { EMILY_VIEW_TYPE, EMILY_ICON_NAME } from './constants';
 import { EmilySettingTab } from './views/settingsTab';
-import { EmilySidebarView } from './views/sidebarView';
+import { EmilySidebarView, RollingSessionData, getISODateTimeString } from './views/sidebarView';
 import { LLMProxyClient } from './api/llmClient';
 import { ProofreadingEngine } from './core/proofreadingEngine';
 import { TranslationEngine } from './core/translationEngine';
-import { getTranslation } from './i18n';
+import { detectDocumentLanguage, isSameLanguage } from './core/languageDetector';
+import { getTranslation, getDefaultTargetLanguageName, getLocalizedLanguageName, normalizeLanguageCode } from './i18n';
 import { migrateDeviceProfiles, migrateLegacySettingsToProviders, getEffectiveProviderForDevice } from './utils/deviceKeyManager';
 
 /**
@@ -23,6 +25,42 @@ export default class EmilyPlugin extends Plugin {
   private proofreadingEngine: ProofreadingEngine;
   /** 대용량 청킹 및 1:1 대조 번역 엔진 */
   private translationEngine: TranslationEngine;
+  /** 사이드바 및 단축키 실행 전체 작업 세션 히스토리 캐시 */
+  private sessionHistory: RollingSessionData[] = [];
+  private sessionCounter: number = 0;
+
+  public getSessionHistory(): RollingSessionData[] {
+    return this.sessionHistory;
+  }
+
+  public clearSessionHistory(): void {
+    this.sessionHistory = [];
+  }
+
+  public getNextSessionId(): number {
+    return ++this.sessionCounter;
+  }
+
+  public recordSessionFromSidebar(sessionData: RollingSessionData): void {
+    if (!this.sessionHistory.some((s) => s.id === sessionData.id)) {
+      this.sessionHistory.push(sessionData);
+    }
+    this.sessionCounter = Math.max(this.sessionCounter, sessionData.id);
+  }
+
+  public recordExternalSession(sessionData: RollingSessionData): void {
+    if (!this.sessionHistory.some((s) => s.id === sessionData.id)) {
+      this.sessionHistory.push(sessionData);
+    }
+    this.sessionCounter = Math.max(this.sessionCounter, sessionData.id);
+
+    const leaves = this.app.workspace.getLeavesOfType(EMILY_VIEW_TYPE);
+    for (const leaf of leaves) {
+      if (leaf.view instanceof EmilySidebarView) {
+        leaf.view.recordCompletedSession(sessionData);
+      }
+    }
+  }
 
   /**
    * 옵시디언 플러그인 로드 시 호출되는 라이프사이클 메서드
@@ -74,6 +112,22 @@ export default class EmilyPlugin extends Plugin {
       }
     });
 
+    // DeepL 스타일 빠른 선택 영역 번역 후 바로 아래에 덧붙이기 단축키 커맨드
+    this.addCommand({
+      id: 'emily-quick-translate-selection-append',
+      name: t.commands.quickTranslateSelectionAppend,
+      icon: 'languages',
+      hotkeys: [
+        {
+          modifiers: ['Mod', 'Shift'],
+          key: 'C'
+        }
+      ],
+      editorCallback: (editor: Editor, view: MarkdownView) => {
+        void this.handleQuickTranslateSelectionAppend(editor, view);
+      }
+    });
+
     // 6. 옵시디언 환경 설정 탭 등록
     this.addSettingTab(new EmilySettingTab(this.app, this));
 
@@ -121,6 +175,24 @@ export default class EmilyPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on('layout-change', () => {
         this.notifySidebarViewsDocChange();
+      })
+    );
+
+    // 12. 에디터 우클릭 컨텍스트 메뉴 등록 (선택 영역 번역 - 옵시디언 표준)
+    this.registerEvent(
+      this.app.workspace.on('editor-menu', (menu, editor, view) => {
+        if (!(view instanceof MarkdownView) || !view.file) return;
+        const selection = editor.getSelection();
+        if (!selection || selection.trim().length === 0) return;
+
+        menu.addItem((item) => {
+          item
+            .setTitle(`Assistant Emily: ${t.commands.quickTranslateSelectionAppend}`)
+            .setIcon('languages')
+            .onClick(() => {
+              void this.handleQuickTranslateSelectionAppend(editor, view);
+            });
+        });
       })
     );
   }
@@ -246,6 +318,38 @@ export default class EmilyPlugin extends Plugin {
     }
   }
 
+  /**
+   * DeepL 스타일 빠른 선택 영역 번역 후 바로 아래에 덧붙이기 핸들러
+   * - 에디터에서 선택된 텍스트를 감지하여 번역 후 원문 바로 아래에 빈 줄 하나를 두고 덧붙입니다.
+   * - 기본 단축키: Ctrl+Shift+C (Mac: Cmd+Shift+C)
+   */
+  public async handleQuickTranslateSelectionAppend(
+    editor: Editor,
+    view: MarkdownView
+  ): Promise<void> {
+    const t = getTranslation(this.settings.language);
+    const selectedText = editor.getSelection();
+
+    if (!selectedText || selectedText.trim().length === 0) {
+      new Notice(t.commands.quickTranslateNoSelection);
+      return;
+    }
+
+    if (!view.file) {
+      new Notice('활성 마크다운 파일이 없습니다.');
+      return;
+    }
+
+    // 사이드바 활성화 및 에디터 포커스 유지
+    const sidebarView = await this.activateView(false);
+    editor.focus();
+
+    if (sidebarView) {
+      await sidebarView.executeQuickSelectionTranslation(editor, view, selectedText);
+      return;
+    }
+  }
+
   /** LLM 클라이언트 인스턴스 반환 */
   getLLMClient(): LLMProxyClient {
     return this.llmClient;
@@ -264,7 +368,7 @@ export default class EmilyPlugin extends Plugin {
   /**
    * 우측 사이드바 리프에 에밀리 전용 뷰를 표시하거나 포커스합니다.
    */
-  async activateView() {
+  async activateView(focus: boolean = true): Promise<EmilySidebarView | null> {
     const { workspace } = this.app;
     let leaf: WorkspaceLeaf | null = null;
     const leaves = workspace.getLeavesOfType(EMILY_VIEW_TYPE);
@@ -279,8 +383,12 @@ export default class EmilyPlugin extends Plugin {
     }
 
     if (leaf) {
-      void workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
+      if (leaf.view instanceof EmilySidebarView) {
+        return leaf.view;
+      }
     }
+    return null;
   }
 
   /**

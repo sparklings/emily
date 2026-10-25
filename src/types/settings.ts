@@ -137,6 +137,8 @@ export interface EmilySettings {
   defaultTranslationStyle: TranslationStyle;
   /** 코드 블록 내부 주석만 번역하고 코드는 보존할지 여부 */
   defaultTranslateCodeComments: boolean;
+  /** DeepL 스타일 연속 단축키 (Ctrl+C+C 또는 Cmd+C+C) 빠른 선택 영역 번역 활성화 여부 */
+  enableDoubleCtrlCTranslate?: boolean;
 
   // 편집 및 서식 제거 기본 설정 (Editing & Format Removal Preferences)
   /** 볼드체(**, __) 서식 제거 기본 선택 여부 */
@@ -188,6 +190,7 @@ export const DEFAULT_SETTINGS: EmilySettings = {
   defaultTranslationTone: 'academic',
   defaultTranslationStyle: 'balanced',
   defaultTranslateCodeComments: false,
+  enableDoubleCtrlCTranslate: true,
 
   // 편집 및 서식 제거 기본값
   defaultStripBold: false,

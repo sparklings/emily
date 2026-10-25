@@ -65,12 +65,9 @@ export class TranslationEngine {
       throw abortError;
     }
 
-    // 0. 타임스탬프 선제적 정규식 제거: 원문에 타임스탬프(0:04, 18:11· 등)가 포함된 경우
-    //    LLM에 맡기지 않고 코드 레벨에서 100% 무결하게 사전 제거하여 문단을 자연스럽게 연결한 뒤 번역에 전달합니다.
-    const hasTimestamps = /(?:(?:\*\*|\(|\[)?(?:\d{1,2}:)?\d{1,2}:\d{2}(?::\d{2})?(?:\*\*|\)|\])?\s*(?:[·•・:–—\-|]|&middot;)?)/.test(markdownContent);
-    const contentToTranslate = hasTimestamps
-      ? MarkdownFormatter.cleanScriptTimestamps(markdownContent)
-      : markdownContent;
+    // 0-1. 음성 전사(STT) 구두점 누락으로 인한 숫자 연쇄 병합 왜곡 선제 방지
+    // (예: "Claude 101 13 lessons" -> "Claude 101: 13 lessons")
+    const contentToTranslate = MarkdownFormatter.disambiguateSpokenNumberSequences(markdownContent);
 
     // 1. 단락별 원문 병기(paragraph_bilingual)의 경우 전용 결정론적 파이프라인 또는 단일/청크 번역 수행
     const chunks = this.splitIntoSmartChunks(contentToTranslate, this.CHUNK_SIZE_THRESHOLD);
@@ -229,8 +226,13 @@ export class TranslationEngine {
 
     const isTargetKoreanGlobal = (options.targetLanguage || '').includes('한국어') || (options.targetLanguage || '').toLowerCase().includes('korean');
 
-    // 1-1. 잔여 타임스탬프 사후 정규식 정제 (LLM이 우발적으로 생성/보존한 18:11· 등 타임스탬프 원천 제거)
-    accumulatedTranslatedMarkdown = MarkdownFormatter.cleanScriptTimestamps(accumulatedTranslatedMarkdown);
+    // 1-0. 번역 결과물에서 띄어쓰기 생략으로 인해 숫자가 왜곡된 경우(예: '10113개 강의') 원본 대조 자동 자가 치유
+    accumulatedTranslatedMarkdown = MarkdownFormatter.fixMergedNumberSequences(
+      accumulatedTranslatedMarkdown,
+      markdownContent
+    );
+
+    // 1-1. 웹 클리핑 타임스탬프는 제거하지 않고 원형 및 문장 단위 유지
 
     // 1-2. 한국어 번역 대상 중국어 간체자/한자 누출 사후 정제
     if (isTargetKoreanGlobal) {
