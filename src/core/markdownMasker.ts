@@ -145,9 +145,13 @@ export class MarkdownMasker {
 
     // 9-2. 독립형 URL 보호 (Raw URLs: https://... 또는 http://...)
     target = target.replace(/(?<![\(\[<"'])https?:\/\/[^\s\)\]>]+/g, (match: string) => {
+      // 문장 끝 구두점(., ,, ;, :, !, ?)이 URL 끝에 붙은 경우 분리하여 본문 문장 부호로 유지
+      const punctMatch = match.match(/[.,;:!?]+$/);
+      const punct = punctMatch ? punctMatch[0] : '';
+      const cleanUrl = punct ? match.slice(0, -punct.length) : match;
       const token = getPlaceholder('RAWURL');
-      maskMap.set(token, match);
-      return token;
+      maskMap.set(token, cleanUrl);
+      return `${token}${punct}`;
     });
 
     // 10. 타임스탬프 (유튜브/팟캐스트 스크립트 및 챕터 목차: 0:00 ·, **0:00** ·, 1:57, [00:15], - 0:00 등)

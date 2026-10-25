@@ -406,31 +406,54 @@ export class MarkdownFormatter {
   static disambiguateSpokenNumberSequences(text: string): string {
     if (!text) return text;
 
-    return text.replace(
-      /(\b[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*\s+\d{1,4})\s+(\d{1,4}\s+(?:lessons?|courses?|hours?|mins?|minutes?|days?|weeks?|months?|years?|items?|parts?|modules?|chapters?|videos?|steps?|lectures?|credits?|sessions?|quizzes?)\b)/gi,
-      '$1: $2'
-    );
+    // YAML 프론트매터 및 코드 블록 보호/격리
+    const { frontmatter, body } = this.extractFrontmatter(text);
+    const codeBlocks: string[] = [];
+    const protectedBody = body.replace(/```[\s\S]*?```/g, (match) => {
+      const token = `__EMILY_FMT_CODE_${codeBlocks.length}__`;
+      codeBlocks.push(match);
+      return token;
+    });
+
+    // 영문 강좌명(식별자) + 강좌 번호(2~4자리) + 교육 수량 단위(1~3자리 + lessons/courses/etc.)에만 정밀하게 콜론 삽입
+    const pattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*\s+\d{2,4})\s+(\d{1,3}\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)\b)/gi;
+    let processed = protectedBody.replace(pattern, '$1: $2');
+
+    // 코드 블록 복원
+    codeBlocks.forEach((code, i) => {
+      processed = processed.replace(`__EMILY_FMT_CODE_${i}__`, code);
+    });
+
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${processed.trimStart()}`;
+    }
+    return processed;
   }
 
   /**
-   * 번역 완료된 텍스트에서 띄어쓰기 생략으로 인해 2개의 숫자가 하나로 합쳐진 왜곡을
-   * 원문 숫자 쌍과 대조하여 자동으로 복원 및 분리합니다.
+   * 번역 완료된 텍스트에서 띄어쓰기 생략으로 인해 강좌명 번호와 수량이 하나로 합쳐진 왜곡을
+   * 원문의 맥락(식별자 명칭, 번호 쌍, 한글 단위)과 엄격히 대조하여 안전하게 복원 및 분리합니다.
+   * 무차별 전체 숫자 쌍 매칭을 배제하여 연도(2024년)나 일반 번호의 오작동(False Positive)을 100% 방지합니다.
    * 예: 원문 "Claude 101 13 lessons" ➔ 번역본 "Claude 10113개 강의" ➔ "Claude 101: 13개 강의"로 복원
    */
   static fixMergedNumberSequences(translatedText: string, sourceText: string): string {
     if (!translatedText || !sourceText) return translatedText;
 
-    const pairRegex = /\b(\d{2,4})\s+(\d{1,3})\b/g;
+    // 원문에서 (식별자 명칭) (강좌코드 2~4자리) (강의수 1~3자리) (단위) 구조만 정밀 추출
+    const contextPattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d{2,4})\s+(\d{1,3})\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)/gi;
     let match: RegExpExecArray | null;
     let result = translatedText;
 
-    while ((match = pairRegex.exec(sourceText)) !== null) {
-      const num1 = match[1];
-      const num2 = match[2];
-      const mergedPattern = new RegExp(`\\b(${num1})(${num2})(?=[가-힣\\s]|$)`, 'g');
-      if (mergedPattern.test(result)) {
-        result = result.replace(mergedPattern, '$1: $2');
-      }
+    while ((match = contextPattern.exec(sourceText)) !== null) {
+      const name = match[1].trim();
+      const num1 = match[2];
+      const num2 = match[3];
+
+      // 번역본에서 해당 명칭 바로 뒤에 '10113개', '10113강' 등 한글 수량 단위가 붙어 있는 경우만 안전하게 매칭
+      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const mergedPattern = new RegExp(`(\\b${escapedName}\\s+)(${num1})(${num2})([개강명권편차])`, 'gi');
+      result = result.replace(mergedPattern, '$1$2: $3$4');
     }
 
     return result;

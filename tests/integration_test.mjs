@@ -80,24 +80,40 @@ class MarkdownFormatter {
 
   static disambiguateSpokenNumberSequences(text) {
     if (!text) return text;
-    return text.replace(
-      /(\b[A-Za-z0-9_-]+(?:\s+[A-Za-z0-9_-]+)*\s+\d{1,4})\s+(\d{1,4}\s+(?:lessons?|courses?|hours?|mins?|minutes?|days?|weeks?|months?|years?|items?|parts?|modules?|chapters?|videos?|steps?|lectures?|credits?|sessions?|quizzes?)\b)/gi,
-      '$1: $2'
-    );
+    const { frontmatter, body } = this.extractFrontmatter(text);
+    const codeBlocks = [];
+    const protectedBody = body.replace(/```[\s\S]*?```/g, (match) => {
+      const token = `__EMILY_FMT_CODE_${codeBlocks.length}__`;
+      codeBlocks.push(match);
+      return token;
+    });
+
+    const pattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*\s+\d{2,4})\s+(\d{1,3}\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)\b)/gi;
+    let processed = protectedBody.replace(pattern, '$1: $2');
+
+    codeBlocks.forEach((code, i) => {
+      processed = processed.replace(`__EMILY_FMT_CODE_${i}__`, code);
+    });
+
+    if (frontmatter) {
+      const formattedFm = frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n';
+      return `${formattedFm}${processed.trimStart()}`;
+    }
+    return processed;
   }
 
   static fixMergedNumberSequences(translatedText, sourceText) {
     if (!translatedText || !sourceText) return translatedText;
-    const pairRegex = /\b(\d{2,4})\s+(\d{1,3})\b/g;
+    const contextPattern = /(\b[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d{2,4})\s+(\d{1,3})\s+(?:lessons?|courses?|lectures?|modules?|chapters?|quizzes?|weeks?|hours?|parts?|videos?)/gi;
     let match;
     let result = translatedText;
-    while ((match = pairRegex.exec(sourceText)) !== null) {
-      const num1 = match[1];
-      const num2 = match[2];
-      const mergedPattern = new RegExp(`\\b(${num1})(${num2})(?=[가-힣\\s]|$)`, 'g');
-      if (mergedPattern.test(result)) {
-        result = result.replace(mergedPattern, '$1: $2');
-      }
+    while ((match = contextPattern.exec(sourceText)) !== null) {
+      const name = match[1].trim();
+      const num1 = match[2];
+      const num2 = match[3];
+      const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const mergedPattern = new RegExp(`(\\b${escapedName}\\s+)(${num1})(${num2})([개강명권편차])`, 'gi');
+      result = result.replace(mergedPattern, '$1$2: $3$4');
     }
     return result;
   }
@@ -6654,11 +6670,19 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
   const tc71_3 = preprocessedOther.includes('Python 101: 20 chapters') &&
                  preprocessedOther.includes('CS 50: 12 weeks');
 
+  // 5) 대조군(Negative Control): 정상적인 연도(2024년), 소제목(단계 10-1), 단독 번호(Claude 101) 오작동(False Positive) 방지 검증
+  const fpSource = 'In 2024 10 people attended. Step 10 1 of the guide. Claude 101 course.';
+  const fpTrans = '2024년에 10명이 참석했습니다. 가이드의 단계 10-1. 여기 Claude 101이 있습니다.';
+  const fpHealed = MarkdownFormatter.fixMergedNumberSequences(fpTrans, fpSource);
+  const tc71_4 = fpHealed.includes('2024년') && !fpHealed.includes('20: 24') &&
+                 fpHealed.includes('Claude 101') && !fpHealed.includes('Claude 10: 1');
+
   console.log('  - 1) STT 음성 전사 강좌번호 및 수량 단위 사전 콜론(: ) 분리: ' + tc71_1);
   console.log('  - 2) 띄어쓰기 생략된 10113개 강의 -> 101: 13개 강의 자동 치유: ' + tc71_2);
   console.log('  - 3) 챕터(chapters), 주차(weeks) 등 복합 단위 정상 분리: ' + tc71_3);
+  console.log('  - 4) 정상 연도/숫자 오작동 방지(False Positive Zero): ' + tc71_4);
 
-  const tc71Passed = tc71_1 && tc71_2 && tc71_3;
+  const tc71Passed = tc71_1 && tc71_2 && tc71_3 && tc71_4;
   if (tc71Passed) {
     console.log('  ✓ [TC-71] STT 음성 전사 숫자 연속 띄어쓰기 생략 왜곡(10113개 강의) 원천 방지 및 자동 치유 100% 검증 완료');
   } else {
