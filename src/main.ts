@@ -340,148 +340,13 @@ export default class EmilyPlugin extends Plugin {
       return;
     }
 
-    // API 프로바이더 및 엔드포인트 유효성 검사
-    const activeProv = getEffectiveProviderForDevice(this.settings);
-    const baseUrl = (activeProv?.baseUrl || this.settings.apiBaseUrl || '').trim();
-    const apiKey = (activeProv?.apiKey || this.settings.apiKey || '').trim();
-    if (!baseUrl && !apiKey) {
-      new Notice('Assistant Emily: AI 프로바이더 또는 API 설정이 구성되지 않았습니다.');
+    // 사이드바 활성화 및 에디터 포커스 유지
+    const sidebarView = await this.activateView(false);
+    editor.focus();
+
+    if (sidebarView) {
+      await sidebarView.executeQuickSelectionTranslation(editor, view, selectedText);
       return;
-    }
-
-    const targetLangName = this.settings.defaultTranslationTarget || getDefaultTargetLanguageName(t);
-    const targetLang = getLocalizedLanguageName(targetLangName, t);
-    const rawSrc = this.settings.defaultTranslationSource || 'auto';
-    const isAutoSrc = !rawSrc || normalizeLanguageCode(rawSrc) === 'auto';
-    const sourceLang = getLocalizedLanguageName(rawSrc, t) || t.languages.auto;
-
-    const detected = detectDocumentLanguage(selectedText, this.settings.language);
-    const effectiveSrc = isAutoSrc ? detected.name : sourceLang;
-    const isSameLangEdit = isSameLanguage(effectiveSrc, targetLang);
-
-    const options: TranslationOptions = {
-      enabled: true,
-      sourceLanguage: effectiveSrc,
-      targetLanguage: targetLangName,
-      scope: 'selection',
-      preservation: 'append',
-      isSameLangEdit,
-      tone: this.settings.defaultTranslationTone || 'academic',
-      style: this.settings.defaultTranslationStyle || 'balanced',
-      translateCodeComments: Boolean(this.settings.defaultTranslateCodeComments)
-    };
-
-    // 1. 선택 영역 바로 아래에 인라인 상태 블록 삽입 (에디터 내 실시간 시각적 상태 피드백)
-    const cleanSelected = selectedText.trimEnd();
-    const statusTemplate = t.commands.quickTranslateInlineStatus || '⏳ **[Assistant Emily] {lang} 번역 진행 중...** ';
-    const inlineStatusText = statusTemplate.replace('{lang}', targetLang);
-    const placeholderToken = `<!-- emily-translating-${Date.now()} -->`;
-    const placeholderBlock = `\n\n> ${inlineStatusText}\n${placeholderToken}`;
-
-    // 에디터의 현재 선택 영역을 [원문 + 인라인 상태 안내]로 즉각 치환
-    editor.replaceSelection(`${cleanSelected}${placeholderBlock}`);
-
-    // 상단 플로팅 Notice 알림도 함께 제공
-    const notice = new Notice(`${t.commands.quickTranslateTranslating} (${targetLang})`, 0);
-
-    // 사이드바가 닫혀있다면 사이드바를 백그라운드 활성화하고 에디터 포커스 유지
-    void this.activateView().then(() => {
-      editor.focus();
-    });
-
-    try {
-      this.llmClient.updateMultiConfig(this.settings);
-      const res = await this.translationEngine.runTranslation(
-        view.file,
-        selectedText,
-        options
-      );
-
-      notice.hide();
-
-      const cleanTranslated = res.result.translatedMarkdown.trim();
-
-      // 2. 인라인 상태 블록을 완료된 번역문으로 정밀 교체
-      const currentDoc = editor.getValue();
-      const tokenIndex = currentDoc.indexOf(placeholderToken);
-      if (tokenIndex !== -1) {
-        const blockStartIndex = currentDoc.lastIndexOf('\n\n> ', tokenIndex);
-        const startOffset = blockStartIndex !== -1 ? blockStartIndex : tokenIndex;
-        const endOffset = tokenIndex + placeholderToken.length;
-        const fromPos = editor.offsetToPos(startOffset);
-        const toPos = editor.offsetToPos(endOffset);
-        editor.replaceRange(`\n\n${cleanTranslated}`, fromPos, toPos);
-      } else {
-        editor.replaceSelection(`\n\n${cleanTranslated}`);
-      }
-
-      // 3. 우측 사이드바 Rolling History 세션 카드 생성 및 동기화 (작업 이력 보존 & 대조 검토 지원)
-      const recordedTransOptions: TranslationOptions = {
-        ...options,
-        sourceLanguage: isAutoSrc
-          ? `${t.sidebar.autoDetectLabel} (${effectiveSrc})`
-          : sourceLang
-      };
-
-      const sessionData: RollingSessionData = {
-        id: this.getNextSessionId(),
-        timestamp: getISODateTimeString(),
-        fileName: view.file.name,
-        filePath: view.file.path,
-        sessionType: 'translation',
-        proofreadScope: 'selection',
-        status: 'completed',
-        isSameLangEdit,
-        promptText: '',
-        model: res.model,
-        totalTimeMs: res.totalTimeMs,
-        tokensPerSec: res.tokensPerSec,
-        usage: res.usage,
-        responseId: res.id,
-        finishReason: res.finish_reason,
-        systemFingerprint: res.system_fingerprint,
-        createdTimestamp: res.created,
-        providerUsed: res.providerUsed,
-        failedOver: res.failedOver,
-        itemsCount: 0,
-        items: [],
-        originalMarkdown: cleanSelected,
-        translatedMarkdown: cleanTranslated,
-        proofreadOptions: {
-          checkSpelling: false,
-          checkGrammar: false,
-          removeTimestamps: false,
-          improveExpression: false,
-          checkConsistency: false,
-          searchCitation: false,
-          scope: 'selection'
-        },
-        translationOptions: recordedTransOptions
-      };
-
-      this.recordExternalSession(sessionData);
-
-      new Notice(`${t.commands.quickTranslateDone} (${(res.totalTimeMs / 1000).toFixed(1)}s)`);
-    } catch (err: unknown) {
-      notice.hide();
-      console.error('[Assistant Emily] Quick selection translation failed:', err);
-      const errMsg = err instanceof Error ? err.message : String(err);
-
-      // 번역 실패 시 에디터 인라인 블록에 에러 상태 표시
-      const currentDoc = editor.getValue();
-      const tokenIndex = currentDoc.indexOf(placeholderToken);
-      if (tokenIndex !== -1) {
-        const blockStartIndex = currentDoc.lastIndexOf('\n\n> ', tokenIndex);
-        const startOffset = blockStartIndex !== -1 ? blockStartIndex : tokenIndex;
-        const endOffset = tokenIndex + placeholderToken.length;
-        const fromPos = editor.offsetToPos(startOffset);
-        const toPos = editor.offsetToPos(endOffset);
-        const errorTemplate = t.commands.quickTranslateInlineError || '❌ **[Assistant Emily] 번역 실패: {error}** ';
-        const inlineErrorText = errorTemplate.replace('{error}', errMsg);
-        editor.replaceRange(`\n\n> ${inlineErrorText}`, fromPos, toPos);
-      }
-
-      new Notice(`❌ 번역 실패: ${errMsg}`);
     }
   }
 
@@ -503,7 +368,7 @@ export default class EmilyPlugin extends Plugin {
   /**
    * 우측 사이드바 리프에 에밀리 전용 뷰를 표시하거나 포커스합니다.
    */
-  async activateView() {
+  async activateView(focus: boolean = true): Promise<EmilySidebarView | null> {
     const { workspace } = this.app;
     let leaf: WorkspaceLeaf | null = null;
     const leaves = workspace.getLeavesOfType(EMILY_VIEW_TYPE);
@@ -518,8 +383,12 @@ export default class EmilyPlugin extends Plugin {
     }
 
     if (leaf) {
-      void workspace.revealLeaf(leaf);
+      await workspace.revealLeaf(leaf);
+      if (leaf.view instanceof EmilySidebarView) {
+        return leaf.view;
+      }
     }
+    return null;
   }
 
   /**
