@@ -332,7 +332,7 @@ export const en: TranslationStrings = {
     stripHighlight: 'Highlight',
     stripHighlightTooltip: 'Remove Obsidian highlight formatting (==text==) to plain text.',
     charCountSuffix: ' chars',
-    applyBtn: '🚀 Start Task',
+    applyBtn: 'Start Task',
     pipelineStream: 'Pipeline Progress',
     retryBtn: '🔄 Retry',
     restartingBtn: '⏳ Restarting...',

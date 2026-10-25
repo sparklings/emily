@@ -332,7 +332,7 @@ export const ko: TranslationStrings = {
     stripHighlight: '하이라이트',
     stripHighlightTooltip: '옵시디언 형광펜(==텍스트==) 마크다운 서식을 제거합니다.',
     charCountSuffix: '자',
-    applyBtn: '🚀 작업 시작하기',
+    applyBtn: '작업 시작하기',
     pipelineStream: '작업 진행 상태',
     retryBtn: '🔄 재시작하기',
     restartingBtn: '⏳ 재시작 진행 중...',

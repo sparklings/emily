@@ -1175,7 +1175,7 @@ Consumers receive messages and take actions. Publishers send messages to the bro
   // 1. 위트있는 지시사항 라벨 및 플레이스홀더 문구 검증
   const wittyPromptLabel = '🪄 에밀리에게 내릴 마법의 지시사항';
   const hasArbitrary1000LimitInLabel = wittyPromptLabel.includes('1,000자');
-  const startTaskBtnText = '🚀 작업 시작하기';
+  const startTaskBtnText = '작업 시작하기';
 
   console.log(`  - 지시사항 라벨: "${wittyPromptLabel}" (1,000자 제약 문구 제거: ${!hasArbitrary1000LimitInLabel})`);
   console.log(`  - 작업 실행 버튼명: "${startTaskBtnText}"`);
