@@ -179,7 +179,7 @@ export const ko: TranslationStrings = {
     transCodeCommentsTitle: '코드 블록 내부 주석 번역',
     transCodeCommentsDesc: '코드 블록(```...```) 내부의 소스코드 구조와 변수명은 보존하고 주석(//, #, /* */)만 도착어로 번역합니다.',
     quickTranslateHotkeyTitle: '선택 영역 빠른 번역 단축키 안내',
-    quickTranslateHotkeyDesc: '옵시디언의 [설정 > 단축키]에서 "선택 영역 번역 후 바로 아래에 덧붙이기" 명령어를 검색하여 원하는 단축키로 언제든지 자유롭게 변경할 수 있습니다 (기본값: Ctrl+Alt+T / Mac: Cmd+Option+T). 에디터에서 텍스트를 선택 후 마우스 우클릭 메뉴로도 실행할 수 있습니다.',
+    quickTranslateHotkeyDesc: '옵시디언의 [설정 > 단축키]에서 "선택 영역 번역 후 바로 아래에 덧붙이기" 명령어를 검색하여 원하는 단축키로 언제든지 자유롭게 변경할 수 있습니다 (기본값: Ctrl+Shift+C / Mac: Cmd+Shift+C). 에디터에서 텍스트를 선택 후 마우스 우클릭 메뉴로도 실행할 수 있습니다.',
     editPreferencesHeader: '편집 및 서식 제거 기본 설정',
     stripBoldTitle: '볼드체(**, __) 서식 제거 기본값',
     stripBoldDesc: '편집 및 번역 작업 시 마크다운 굵은 글씨(**텍스트**, __텍스트__) 서식을 자동으로 제거하여 일반 텍스트로 반영합니다.',

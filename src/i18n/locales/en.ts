@@ -179,7 +179,7 @@ export const en: TranslationStrings = {
     transCodeCommentsTitle: 'Translate Code Comments',
     transCodeCommentsDesc: 'Preserve code structure and variables inside code blocks (```...```) while translating comments (//, #, /* */).',
     quickTranslateHotkeyTitle: 'Quick Selection Translation Hotkey',
-    quickTranslateHotkeyDesc: 'You can customize or rebind this hotkey at any time in Obsidian [Settings > Hotkeys] by searching for "Translate Selection & Append Below" (Default: Ctrl+Alt+T / Mac: Cmd+Option+T). You can also run it via the editor right-click context menu.',
+    quickTranslateHotkeyDesc: 'You can customize or rebind this hotkey at any time in Obsidian [Settings > Hotkeys] by searching for "Translate Selection & Append Below" (Default: Ctrl+Shift+C / Mac: Cmd+Shift+C). You can also run it via the editor right-click context menu.',
     editPreferencesHeader: 'Editing & Format Removal Preferences',
     stripBoldTitle: 'Remove Bold (**, __) by Default',
     stripBoldDesc: 'Automatically strip bold markdown syntax (**text**, __text__) to plain text during editing and translation.',
