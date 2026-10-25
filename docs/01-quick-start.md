@@ -48,19 +48,19 @@ flowchart LR
 
 ---
 
-## 2단계: 무료 AI 프로바이더 1분 연결
+## 2단계: FreeLLMAPI 1분 연결 (핵심 추천)
 
-Assistant Emily는 사용자의 요구에 따라 **100% 무료 로컬 AI(Ollama)**  또는 ** 클라우드 API(OpenAI, Gemini, FreeLLMAPI)**  를 유연하게 연결할 수 있습니다.
+Assistant Emily는 **FreeLLMAPI** 를 핵심 1순위 AI 프록시로 설계되었으며, 오프라인 로컬 환경을 위한 Ollama 및 표준 OpenAI 호환 엔드포인트도 유연하게 연결할 수 있습니다.
 
 1. 옵시디언 설정 창 좌측 하단의 **Assistant Emily** 설정 탭을 클릭합니다.
 2. 첫 번째 서브탭인 **AI 프로바이더(AI Providers)** 로 이동합니다.
-3. 가장 편리한 방식을 선택합니다:
+3. 가장 권장되는 방식을 선택합니다:
 
 | 연결 방식 | 설정 방법 | 추천 사용자 |
 | :--- | :--- | :--- |
-| **A. Ollama (로컬 무료)** | • Base URL: `http://localhost:11434/v1`<br/>• API Key: 공란<br/>• Model: `qwen2.5:14b` 또는 `llama3.1:8b` | 프라이버시가 중요하고 개인 GPU를 갖춘 사용자 |
-| **B. FreeLLMAPI (통합 무료)** | • Base URL: `https://api.freellmapi.com/v1`<br/>• API Key: FreeLLMAPI 토큰 입력<br/>• Model: `dots-3-note-preview:free` 또는 `gemini-2.5-flash` | 고성능 GPU 없이 무료로 고품질 번역을 원하는 사용자 |
-| **C. OpenAI / Gemini (상용)** | • Base URL: 프로바이더 공식 엔드포인트<br/>• API Key: 발급받은 개인 API 키<br/>• Model: `gpt-4o-mini`, `gemini-2.5-flash` | 안정적인 상용 클라우드 인프라를 원하는 사용자 |
+| **A. FreeLLMAPI (1순위 핵심 추천 / 통합 무료)** | • Base URL: https://api.freellmapi.com/v1<br/>• API Key: FreeLLMAPI 토큰 입력<br/>• Model: dots-3-note-preview:free 또는 gemini-2.5-flash | 고성능 GPU 없이 무료로 수십 개 고품질 LLM을 즉시 사용하고자 하는 모든 사용자 (최우선 권장) |
+| **B. Ollama (오프라인 로컬 무료 대안)** | • Base URL: http://localhost:11434/v1<br/>• API Key: 공란<br/>• Model: qwen2.5:14b 또는 llama3.1:8b | 인터넷 연결 없는 오프라인 환경이나 개인 GPU 환경을 원하는 사용자 |
+| **C. 기타 OpenAI 호환 엔드포인트 (부가 지원)** | • Base URL: 해당 엔드포인트 URL<br/>• API Key: 발급받은 인증 키<br/>• Model: 지정 모델명 | 기존에 사용 중인 사내 또는 외부 OpenAI 호환 엔드포인트를 연결하려는 사용자 |
 
 4. 하단의 **[연결 테스트]** 버튼을 클릭합니다. 초록색 체크 뱃지(`✓ 연결 성공`)가 표시되면 정상 연결된 것입니다.
 

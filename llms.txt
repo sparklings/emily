@@ -1,21 +1,17 @@
-# Assistant Emily (assistant-emily)
+# Assistant Emily: Lossless Markdown Proofreading & Context-Aware AI Translation for Obsidian
 
-> Intelligent Lossless Markdown Proofreading, Context-Aware AI Translation, and Obsidian-Flavored Markdown (OFM) Pair-Assistant for Desktop Obsidian.
-
-Assistant Emily is a desktop Obsidian community plugin designed for researchers, technical writers, and knowledge workers. It integrates local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud proxies with a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
+> Assistant Emily is a desktop Obsidian community plugin built natively around FreeLLMAPI as its primary AI proxy, with auxiliary support for local Ollama and OpenAI-compatible endpoints. It features a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
 
 - Repository: https://github.com/sparklings/emily
 - Documentation: https://github.com/sparklings/emily/tree/master/docs
 - Wiki: https://github.com/sparklings/emily/wiki
-- Documentation: https://github.com/sparklings/emily/tree/main/docs
 - License: MIT
 - Version: 1.1.2
+- Primary Backend: FreeLLMAPI (https://api.freellmapi.com/v1)
 
-## Key Capabilities
-- **Lossless Syntax Masking**: Protects WikiLinks, tags, LaTeX math, code blocks, callouts, highlights, tasks, block IDs, footnotes, and TOC chapter timestamps (`TOCTIME`) via UUID token masking.
-- **OFM Autonomous Self-Healing**: Automatically corrects heading line-padding, callout `>` prefix continuity, and transpiles leaked HTML into native Markdown.
-- **Video Clipping Partitioning & Smart Chunking**: Retains TOC lists and metadata line breaks intact; strips timestamps only in subtitle transcripts; guarantees 1,800-character chunk boundary safety.
-- **Deterministic Video Embed Preservation**: Re-injects dropped video embeds into the translated output.
-- **Context-Aware Translation & Tone Rewriting**: 3 scopes (Full Document, Selection, Paragraph Bilingual) and 3 tones (Academic, Polite, Friendly).
-- **Selection-Scoped Atomic Proofreading**: In-place replacement (`replaceRange`) with interactive diff review.
-- **Device-Profile Provider Management**: Eliminates cloud sync conflicts across multiple workstations.
+## Core Capabilities
+- Lossless Syntax Masking: 10-element UUID token taxonomy safeguarding Obsidian Flavored Markdown (OFM)
+- Primary FreeLLMAPI Integration: 34+ providers, 635 endpoints, ~7.4B tokens/month
+- Local Ollama & OpenAI-compatible support
+- Selection and Full Document Translation with 1,800-character Smart Chunking
+- Side-by-Side Proofreading Diff Modal with interactive line-by-line sync

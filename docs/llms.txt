@@ -1,44 +1,17 @@
-# Assistant Emily - 옵시디언 번역 및 마크다운 서식 보존 교열 플러그인 (Obsidian Translation & Proofreading)
+# Assistant Emily: Lossless Markdown Proofreading & Context-Aware AI Translation for Obsidian
 
-> 옵시디언(Obsidian) 데스크톱 환경에서 마크다운 및 옵시디언 고유 문법(OFM)을 문법 요소를 보호하며 AI 번역, 지능형 교열, 1:1 대조 정렬을 수행하는 커뮤니티 플러그인입니다.
-> Markdown-preserving translation, proofreading, and OFM self-healing plugin for Obsidian.
+> Assistant Emily is a desktop Obsidian community plugin built natively around FreeLLMAPI as its primary AI proxy, with auxiliary support for local Ollama and OpenAI-compatible endpoints. It features a lossless syntax masking pipeline that guarantees zero destruction of Obsidian links, math, callouts, and frontmatter.
 
-Assistant Emily connects Obsidian to local LLMs (Ollama, LM Studio) and OpenAI-compatible cloud APIs to perform markdown translation, proofreading, and bilingual parallel alignment while preserving Obsidian-specific markdown syntax.
+- Repository: https://github.com/sparklings/emily
+- Documentation: https://github.com/sparklings/emily/tree/master/docs
+- Wiki: https://github.com/sparklings/emily/wiki
+- License: MIT
+- Version: 1.1.2
+- Primary Backend: FreeLLMAPI (https://api.freellmapi.com/v1)
 
-- **Documentation**: https://github.com/sparklings/emily/tree/master/docs
-- **Wiki**: https://github.com/sparklings/emily/wiki
-- **GitHub**: https://github.com/sparklings/emily
-- **Obsidian Community Plugin ID**: `assistant-emily`
-- **Keywords**: 옵시디언 번역, Obsidian Translation, 옵시디언 교열, 마크다운 번역, OFM 자가 치유, 무손실 마스킹, 비디오 클리핑 정제
-- **License**: MIT
-- **Author**: SUNGWON PARK (sparklings)
-- **Version**: 1.1.2
-
-## 주요 기능 요약 (Features)
-
-1. **목차 타임스탬프 마스킹 잠금 (`TOCTIME`) 및 구역 분할**:
-   - 목차 구역(`Timestamps:`, `Chapters:`)의 타임스탬프(`0:00 Intro`, `1:57 BEGINNER`)를 `__EMILY_TOCTIME_n__` 불릿 리스트 토큰으로 마스킹 잠금하여 100% 원형 보존.
-   - `## Transcript` 이전 메타데이터/연락처 구역의 줄바꿈을 원형 그대로 유지하고, 자막 본문 구역만 타임스탬프 정제 및 400~600자 문단 리플로우 적용.
-   - 일반 신문기사 및 웹 클리핑 문서는 타임스탬프 정제를 건너뛰어 원문 문단 구조 100% 보존.
-
-2. **동영상 임베드 사후 복원 (`ensureVideoEmbedsPreserved`)**:
-   - LLM이 출력 과정에서 동영상 임베드(`![](https://www.youtube.com/...)`)를 누락하더라도 코드 레벨에서 상단에 확정 복원.
-
-3. **마크다운 서식 토큰 보호 번역 및 OFM 자가 치유 정규화**:
-   - YAML 프론트매터, `[[위키링크]]`, `#태그`, LaTeX 수식(`$...$`), 콜아웃(`> [!note]`), 코드 블록, 이미지/동영상 임베드, 하이라이트(`==...==`), 체크리스트(`- [ ]`), 각주 정의(`[^1]:`)를 토큰으로 마스킹 후 번역.
-   - 헤딩 전후 개행 보정, 콜아웃 인용 부호(`>`) 연속성 복원, 잔여 인라인 HTML 태그 정제 등 옵시디언 마크다운(OFM) 표준 렌더링 자가 치유 자동 적용.
-
-4. **단락별 1:1 대조 병렬 번역 (Paragraph Bilingual Mode)**:
-   - 원문 문단 하단에 번역 문단을 1:1로 배치하여 논문 및 외신 독해 시 최적의 대조 가독성 제공.
-
-5. **한국어 번역 시 중국어(간체자) 유출 방지 및 미번역 영어 차단**:
-   - 다국어 LLM 사용 시 발생하는 중국어 간체 어휘(예: `我们所拥有的` ➔ `우리가 가진 것`)를 코드 레벨에서 자동 치환.
-   - 200자 이상 미번역 영어 덩어리 유출을 감지하여 자동 자가 치유 재시도.
-
-6. **반응형 라이브 상태 헤더 UI/UX (좁은 사이드바 아이콘 모드)**:
-   - 사이드바 너비가 380px 미만으로 축소되면 작업 취소 버튼의 텍스트를 숨기고 22px 콤팩트 아이콘 전용 모드로 전환.
-
-7. **설정 화면 4대 서브탭 및 기기 프로필 기반 프로바이더 관리**:
-   - AI 프로바이더, 번역 설정, 교열 & 서식, 일반 & UI 4대 독립 탭 구성.
-   - 기기 식별자 바인딩을 통해 OneDrive/클라우드 볼트 동기화 시 설정 충돌 방지.
-   - 로컬 Ollama, LM Studio, FreeLLMAPI, OpenRouter, OpenAI 완벽 지원.
+## Core Capabilities
+- Lossless Syntax Masking: 10-element UUID token taxonomy safeguarding Obsidian Flavored Markdown (OFM)
+- Primary FreeLLMAPI Integration: 34+ providers, 635 endpoints, ~7.4B tokens/month
+- Local Ollama & OpenAI-compatible support
+- Selection and Full Document Translation with 1,800-character Smart Chunking
+- Side-by-Side Proofreading Diff Modal with interactive line-by-line sync
