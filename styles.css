@@ -249,12 +249,7 @@
   flex-shrink: 0;
 }
 
-.emily-accordion-cat-icon.is-proofread {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-}
-
+.emily-accordion-cat-icon.is-proofread,
 .emily-accordion-cat-icon.is-translation {
   background: rgba(139, 92, 246, 0.12);
   color: #8b5cf6;
@@ -1011,22 +1006,86 @@ select.emily-select-input {
   width: 100%;
   padding: 10px 14px;
   border-radius: 10px;
-  background: linear-gradient(135deg, var(--interactive-accent) 0%, #6366f1 50%, #8b5cf6 100%);
-  color: var(--text-on-accent, #ffffff);
-  border: 1px solid rgba(255, 255, 255, 0.14);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 16px -2px rgba(124, 58, 237, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   box-sizing: border-box;
 }
 
-.emily-btn-primary.emily-retry-btn {
+/* Dark Theme: Vibrant purple/indigo gradient with crisp high-contrast white typography */
+.theme-dark .emily-btn-primary,
+:not(.theme-light) .emily-btn-primary {
+  background: linear-gradient(135deg, var(--interactive-accent) 0%, #6366f1 50%, #8b5cf6 100%);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 16px -2px rgba(124, 58, 237, 0.35);
+}
+
+.theme-dark .emily-btn-primary:hover:not(:disabled),
+:not(.theme-light) .emily-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--interactive-accent-hover, #4f46e5) 0%, #4f46e5 50%, #7c3aed 100%);
+  box-shadow: 0 6px 20px -2px rgba(124, 58, 237, 0.48);
+}
+
+.theme-dark .emily-btn-primary .emily-btn-sparkle-icon,
+:not(.theme-light) .emily-btn-primary .emily-btn-sparkle-icon {
+  color: #ffffff;
+}
+
+.theme-dark .emily-btn-primary .emily-btn-main-label,
+:not(.theme-light) .emily-btn-primary .emily-btn-main-label {
+  color: #ffffff;
+}
+
+.theme-dark .emily-btn-primary .emily-btn-char-counter,
+:not(.theme-light) .emily-btn-primary .emily-btn-char-counter {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Light Theme: Sophisticated soft accent surface responding logically to system dark typography */
+.theme-light .emily-btn-primary {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.15) 100%), var(--background-primary, #ffffff);
+  color: var(--text-normal);
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.10);
+}
+
+.theme-light .emily-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.20) 0%, rgba(139, 92, 246, 0.25) 100%), var(--background-primary, #ffffff);
+  border-color: rgba(99, 102, 241, 0.50);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.18);
+}
+
+.theme-light .emily-btn-primary .emily-btn-sparkle-icon {
+  color: var(--interactive-accent, #6366f1);
+}
+
+.theme-light .emily-btn-primary .emily-btn-main-label {
+  color: var(--text-normal);
+}
+
+.theme-light .emily-btn-primary .emily-btn-char-counter {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+/* Retry Button Theme Variants */
+.theme-dark .emily-btn-primary.emily-retry-btn,
+:not(.theme-light) .emily-btn-primary.emily-retry-btn {
   justify-content: center;
   background: var(--interactive-accent);
+  color: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.theme-light .emily-btn-primary.emily-retry-btn {
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.15) 100%), var(--background-primary, #ffffff);
+  color: var(--text-normal);
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.10);
 }
 
 .emily-btn-sparkle-icon {
@@ -1111,9 +1170,7 @@ select.emily-select-input {
   }
 }
 
-.emily-btn-primary:hover:not(:disabled) {
-  background-color: var(--interactive-accent-hover);
-}
+
 
 .emily-btn-primary:active:not(:disabled) {
   transform: scale(0.99);
@@ -3389,8 +3446,8 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
    Format Stripping Options (4-Column Responsive Grid)
    ========================================================================== */
 .emily-format-strip-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
   box-sizing: border-box;
@@ -3400,36 +3457,44 @@ body .modal-container .modal.emily-translation-diff-modal-window .modal-content 
 }
 
 .emily-format-strip-grid .emily-segmented-btn {
-  display: inline-flex;
+  display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-height: 26px;
-  height: 26px;
-  padding: 3px 10px;
-  border-radius: 9999px;
+  gap: 4px;
+  min-height: 28px;
+  height: 28px;
+  padding: 4px 2px;
+  border-radius: 8px;
   background-color: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
   color: var(--text-muted);
-  width: auto;
-  flex: none;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
   font-size: 11px;
   font-weight: 500;
   transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
 .emily-format-strip-grid .emily-segmented-btn:hover {
+  background-color: var(--background-modifier-hover);
   border-color: var(--interactive-accent);
   color: var(--text-normal);
 }
 
 .emily-format-strip-grid .emily-segmented-btn.is-active {
-  background-color: rgba(124, 58, 237, 0.18);
-  border-color: rgba(124, 58, 237, 0.5);
-  color: var(--interactive-accent);
-  box-shadow: none;
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
   font-weight: 600;
+}
+
+.emily-format-strip-grid .emily-segmented-btn.is-active .emily-segmented-icon,
+.emily-format-strip-grid .emily-segmented-btn.is-active .emily-segmented-label {
+  color: #ffffff;
 }
 
 .emily-format-strip-grid .emily-segmented-btn .emily-segmented-icon svg {
