@@ -15,6 +15,8 @@ type: documentation-hub
 
 본 문서 보관소(`/docs`)는 처음 시작하는 사용자부터 파워 유저까지 단계별로 쉽게 따라하며 모든 핵심 기능을 완전히 마스터할 수 있도록 체계적으로 구성된 공식 사용자 매뉴얼입니다.
 
+> 🌐 **온라인 위키**: 본 매뉴얼은 [Assistant Emily GitHub Wiki](https://github.com/sparklings/emily/wiki)에서도 동일하게 제공되며 편리한 사이드바 내비게이션으로 열람하실 수 있습니다.
+
 ---
 
 ## 📚 매뉴얼 전체 목차 (Table of Contents)
@@ -99,6 +101,15 @@ flowchart TD
   * 413 Payload Too Large / 컨텍스트 초과 대처 요령
   * 단축키 변경 및 옵시디언 기본 단축키 시스템과의 충돌 해소
   * 자주 묻는 질문(FAQ) 모음
+
+---
+
+## 🔬 심층 기술 가이드 (Technical Guides)
+
+* ### [FreeLLMAPI 아키텍처 및 연동 기술 가이드](freellmapi-technical-guide.md)
+  * **핵심 내용**: 34개 무료 프로바이더, 635개 엔드포인트의 통합 연동 분석 및 고가용성 장애 극복 설계
+* ### [OFM 무손실 문법 마스킹 파이프라인 엔지니어링 가이드](markdown-syntax-masking-pipeline-technical-guide.md)
+  * **핵심 내용**: 정규식 기반 UUID 토큰 치환, 토큰 텍사노미, LLM 자율 복구 정규화 엔진의 내부 아키텍처
 
 ---
 

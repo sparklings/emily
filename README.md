@@ -37,6 +37,8 @@ Assistant Emily provides comprehensive, step-by-step user manuals and technical 
 | **Part 5** | [Video Clipping & Transcripts](docs/05-video-clipping-and-transcripts.md) | Pre-transcript metadata lock, subtitle cleaning, H3 sub-titles, STT disambiguation |
 | **Part 6** | [OFM Syntax Masking & Safety](docs/06-syntax-masking-and-safety.md) | 10-element UUID token taxonomy, TOCTIME chapter locking, OFM self-healing |
 | **Part 7** | [Troubleshooting & FAQ](docs/07-troubleshooting.md) | Diagnostics, 502/413 error remedies, hotkey customization, and frequently asked questions |
+| **Tech 1** | [FreeLLMAPI Architecture & Integration](docs/freellmapi-technical-guide.md) | 34 provider & 635 endpoint architecture analysis, fallback routing |
+| **Tech 2** | [OFM Syntax Masking Pipeline](docs/markdown-syntax-masking-pipeline-technical-guide.md) | Regex UUID token taxonomy, token preservation, self-healing normalization |
 | **Index** | [Documentation Hub (README.md)](docs/README.md) | Complete documentation index, reading roadmap, and architecture overview |
 
 ---
