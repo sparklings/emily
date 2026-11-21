@@ -26,7 +26,7 @@ epic: "https://github.com/sparklings/emily/issues/11"
 | **태스크 1** | **[#12] [UI] 타깃 문서 인디케이터 무박스화 및 '문서 없음' 박스 완전 제거** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 완료 |
 | **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
-| **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 대기 중 |
+| **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 대기 중 |
 
 ---
@@ -55,12 +55,12 @@ epic: "https://github.com/sparklings/emily/issues/11"
 - [x] 대기열이 0개일 때는 큐 UI 영역 전체가 0px로 자동 은닉 검증
 
 ### 4단계: Antigravity 스타일 무경계 사고 스트림 (Thought Stream) (#15)
-- [ ] 기존 무거운 `emily-status-box` 패널 컨테이너 완전 제거
-- [ ] 1.5px 수직 가이드라인(`border-left: 1.5px solid var(--text-faint)`) 기반 모노스페이스 페이즈 트레이스 렌더링
-- [ ] 실행 중 단계별 로그 실시간 출력 (`parse` ➔ `mask` ➔ `infer` ➔ `restore`)
-- [ ] 작업 완료 즉시 `Thought for X.Xs ›` 1줄 인라인 자동 축약(Auto-collapse) 동작
-- [ ] 클릭 시 부드럽게 세부 단계를 펼치고 접는 아코디언 토글 인터랙션 구현
-- [ ] **[TC-78]** 사고 스트림 단계별 출력 및 토글 무결성 검증 추가
+- [x] 기존 무거운 `emily-status-box` 패널 컨테이너 완전 제거
+- [x] 1.5px 수직 가이드라인(`border-left: 1.5px solid var(--text-faint)`) 기반 모노스페이스 페이즈 트레이스 렌더링
+- [x] 실행 중 단계별 로그 실시간 출력 (`parse` ➔ `mask` ➔ `infer` ➔ `restore`)
+- [x] 작업 완료 즉시 `Thought for X.Xs ›` 1줄 인라인 자동 축약(Auto-collapse) 동작
+- [x] 클릭 시 부드럽게 세부 단계를 펼치고 접는 아코디언 토글 인터랙션 구현
+- [x] **[TC-79]** 사고 스트림 단계별 출력 및 토글 무결성 검증 추가
 
 ### 5단계: 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 (#16)
 - [ ] 기존 `.emily-session-card` 박스/패널 컨테이너 완전 제거

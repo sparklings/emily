@@ -548,6 +548,37 @@ export class EmilySidebarView extends ItemView {
     });
   }
 
+  public collapseThoughtStream(statusBoxEl: HTMLElement, durationSeconds: string, statusText: string = 'Thought') {
+    const header = statusBoxEl.querySelector('.emily-status-header') as HTMLElement;
+    const timeline = statusBoxEl.querySelector('.emily-timeline-steps') as HTMLElement;
+    if (!header || !timeline) return;
+
+    header.empty();
+    header.addClass('is-collapsed');
+    timeline.addClass('is-collapsed');
+
+    const toggleWrap = header.createDiv({ cls: 'emily-thought-toggle-wrap' });
+    toggleWrap.createSpan({
+      text: `${statusText} for ${durationSeconds}s `,
+      cls: 'emily-thought-toggle-label'
+    });
+    const chevron = toggleWrap.createSpan({ text: '›', cls: 'emily-thought-chevron' });
+
+    header.onclick = (e) => {
+      e.stopPropagation();
+      const isCurrentlyCollapsed = timeline.hasClass('is-collapsed');
+      if (isCurrentlyCollapsed) {
+        timeline.removeClass('is-collapsed');
+        header.removeClass('is-collapsed');
+        chevron.setText('⌄');
+      } else {
+        timeline.addClass('is-collapsed');
+        header.addClass('is-collapsed');
+        chevron.setText('›');
+      }
+    };
+  }
+
   private setupKeyboardHandlers() {
     // Helper: Safely trigger execution from Ctrl+Enter
     const triggerStartTask = (e?: KeyboardEvent) => {
@@ -1384,17 +1415,13 @@ export class EmilySidebarView extends ItemView {
     statusBoxEl.empty();
     const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
     const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
-    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+    headerLeft.createSpan({ text: 'Thinking...', cls: 'emily-thought-running-label font-semibold text-xs' });
 
     const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
     const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
     badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
     badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
     const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
-    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
 
     const cancelPipelineBtn = headerRight.createEl('button', {
       cls: 'emily-btn-secondary emily-pipeline-cancel-btn',
@@ -1404,7 +1431,7 @@ export class EmilySidebarView extends ItemView {
         title: t.sidebar.cancelBtn
       }
     });
-    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({ text: '✕', cls: 'emily-cancel-icon' });
     cancelPipelineBtn.createSpan({
       text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
       cls: 'emily-pipeline-cancel-text'
@@ -2264,6 +2291,10 @@ export class EmilySidebarView extends ItemView {
       this.sessions.push(sessionData);
     }
     this.plugin.recordSessionFromSidebar?.(sessionData);
+
+    if (this.currentStatusBoxEl) {
+      this.collapseThoughtStream(this.currentStatusBoxEl, (totalTimeMs / 1000).toFixed(1));
+    }
 
     // Release execution lock and restore controls
     this.lockedTargetFile = null;
@@ -3411,17 +3442,13 @@ export class EmilySidebarView extends ItemView {
     // 사이드바 상태 헤더 (실행 뱃지 + 타이머 + 작업 취소 버튼)
     const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
     const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
-    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+    headerLeft.createSpan({ text: 'Thinking...', cls: 'emily-thought-running-label font-semibold text-xs' });
 
     const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
     const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
     badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
     badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
     const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
-    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
 
     // 작업 취소 버튼 (Cancel Pipeline Button)
     const cancelPipelineBtn = headerRight.createEl('button', {
@@ -3432,7 +3459,7 @@ export class EmilySidebarView extends ItemView {
         title: t.sidebar.cancelBtn
       }
     });
-    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({ text: '✕', cls: 'emily-cancel-icon' });
     cancelPipelineBtn.createSpan({
       text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
       cls: 'emily-pipeline-cancel-text'
@@ -3573,24 +3600,11 @@ export class EmilySidebarView extends ItemView {
         }
 
         // B. 사이드바 상태 취소로 전환
-        const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
-        if (badgeEl) {
-          badgeEl.className = 'emily-badge is-warning';
-          badgeEl.empty();
-          badgeEl.createSpan({ text: t.sidebar.pipelineCancelled });
-          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
+        const elapsed = ((Date.now() - pipelineStartTime) / 1000).toFixed(1);
+        if (cancelPipelineBtn) {
+          cancelPipelineBtn.remove();
         }
-
-        this.updateTimelineStep(step2, 'warning', undefined, t.sidebar.pipelineCancelled);
-
-        cancelPipelineBtn.textContent = `✕ ${t.common.close}`;
-        cancelPipelineBtn.disabled = false;
-        cancelPipelineBtn.onclick = (e) => {
-          e.stopPropagation();
-          statusBoxEl.removeClass('is-visible');
-          statusBoxEl.empty();
-        };
-
+        this.collapseThoughtStream(statusBoxEl, elapsed, 'Cancelled');
         this.onTaskFinished();
         new Notice(t.sidebar.cancelSuccess);
         return;

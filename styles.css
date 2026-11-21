@@ -1351,15 +1351,17 @@ select.emily-select-input {
   color: var(--text-error, var(--color-red, #e05252));
 }
 
-/* Verbose Status & Stream Log Box */
+/* Verbose Status & Antigravity Thought Stream Box */
 .emily-status-box {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  padding: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 2px 0;
+  margin-top: 4px;
+  margin-bottom: 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   font-family: var(--font-monospace);
   font-size: 11px;
 }
@@ -1370,8 +1372,42 @@ select.emily-select-input {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--divider-color);
+  padding: 2px 0;
+  border-bottom: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-thought-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+  padding: 2px 0;
+}
+
+.emily-thought-toggle-wrap:hover {
+  color: var(--text-muted);
+}
+
+.emily-thought-toggle-label {
+  font-weight: 500;
+}
+
+.emily-thought-chevron {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+.emily-thought-running-label {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
 }
 
 .emily-status-header-left {
@@ -1600,42 +1636,39 @@ select.emily-select-input {
 }
 
 /* ==========================================================================
-   Timeline Steps Component (Dot-Line UI)
+   Timeline Steps Component (Antigravity Thought Rail UI)
    ========================================================================== */
 .emily-timeline-steps {
+  border-left: 1.5px solid var(--background-modifier-border);
+  margin-left: 6px;
+  padding-left: 10px;
   display: flex;
   flex-direction: column;
   position: relative;
-  padding: 6px 0 2px 2px;
+  gap: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.emily-timeline-steps.is-collapsed {
+  display: none !important;
 }
 
 .emily-timeline-step {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  padding-bottom: 12px;
+  padding-bottom: 4px;
 }
 
 .emily-timeline-step:last-child {
   padding-bottom: 0;
 }
 
-/* Vertical Connecting Line */
+/* Hide legacy vertical connecting line since border-left handles it continuously */
 .emily-timeline-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 13px;
-  bottom: -2px;
-  left: 4px;
-  width: 2px;
-  background-color: var(--background-modifier-border, rgba(255, 255, 255, 0.1));
-  transition: background-color 0.25s ease;
-  z-index: 1;
-}
-
-.emily-timeline-step.is-done:not(:last-child)::after {
-  background-color: var(--interactive-accent, #7b6cd9);
+  display: none;
 }
 
 /* Dot / Marker Node */
@@ -1644,21 +1677,40 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
+  width: 6px;
   flex-shrink: 0;
-  padding-top: 3px;
+  padding-top: 4px;
+  margin-left: -14px;
+  margin-right: 6px;
   z-index: 2;
 }
 
 .emily-timeline-dot {
   display: block;
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 2px solid var(--text-faint, #666);
-  background-color: var(--background-secondary, #262626);
+  border: none;
+  background-color: var(--text-faint);
   box-sizing: border-box;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+}
+
+.emily-timeline-step.is-active .emily-timeline-dot {
+  background-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-accent, rgba(123, 108, 217, 0.25));
+}
+
+.emily-timeline-step.is-done .emily-timeline-dot {
+  background-color: var(--text-muted);
+}
+
+.emily-timeline-step.is-error .emily-timeline-dot {
+  background-color: var(--text-error, #e5534b);
+}
+
+.emily-timeline-step.is-warning .emily-timeline-dot {
+  background-color: var(--color-orange, #cb7634);
 }
 
 /* Step Content Body */
