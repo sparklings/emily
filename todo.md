@@ -24,7 +24,7 @@ epic: "https://github.com/sparklings/emily/issues/11"
 | 단계 | 서브 이슈 번호 & 제목 | 수정 대상 파일 | 상태 |
 | :---: | :--- | :--- | :---: |
 | **태스크 1** | **[#12] [UI] 타깃 문서 인디케이터 무박스화 및 '문서 없음' 박스 완전 제거** | `sidebarView.ts`, `styles.css` | 완료 |
-| **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 대기 중 |
+| **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 완료 |
 | **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 대기 중 |
 | **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 대기 중 |
 | **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 대기 중 |
@@ -41,11 +41,11 @@ epic: "https://github.com/sparklings/emily/issues/11"
 - [x] **[TC-77]** 타깃 문서 버튼 직하단 불릿 조건부 렌더링 및 빈 문서 은닉 단위 테스트 추가
 
 ### 2단계: 백그라운드 태스크 큐 매니저 엔진 구현 (#13)
-- [ ] `QueuedTask` 인터페이스 정의 (ID, 타임스탬프, 파일명, 텍스트 버퍼, 글자 수, 번역/교열 옵션)
-- [ ] 파이프라인 연산 중(`isExecuting === true`) 단축키(`Ctrl+Shift+C`) 또는 버튼 추가 호출 시 작업을 유실 없이 순차 적재하는 FIFO 큐 구축
-- [ ] 활성 작업 완료(`resolve`) 또는 취소(`abort`) 시 큐의 다음 항목을 자동으로 꺼내어 지연 없이 연속 실행하는 오토 드레인(Auto-drain) 파이프라인 구축
-- [ ] 대기 중인 특정 큐 항목의 개별 제거(`removeQueuedTask`) 핸들러 구현
-- [ ] **[TC-76]** 단축키 연속 호출 시 작업 큐 적재 및 순차 실행(FIFO) 무결성 검증 추가
+- [x] `QueuedTask` 인터페이스 정의 (ID, 타임스탬프, 파일명, 텍스트 버퍼, 글자 수, 번역/교열 옵션)
+- [x] 파이프라인 연산 중(`isExecuting === true`) 단축키(`Ctrl+Shift+C`) 또는 버튼 추가 호출 시 작업을 유실 없이 순차 적재하는 FIFO 큐 구축
+- [x] 활성 작업 완료(`resolve`) 또는 취소(`abort`) 시 큐의 다음 항목을 자동으로 꺼내어 지연 없이 연속 실행하는 오토 드레인(Auto-drain) 파이프라인 구축
+- [x] 대기 중인 특정 큐 항목의 개별 제거(`removeQueuedTask`) 핸들러 구현
+- [x] **[TC-76]** 단축키 연속 호출 시 작업 큐 적재 및 순차 실행(FIFO) 무결성 검증 추가
 
 ### 3단계: 인라인 태스크 큐 스트림 UI (#14)
 - [ ] 박스 테두리 없는 고밀도 인라인 상태 행 렌더러 구현

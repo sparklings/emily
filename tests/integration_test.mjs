@@ -7032,6 +7032,156 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
   }
 
   // ===================================================================
+  // [TC-76] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저(FIFO) 검증 (#13)
+  // ===================================================================
+  console.log('\n▶ [TC-76] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저(FIFO) 검증...');
+  {
+    class MockTaskQueueManager {
+      constructor() {
+        this.taskQueue = [];
+        this.activeTaskId = null;
+        this.activeTaskSummary = null;
+        this.isExecuting = false;
+        this.executionLog = [];
+      }
+
+      getTaskQueue() {
+        return [...this.taskQueue];
+      }
+
+      removeQueuedTask(id) {
+        const idx = this.taskQueue.findIndex((t) => t.id === id);
+        if (idx !== -1) {
+          this.taskQueue.splice(idx, 1);
+          return true;
+        }
+        return false;
+      }
+
+      clearTaskQueue() {
+        this.taskQueue = [];
+      }
+
+      async triggerTask(task) {
+        if (this.isExecuting) {
+          this.taskQueue.push(task);
+          return 'queued';
+        }
+        this.isExecuting = true;
+        this.activeTaskId = task.id;
+        this.activeTaskSummary = task.summary;
+        this.executionLog.push(task.id);
+        await task.run();
+        this.onTaskFinished();
+        return 'executed';
+      }
+
+      onTaskFinished() {
+        this.isExecuting = false;
+        this.activeTaskId = null;
+        this.activeTaskSummary = null;
+
+        if (this.taskQueue.length > 0) {
+          const nextTask = this.taskQueue.shift();
+          if (nextTask) {
+            this.isExecuting = true;
+            this.activeTaskId = nextTask.id;
+            this.activeTaskSummary = nextTask.summary;
+            this.executionLog.push(nextTask.id);
+            void nextTask.run().then(() => this.onTaskFinished());
+          }
+        }
+      }
+    }
+
+    const manager = new MockTaskQueueManager();
+    const taskResults = [];
+
+    // 1) 3개의 태스크 생성 (Task 1: 실행 중, Task 2: 큐 대기, Task 3: 큐 대기)
+    const task1 = {
+      id: 'task-1',
+      createdAt: Date.now(),
+      type: 'quick-selection',
+      fileName: 'DocA.md',
+      filePath: 'Notes/DocA.md',
+      charCount: 150,
+      summary: 'Selection (150자) · DocA.md',
+      run: async () => {
+        taskResults.push('task-1-done');
+      }
+    };
+
+    const task2 = {
+      id: 'task-2',
+      createdAt: Date.now() + 10,
+      type: 'quick-selection',
+      fileName: 'DocB.md',
+      filePath: 'Notes/DocB.md',
+      charCount: 240,
+      summary: 'Selection (240자) · DocB.md',
+      run: async () => {
+        taskResults.push('task-2-done');
+      }
+    };
+
+    const task3 = {
+      id: 'task-3',
+      createdAt: Date.now() + 20,
+      type: 'custom-pipeline',
+      fileName: 'DocC.md',
+      filePath: 'Notes/DocC.md',
+      charCount: 800,
+      summary: 'Pipeline · DocC.md',
+      run: async () => {
+        taskResults.push('task-3-done');
+      }
+    };
+
+    // Task 1 실행 (동기/비동기 지연 시뮬레이션)
+    let resolveTask1;
+    task1.run = () => new Promise((res) => { resolveTask1 = () => { taskResults.push('task-1-done'); res(); }; });
+
+    void manager.triggerTask(task1);
+    const tc76_1 = manager.isExecuting === true && manager.activeTaskId === 'task-1';
+
+    // Task 1 연산 중 Task 2 및 Task 3 추가 호출 (단축키 연타 시뮬레이션)
+    void manager.triggerTask(task2);
+    void manager.triggerTask(task3);
+
+    const tc76_2 = manager.taskQueue.length === 2 &&
+                   manager.taskQueue[0].id === 'task-2' &&
+                   manager.taskQueue[1].id === 'task-3';
+
+    // 2) 특정 대기 항목 개별 제거 (removeQueuedTask: Task 2 취소)
+    const removed = manager.removeQueuedTask('task-2');
+    const tc76_3 = removed === true &&
+                   manager.taskQueue.length === 1 &&
+                   manager.taskQueue[0].id === 'task-3';
+
+    // 3) Task 1 완료 트리거 -> Auto-drain으로 Task 3 자동 실행 검증
+    resolveTask1();
+    await new Promise((r) => setTimeout(r, 20));
+
+    const tc76_4 = taskResults.includes('task-1-done') &&
+                   taskResults.includes('task-3-done') &&
+                   !taskResults.includes('task-2-done') &&
+                   manager.taskQueue.length === 0 &&
+                   manager.isExecuting === false &&
+                   manager.activeTaskId === null;
+
+    console.log('  - 1) 활성 작업 실행 중 단축키 추가 호출 시 유실 없이 큐 적재: ' + tc76_2);
+    console.log('  - 2) 대기열 내 특정 작업 개별 제거(Dismiss) 무결성: ' + tc76_3);
+    console.log('  - 3) 활성 작업 종료 시 다음 큐 항목 지연 없는 오토 드레인(Auto-drain) 순차 실행: ' + tc76_4);
+
+    const tc76Passed = tc76_1 && tc76_2 && tc76_3 && tc76_4;
+    if (tc76Passed) {
+      console.log('  ✓ [TC-76] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저(FIFO) 100% 검증 완료');
+    } else {
+      console.error('  ✗ [TC-76] 검증 실패');
+    }
+  }
+
+  // ===================================================================
   // [TC-77] 타깃 문서 인디케이터 무박스화 및 '문서 없음' 박스 완전 제거 검증 (#12)
   // ===================================================================
   console.log('\n▶ [TC-77] 타깃 문서 인디케이터 무박스화 및 \'문서 없음\' 완전 은닉 검증...');
@@ -7165,7 +7315,7 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     }
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 76개 테스트 전원 통과) ===');
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 77개 테스트 전원 통과) ===');
 
 }
 

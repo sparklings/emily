@@ -75,8 +75,25 @@ export interface RollingSessionData {
   sessionEl?: HTMLElement;
 }
 
+export interface QueuedTask {
+  id: string;
+  createdAt: number;
+  type: 'quick-selection' | 'custom-pipeline';
+  fileName: string;
+  filePath: string;
+  charCount: number;
+  summary: string;
+  run: () => Promise<void>;
+}
+
 export class EmilySidebarView extends ItemView {
   private plugin: EmilyPlugin;
+
+  // Task Queue State
+  public taskQueue: QueuedTask[] = [];
+  public activeTaskId: string | null = null;
+  public activeTaskSummary: string | null = null;
+  public queueContainerEl: HTMLElement | null = null;
 
   // Rolling Sessions State
   private sessionCounter: number = 0;
@@ -409,6 +426,87 @@ export class EmilySidebarView extends ItemView {
     // 4. Sidebar Floating Navigator (Docked inside sidebar at bottom-right)
     this.renderSidebarNavigator(container);
 
+    this.setupKeyboardHandlers();
+  }
+
+  // Queue Manager Public API
+  public getTaskQueue(): QueuedTask[] {
+    return [...this.taskQueue];
+  }
+
+  public removeQueuedTask(id: string): boolean {
+    const idx = this.taskQueue.findIndex((t) => t.id === id);
+    if (idx !== -1) {
+      this.taskQueue.splice(idx, 1);
+      this.renderQueueStream();
+      return true;
+    }
+    return false;
+  }
+
+  public clearTaskQueue(): void {
+    this.taskQueue = [];
+    this.renderQueueStream();
+  }
+
+  public onTaskFinished() {
+    this.isExecuting = false;
+    this.activeTaskId = null;
+    this.activeTaskSummary = null;
+    this.currentAbortController = null;
+
+    if (this.taskQueue.length > 0) {
+      const nextTask = this.taskQueue.shift();
+      if (nextTask) {
+        this.activeTaskId = nextTask.id;
+        this.activeTaskSummary = nextTask.summary;
+        this.renderQueueStream();
+        void nextTask.run();
+        return;
+      }
+    }
+
+    this.lockedTargetFile = null;
+    this.lockedTargetView = null;
+    this.setFormDisabledState(false);
+    if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
+    this.updateTargetDocument();
+    this.renderQueueStream();
+  }
+
+  public renderQueueStream() {
+    if (!this.queueContainerEl) return;
+    this.queueContainerEl.empty();
+    if (this.taskQueue.length === 0 && !this.activeTaskId) {
+      this.queueContainerEl.addClass('is-hidden');
+      this.queueContainerEl.style.display = 'none';
+      return;
+    }
+    this.queueContainerEl.removeClass('is-hidden');
+    this.queueContainerEl.style.display = 'flex';
+
+    // Active Task row
+    if (this.activeTaskId) {
+      const activeRow = this.queueContainerEl.createDiv({ cls: 'emily-queue-row is-running' });
+      activeRow.createSpan({ text: '● RUNNING', cls: 'emily-queue-badge is-running' });
+      activeRow.createSpan({ text: ` ${this.activeTaskSummary || '작업 실행 중'}`, cls: 'emily-queue-summary' });
+    }
+
+    // Queued Tasks rows
+    this.taskQueue.forEach((task) => {
+      const queuedRow = this.queueContainerEl!.createDiv({ cls: 'emily-queue-row is-queued' });
+      queuedRow.createSpan({ text: '◌ QUEUED', cls: 'emily-queue-badge is-queued' });
+      queuedRow.createSpan({ text: ` ${task.summary}`, cls: 'emily-queue-summary' });
+      const dismissBtn = queuedRow.createSpan({ text: '✕', cls: 'emily-queue-dismiss' });
+      dismissBtn.setAttribute('title', '대기열에서 제거');
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeQueuedTask(task.id);
+      });
+    });
+  }
+
+  private setupKeyboardHandlers() {
     // Helper: Safely trigger execution from Ctrl+Enter
     const triggerStartTask = (e?: KeyboardEvent) => {
       if (e) {
@@ -417,7 +515,7 @@ export class EmilySidebarView extends ItemView {
         e.stopImmediatePropagation();
       }
       const applyBtn = this.activeFormContainerEl?.querySelector('.emily-btn-primary') as HTMLButtonElement;
-      if (applyBtn && !applyBtn.disabled && !this.isExecuting) {
+      if (applyBtn && !applyBtn.disabled) {
         applyBtn.click();
       }
     };
@@ -1028,6 +1126,10 @@ export class EmilySidebarView extends ItemView {
     });
     this.updateTargetDocument();
 
+    // Task Queue Stream Container (Above Status Box)
+    this.queueContainerEl = section.createDiv({ cls: 'emily-task-queue-stream is-hidden' });
+    this.renderQueueStream();
+
     // Real-time character count update (without any arbitrary maxlength limit)
     textareaEl.addEventListener('input', () => {
       this.customPromptText = textareaEl.value;
@@ -1043,7 +1145,7 @@ export class EmilySidebarView extends ItemView {
         e.stopPropagation();
         e.stopImmediatePropagation();
         this.customPromptText = textareaEl.value;
-        if (!applyBtn.disabled && !this.isExecuting) {
+        if (!applyBtn.disabled) {
           applyBtn.click();
         }
       }
@@ -1183,6 +1285,31 @@ export class EmilySidebarView extends ItemView {
         return;
       }
     }
+
+    if (this.isExecuting) {
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const task: QueuedTask = {
+        id: taskId,
+        createdAt: Date.now(),
+        type: 'custom-pipeline',
+        fileName: activeFile.name,
+        filePath: activeFile.path,
+        charCount: currentDoc.length,
+        summary: promptText ? `지시: "${promptText.slice(0, 18)}..." · ${activeFile.name}` : `Pipeline · ${activeFile.name}`,
+        run: async () => {
+          await this.executePipeline(applyBtn, statusBoxEl, textareaEl, t);
+        }
+      };
+      this.taskQueue.push(task);
+      this.renderQueueStream();
+      new Notice(`작업이 대기열에 추가되었습니다 (${this.taskQueue.length}개 대기 중)`);
+      return;
+    }
+
+    const currentTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    this.activeTaskId = currentTaskId;
+    this.activeTaskSummary = promptText ? `지시: "${promptText.slice(0, 18)}..." · ${activeFile.name}` : `Pipeline · ${activeFile.name}`;
+    this.renderQueueStream();
 
     void this.persistActiveOptions();
 
@@ -1808,13 +1935,7 @@ export class EmilySidebarView extends ItemView {
           };
         }
 
-        this.isExecuting = false;
-        this.currentAbortController = null;
-        this.setFormDisabledState(false);
-        applyBtn.disabled = false;
-        this.lockedTargetFile = null;
-        this.lockedTargetView = null;
-        this.updateTargetDocument();
+        this.onTaskFinished();
         new Notice(t.sidebar.cancelSuccess);
         return;
       }
@@ -1958,13 +2079,12 @@ export class EmilySidebarView extends ItemView {
             statusBoxEl.empty();
           }
 
-          this.setFormDisabledState(false);
-          applyBtn.disabled = false;
+          this.onTaskFinished();
           new Notice(t.sidebar.cancelSuccess);
         })();
       });
 
-      applyBtn.disabled = false;
+      this.onTaskFinished();
     }
   }
 
@@ -2104,12 +2224,9 @@ export class EmilySidebarView extends ItemView {
     this.plugin.recordSessionFromSidebar?.(sessionData);
 
     // Release execution lock and restore controls
-    this.isExecuting = false;
-    this.currentAbortController = null;
     this.lockedTargetFile = null;
     void this.persistActiveOptions();
     this.lockedTargetView = null;
-    this.setFormDisabledState(false);
 
     // Reset prompt and regenerate active form below
     this.customPromptText = '';
@@ -2117,6 +2234,7 @@ export class EmilySidebarView extends ItemView {
     if (this.activeFormContainerEl) {
       this.renderActiveForm(this.activeFormContainerEl, t);
     }
+    this.onTaskFinished();
 
     // Smooth scroll down to the newly created form
     window.setTimeout(() => {
@@ -3189,8 +3307,35 @@ export class EmilySidebarView extends ItemView {
       translateCodeComments: Boolean(this.plugin.settings.defaultTranslateCodeComments)
     };
 
-    // 2. 에디터 선택 영역 직하단에 실시간 인라인 상태 블록 삽입
     const cleanSelected = selectedText.trimEnd();
+
+    // If already executing, enqueue into background Task Queue
+    if (this.isExecuting) {
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const task: QueuedTask = {
+        id: taskId,
+        createdAt: Date.now(),
+        type: 'quick-selection',
+        fileName: activeFile.name,
+        filePath: activeFile.path,
+        charCount: cleanSelected.length,
+        summary: `Selection (${cleanSelected.length.toLocaleString()}자) · ${activeFile.name}`,
+        run: async () => {
+          await this.executeQuickSelectionTranslation(editor, view, selectedText);
+        }
+      };
+      this.taskQueue.push(task);
+      this.renderQueueStream();
+      new Notice(`작업이 대기열에 추가되었습니다 (${this.taskQueue.length}개 대기 중)`);
+      return;
+    }
+
+    const currentTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    this.activeTaskId = currentTaskId;
+    this.activeTaskSummary = `Selection (${cleanSelected.length.toLocaleString()}자) · ${activeFile.name}`;
+    this.renderQueueStream();
+
+    // 2. 에디터 선택 영역 직하단에 실시간 인라인 상태 블록 삽입
     const statusTemplate = t.commands.quickTranslateInlineStatus || '⏳ **[Assistant Emily] {lang} 번역 진행 중...** ';
     const inlineStatusText = statusTemplate.replace('{lang}', targetLang);
     const placeholderToken = `<!-- emily-translating-${Date.now()} -->`;
@@ -3365,14 +3510,7 @@ export class EmilySidebarView extends ItemView {
         t
       });
 
-      this.isExecuting = false;
-      this.currentAbortController = null;
-      this.setFormDisabledState(false);
-      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-      this.lockedTargetFile = null;
-      this.lockedTargetView = null;
-      this.updateTargetDocument();
-
+      this.onTaskFinished();
       new Notice(`${t.commands.quickTranslateDone} (${(transResult.totalTimeMs / 1000).toFixed(1)}s)`);
     } catch (err: unknown) {
       stopPipelineTimer();
@@ -3411,13 +3549,7 @@ export class EmilySidebarView extends ItemView {
           statusBoxEl.empty();
         };
 
-        this.isExecuting = false;
-        this.currentAbortController = null;
-        this.setFormDisabledState(false);
-        if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-        this.lockedTargetFile = null;
-        this.lockedTargetView = null;
-        this.updateTargetDocument();
+        this.onTaskFinished();
         new Notice(t.sidebar.cancelSuccess);
         return;
       }
@@ -3451,13 +3583,7 @@ export class EmilySidebarView extends ItemView {
       }
       this.updateTimelineStep(step2, 'error', undefined, rawMsg);
 
-      this.isExecuting = false;
-      this.setFormDisabledState(false);
-      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-      this.lockedTargetFile = null;
-      this.lockedTargetView = null;
-      this.updateTargetDocument();
-
+      this.onTaskFinished();
       new Notice(`❌ 번역 실패: ${rawMsg}`);
     }
   }

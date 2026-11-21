@@ -898,6 +898,75 @@ select.emily-select-input {
   color: var(--text-accent);
 }
 
+/* Task Queue Stream Rows */
+.emily-task-queue-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.emily-task-queue-stream.is-hidden {
+  display: none !important;
+}
+
+.emily-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  line-height: 1.4;
+  border-radius: 4px;
+}
+
+.emily-queue-row.is-running {
+  color: var(--text-normal);
+}
+
+.emily-queue-row.is-queued {
+  color: var(--text-muted);
+}
+
+.emily-queue-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.emily-queue-badge.is-running {
+  color: var(--interactive-accent);
+}
+
+.emily-queue-badge.is-queued {
+  color: var(--text-faint);
+}
+
+.emily-queue-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emily-queue-dismiss {
+  cursor: pointer;
+  padding: 0 4px;
+  color: var(--text-faint);
+  font-weight: bold;
+  font-size: 11px;
+  border-radius: 3px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.emily-queue-dismiss:hover {
+  color: var(--text-error, #e5534b);
+  background-color: var(--background-modifier-hover);
+}
+
 .emily-textarea {
   width: 100%;
   min-height: 80px;
