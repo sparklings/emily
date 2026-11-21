@@ -25,7 +25,7 @@ epic: "https://github.com/sparklings/emily/issues/11"
 | :---: | :--- | :--- | :---: |
 | **태스크 1** | **[#12] [UI] 타깃 문서 인디케이터 무박스화 및 '문서 없음' 박스 완전 제거** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 완료 |
-| **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 대기 중 |
+| **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 대기 중 |
 | **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 대기 중 |
 
@@ -48,11 +48,11 @@ epic: "https://github.com/sparklings/emily/issues/11"
 - [x] **[TC-76]** 단축키 연속 호출 시 작업 큐 적재 및 순차 실행(FIFO) 무결성 검증 추가
 
 ### 3단계: 인라인 태스크 큐 스트림 UI (#14)
-- [ ] 박스 테두리 없는 고밀도 인라인 상태 행 렌더러 구현
-- [ ] 활성 작업 행 (`● RUNNING   Selection (N자) · N.Ns  [Cancel]`) 렌더링
-- [ ] 대기 작업 행 (`◌ QUEUED    Selection (N자) · 파일명 [×]`) 렌더링
-- [ ] 대기 작업의 `[×]` 버튼 클릭 시 큐에서 즉시 제거(Dismiss) 인터랙션 구현
-- [ ] 대기열이 0개일 때는 큐 UI 영역 전체가 0px로 자동 은닉 검증
+- [x] 박스 테두리 없는 고밀도 인라인 상태 행 렌더러 구현
+- [x] 활성 작업 행 (`● RUNNING   Selection (N자) · N.Ns  [Cancel]`) 렌더링
+- [x] 대기 작업 행 (`◌ QUEUED    Selection (N자) · 파일명 [×]`) 렌더링
+- [x] 대기 작업의 `[×]` 버튼 클릭 시 큐에서 즉시 제거(Dismiss) 인터랙션 구현
+- [x] 대기열이 0개일 때는 큐 UI 영역 전체가 0px로 자동 은닉 검증
 
 ### 4단계: Antigravity 스타일 무경계 사고 스트림 (Thought Stream) (#15)
 - [ ] 기존 무거운 `emily-status-box` 패널 컨테이너 완전 제거

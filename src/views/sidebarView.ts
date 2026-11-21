@@ -94,6 +94,8 @@ export class EmilySidebarView extends ItemView {
   public activeTaskId: string | null = null;
   public activeTaskSummary: string | null = null;
   public queueContainerEl: HTMLElement | null = null;
+  private activeTaskStartTime: number | null = null;
+  private queueTimerInterval: number | null = null;
 
   // Rolling Sessions State
   private sessionCounter: number = 0;
@@ -449,7 +451,28 @@ export class EmilySidebarView extends ItemView {
     this.renderQueueStream();
   }
 
+  private startQueueTimer(timerSpan: HTMLElement) {
+    if (this.queueTimerInterval !== null) {
+      window.clearInterval(this.queueTimerInterval);
+    }
+    const update = () => {
+      if (!this.activeTaskStartTime) return;
+      const elapsed = ((Date.now() - this.activeTaskStartTime) / 1000).toFixed(1);
+      timerSpan.setText(` · ${elapsed}s`);
+    };
+    update();
+    this.queueTimerInterval = window.setInterval(update, 200);
+  }
+
+  private stopQueueTimer() {
+    if (this.queueTimerInterval !== null) {
+      window.clearInterval(this.queueTimerInterval);
+      this.queueTimerInterval = null;
+    }
+  }
+
   public onTaskFinished() {
+    this.stopQueueTimer();
     this.isExecuting = false;
     this.activeTaskId = null;
     this.activeTaskSummary = null;
@@ -460,6 +483,7 @@ export class EmilySidebarView extends ItemView {
       if (nextTask) {
         this.activeTaskId = nextTask.id;
         this.activeTaskSummary = nextTask.summary;
+        this.activeTaskStartTime = Date.now();
         this.renderQueueStream();
         void nextTask.run();
         return;
@@ -478,6 +502,7 @@ export class EmilySidebarView extends ItemView {
     if (!this.queueContainerEl) return;
     this.queueContainerEl.empty();
     if (this.taskQueue.length === 0 && !this.activeTaskId) {
+      this.stopQueueTimer();
       this.queueContainerEl.addClass('is-hidden');
       this.queueContainerEl.style.display = 'none';
       return;
@@ -490,6 +515,20 @@ export class EmilySidebarView extends ItemView {
       const activeRow = this.queueContainerEl.createDiv({ cls: 'emily-queue-row is-running' });
       activeRow.createSpan({ text: '● RUNNING', cls: 'emily-queue-badge is-running' });
       activeRow.createSpan({ text: ` ${this.activeTaskSummary || '작업 실행 중'}`, cls: 'emily-queue-summary' });
+      const timerSpan = activeRow.createSpan({ text: ' · 0.0s', cls: 'emily-queue-timer' });
+      this.startQueueTimer(timerSpan);
+
+      const cancelBtn = activeRow.createEl('button', {
+        cls: 'emily-queue-action-btn is-cancel',
+        text: 'Cancel',
+        attr: { type: 'button', title: '현재 작업 취소' }
+      });
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.currentAbortController) {
+          this.currentAbortController.abort();
+        }
+      });
     }
 
     // Queued Tasks rows
@@ -497,8 +536,11 @@ export class EmilySidebarView extends ItemView {
       const queuedRow = this.queueContainerEl!.createDiv({ cls: 'emily-queue-row is-queued' });
       queuedRow.createSpan({ text: '◌ QUEUED', cls: 'emily-queue-badge is-queued' });
       queuedRow.createSpan({ text: ` ${task.summary}`, cls: 'emily-queue-summary' });
-      const dismissBtn = queuedRow.createSpan({ text: '✕', cls: 'emily-queue-dismiss' });
-      dismissBtn.setAttribute('title', '대기열에서 제거');
+      const dismissBtn = queuedRow.createEl('button', {
+        cls: 'emily-queue-action-btn is-dismiss',
+        text: '✕',
+        attr: { type: 'button', title: '대기열에서 제거' }
+      });
       dismissBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         this.removeQueuedTask(task.id);
