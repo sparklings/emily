@@ -687,7 +687,7 @@ export class EmilySidebarView extends ItemView {
 
     if (this.sessions.length > 0) {
       const divider = parent.createDiv({ cls: 'emily-rolling-divider' });
-      divider.setText(`${t.sidebar.newSession}${this.sessions.length + 1}`);
+      divider.setText(t.sidebar.nextTask);
     }
 
     // Section 1: 교열 (Proofreading)
@@ -2543,9 +2543,11 @@ export class EmilySidebarView extends ItemView {
     card.setAttribute('data-session-id', String(session.id));
     const t = getTranslation(this.plugin.settings.language);
 
-    // 1. Header: Left = Status Badge, Right = ISO datetime + chevron
-    const header = card.createDiv({ cls: 'emily-session-card-header' });
-    const statusBadge = header.createDiv({ cls: 'emily-session-status-badge' });
+    // 1. Session Divider Header (Divider line across with centered session identity + status + time + toggle)
+    const header = card.createDiv({ cls: 'emily-session-card-header emily-session-divider-header' });
+    const headerLeft = header.createDiv({ cls: 'emily-session-header-left' });
+    headerLeft.createSpan({ text: `${t.sidebar.sessionHeader} #${session.id} · `, cls: 'emily-session-id-label' });
+    const statusBadge = headerLeft.createDiv({ cls: 'emily-session-status-badge' });
     const dot = statusBadge.createSpan({ cls: 'emily-status-dot' });
     if (session.status === 'cancelled') {
       dot.addClass('is-cancelled');
@@ -2560,7 +2562,11 @@ export class EmilySidebarView extends ItemView {
     }
 
     const headerRight = header.createDiv({ cls: 'emily-session-header-right' });
-    headerRight.createSpan({ text: session.timestamp, cls: 'emily-session-time' });
+    const sessionTime = new Date(session.timestamp);
+    const timeLabel = Number.isNaN(sessionTime.getTime())
+      ? session.timestamp
+      : sessionTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    headerRight.createSpan({ text: timeLabel, cls: 'emily-session-time' });
     const headerChevron = headerRight.createSpan({ cls: 'emily-session-header-chevron' });
     setIcon(headerChevron, 'chevron-down');
 
@@ -2578,25 +2584,22 @@ export class EmilySidebarView extends ItemView {
       card.classList.toggle('is-collapsed');
     });
 
-    // 2. Target File row (line-broken with dot, ellipsis and tooltip)
+    // 2. Selected Target File Information (Minimal bullet + click to jump)
     const fileRow = body.createDiv({ cls: 'emily-session-file-row' });
-    fileRow.createSpan({ cls: 'emily-status-dot' });
-    fileRow.createSpan({
-      text: session.fileName,
-      cls: 'emily-session-file-name',
-      attr: { title: session.filePath || session.fileName }
+    fileRow.setAttribute('role', 'button');
+    fileRow.setAttribute('tabindex', '0');
+    fileRow.setAttribute('title', session.filePath || session.fileName);
+    fileRow.createSpan({ text: `• ${session.fileName}`, cls: 'emily-session-file-name' });
+    const openSourceFile = () => {
+      void this.openFileInTargetPane(session.filePath || session.fileName);
+    };
+    fileRow.addEventListener('click', openSourceFile);
+    fileRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openSourceFile();
+      }
     });
-
-    // 2-1. Created Output File Row (if new file was created)
-    if (session.targetPath) {
-      const outputRow = body.createDiv({ cls: 'emily-session-output-file' });
-      outputRow.createSpan({ text: `${t.sidebar.createdOutputFile.replace('{file}', session.targetPath.split('/').pop() || '')} ↗` });
-      outputRow.setAttribute('title', t.sidebar.openCreatedFileTooltip);
-      outputRow.addEventListener('click', (e) => {
-        e.stopPropagation();
-        void this.openFileInTargetPane(session.targetPath!, session.filePath);
-      });
-    }
 
     // 3. User Selected Options Summary Guide
     const optionsSummary = body.createDiv({ cls: 'emily-session-options-summary' });
@@ -2671,159 +2674,62 @@ export class EmilySidebarView extends ItemView {
       promptBox.createSpan({ text: `"${session.promptText}"` });
     }
 
-    // 5. Proofreading Detailed Changes Breakdown (only if proofread was run and items exist)
-    if (session.status === 'cancelled') {
-      const detailsSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const itemsCount = session.items ? session.items.length : session.itemsCount;
-      const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
-      emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
+    // 4. Action-driven Results area (Buttons & Links guidance without raw markdown text)
+    const hasProofreadReview = (session.sessionType === 'proofread' || Boolean(session.items?.length)) && Boolean(session.items && session.items.length > 0);
+    const hasTextResult = Boolean(session.translatedMarkdown);
 
-      if (session.items && session.items.length > 0) {
-        const actionsRow = detailsSection.createDiv({ cls: 'emily-session-inline-actions' });
-        const rawReopenText = t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length));
-        const cleanReopenText = rawReopenText.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
-        const reopenBtn = actionsRow.createEl('button', {
-          text: `${cleanReopenText} ↗`,
-          cls: 'emily-reopen-modal-btn'
+    if (hasProofreadReview || hasTextResult || session.targetPath) {
+      const actionsRow = body.createDiv({ cls: 'emily-session-result-actions emily-session-inline-actions' });
+
+      // 4-1. Review Diff Modal Action Button
+      if (hasProofreadReview || (hasTextResult && session.sessionType !== 'proofread')) {
+        const reviewBtn = actionsRow.createEl('button', {
+          text: t.sidebar.reviewResult || '대조 검토 ↗',
+          cls: 'emily-session-action-btn emily-reopen-modal-btn'
         });
-        reopenBtn.addEventListener('click', (e) => {
+        reviewBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          void this.reopenProofreadModalForSession(session, card);
-        });
-      }
-    } else if (session.sessionType === 'proofread' || (session.items && session.items.length > 0)) {
-      const detailsSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const detailsHeader = detailsSection.createDiv({ cls: 'emily-session-details-header' });
-      const itemsCount = session.items ? session.items.length : session.itemsCount;
-      detailsHeader.createSpan({
-        text: t.sidebar.proofreadDetailsHeader.replace('{count}', String(itemsCount)),
-        cls: 'font-semibold'
-      });
-
-      if (session.items && session.items.length > 0) {
-        const actionsRow = detailsSection.createDiv({ cls: 'emily-session-inline-actions' });
-        const rawReopenText = t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length));
-        const cleanReopenText = rawReopenText.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
-        const reopenBtn = actionsRow.createEl('button', {
-          text: `${cleanReopenText} ↗`,
-          cls: 'emily-reopen-modal-btn'
-        });
-        reopenBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          void this.reopenProofreadModalForSession(session, card);
-        });
-
-        const itemsList = detailsSection.createDiv({ cls: 'emily-session-items-list' });
-        for (const item of session.items) {
-          const itemCard = itemsList.createDiv({ cls: 'emily-session-diff-item' });
-
-          // Meta (Category + Line)
-          const metaRow = itemCard.createDiv({ cls: 'emily-session-diff-meta' });
-          const catBadge = metaRow.createSpan({ cls: 'emily-session-diff-badge' });
-          catBadge.setText(this.getCategoryLabel(item.category, t));
-
-          if (item.line) {
-            metaRow.createSpan({ text: `L.${item.line}`, cls: 'text-muted text-xs' });
-          }
-
-          // Diff Row (Original ➔ Replacement)
-          const contentRow = itemCard.createDiv({ cls: 'emily-session-diff-content' });
-          contentRow.createSpan({ text: item.original, cls: 'emily-session-diff-del' });
-          contentRow.createSpan({ text: '➔', cls: 'emily-session-diff-arrow' });
-
-          const isSpecialCleanItem = item.id === 'timestamp_clean_auto' || item.category === 'timestamp' || item.id === 'korean_bold_auto';
-
-          if (isSpecialCleanItem) {
-            contentRow.createSpan({
-              text: item.replacement,
-              cls: 'emily-session-diff-ins is-non-interactive'
-            });
+          if (session.sessionType === 'proofread') {
+            void this.reopenProofreadModalForSession(session, card);
           } else {
-            const insSpan = contentRow.createSpan({
-              text: item.replacement,
-              cls: 'emily-session-diff-ins',
-              attr: { title: t.sidebar.jumpToDocTooltip }
-            });
-            insSpan.addEventListener('click', (e) => {
-              e.stopPropagation();
-              void this.jumpToDiffLocation(session.filePath || session.fileName, item);
-            });
+            this.reopenTranslationModalForSession(session);
           }
-
-          // Explanation
-          if (item.explanation) {
-            const expRow = itemCard.createDiv({ cls: 'emily-session-diff-explanation' });
-            expRow.createSpan({ text: `💡 ${item.explanation}` });
-          }
-        }
-      } else {
-        const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
-        emptyNotice.setText(t.sidebar.noIssuesDetected);
-      }
-    } else if (session.sessionType === 'translation' && (session.translatedMarkdown || session.targetPath)) {
-      const transSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const transHeader = transSection.createDiv({ cls: 'emily-session-details-header' });
-      transHeader.createSpan({
-        text: session.isSameLangEdit ? t.sidebar.reopenEditReviewHeader : t.sidebar.reopenTransReviewHeader,
-        cls: 'font-semibold'
-      });
-
-      // Direct typography result preview (1-2 lines)
-      if (session.translatedMarkdown) {
-        const preview = transSection.createDiv({ cls: 'emily-session-result-preview' });
-        const cleanSnippet = session.translatedMarkdown.trim().slice(0, 140);
-        preview.setText(cleanSnippet + (session.translatedMarkdown.length > 140 ? '…' : ''));
+        });
       }
 
-      const actionsRow = transSection.createDiv({ cls: 'emily-session-inline-actions' });
-      const rawReviewLabel = session.isSameLangEdit ? t.sidebar.reopenTransBtnEdit : t.sidebar.reopenTransBtnReview;
-      const cleanReviewLabel = rawReviewLabel.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
-      const reopenTransBtn = actionsRow.createEl('button', {
-        text: `${cleanReviewLabel} ↗`,
-        cls: 'emily-reopen-modal-btn'
-      });
-      reopenTransBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const targetPath = session.filePath || session.fileName;
-        let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
-        if (!(targetFile instanceof TFile)) {
-          const resolved = this.app.metadataCache.getFirstLinkpathDest(session.fileName || '', session.filePath || '');
-          if (resolved instanceof TFile) {
-            targetFile = resolved;
-          }
-        }
-        if (targetFile instanceof TFile) {
-          const modal = new TranslationDiffModal(
-            this.app,
-            targetFile,
-            session.originalMarkdown || '',
-            session.translatedMarkdown || '',
-            session.translationOptions,
-            this.plugin.getTranslationEngine(),
-            (finalText: string, action: string, targetPath?: string) => {
-              session.translatedMarkdown = finalText;
-              if (targetPath) session.targetPath = targetPath;
-              this.plugin.recordSessionFromSidebar(session);
-            },
-            this.plugin.settings.language
-          );
-          modal.open();
-        } else {
-          new Notice(t.sidebar.cannotFindDocNotice);
-        }
-      });
-
-      if (session.translatedMarkdown) {
+      // 4-2. Copy Result Action Button
+      if (hasTextResult) {
         const copyBtn = actionsRow.createEl('button', {
-          text: `${t.common.copy || '복사'} ⎘`,
-          cls: 'emily-reopen-modal-btn emily-copy-btn'
+          text: t.sidebar.copyResult || '복사 ⎘',
+          cls: 'emily-session-action-btn emily-reopen-modal-btn emily-copy-btn'
         });
         copyBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           void navigator.clipboard.writeText(session.translatedMarkdown || '');
-          new Notice((t.common.copy || '복사') + ' 완료');
+          new Notice(t.sidebar.resultCopied || (t.common.copy + ' 완료'));
         });
       }
+
+      // 4-3. Open Created File Action Button
+      if (session.targetPath) {
+        const outputFileName = session.targetPath.split('/').pop() || session.targetPath;
+        const openFileBtn = actionsRow.createEl('button', {
+          text: t.sidebar.openResultFile ? t.sidebar.openResultFile.replace('{file}', outputFileName) : `파일 열기: ${outputFileName} ↗`,
+          cls: 'emily-session-action-btn emily-reopen-modal-btn emily-session-output-file'
+        });
+        openFileBtn.setAttribute('title', t.sidebar.openCreatedFileTooltip);
+        openFileBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void this.openFileInTargetPane(session.targetPath!, session.filePath);
+        });
+      }
+    } else if (session.sessionType === 'proofread' && session.status !== 'cancelled' && (!session.items || session.items.length === 0)) {
+      const emptyNotice = body.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
+      emptyNotice.setText(t.sidebar.noIssuesDetected);
+    } else if (session.status === 'cancelled') {
+      const emptyNotice = body.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
+      const itemsCount = session.items ? session.items.length : session.itemsCount;
+      emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
     }
 
     // 6. Response Summary & Telemetry Metadata (Collapsible: default 1 line collapsed)
@@ -2910,6 +2816,37 @@ export class EmilySidebarView extends ItemView {
     });
 
     return card;
+  }
+
+  private reopenTranslationModalForSession(session: RollingSessionData): void {
+    const t = getTranslation(this.plugin.settings.language);
+    const targetPath = session.filePath || session.fileName;
+    let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
+    if (!(targetFile instanceof TFile)) {
+      const resolved = this.app.metadataCache.getFirstLinkpathDest(session.fileName || '', session.filePath || '');
+      if (resolved instanceof TFile) {
+        targetFile = resolved;
+      }
+    }
+    if (targetFile instanceof TFile) {
+      const modal = new TranslationDiffModal(
+        this.app,
+        targetFile,
+        session.originalMarkdown || '',
+        session.translatedMarkdown || '',
+        session.translationOptions,
+        this.plugin.getTranslationEngine(),
+        (finalText: string, action: string, targetPath?: string) => {
+          session.translatedMarkdown = finalText;
+          if (targetPath) session.targetPath = targetPath;
+          this.plugin.recordSessionFromSidebar(session);
+        },
+        this.plugin.settings.language
+      );
+      modal.open();
+    } else {
+      new Notice(t.sidebar.cannotFindDocNotice);
+    }
   }
 
   private async reopenProofreadModalForSession(session: RollingSessionData, cardEl?: HTMLElement) {

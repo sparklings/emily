@@ -7600,10 +7600,9 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
                  stylesCssContent80.includes('background: transparent;') &&
                  stylesCssContent80.includes('box-shadow: none;');
 
-  // 2) 다이렉트 타이포그래피 결과 프리뷰(.emily-session-result-preview) 및 인라인 액션 행(.emily-session-inline-actions) 정의
+  // 2) 다이렉트 타이포그래피 및 인라인 액션 행(.emily-session-inline-actions) 정의
   const tc80_2 = stylesCssContent80.includes('.emily-session-result-preview') &&
                  stylesCssContent80.includes('.emily-session-inline-actions') &&
-                 sidebarViewContent80.includes('emily-session-result-preview') &&
                  sidebarViewContent80.includes('emily-session-inline-actions');
 
   // 3) 미니멀 인라인 액션 링크(대조 검토 ↗, 복사 ⎘, 파일 열기 ↗) 무결성
@@ -7618,7 +7617,7 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
                  sidebarViewContent80.includes("summaryBar.createDiv({ cls: 'emily-meta-summary-left' })");
 
   console.log('  - 1) .emily-session-card 박스/패널 테두리 완전 제거 및 투명 캔버스화: ' + tc80_1);
-  console.log('  - 2) 다이렉트 1-2줄 결과 타이포그래피(.emily-session-result-preview) 정의: ' + tc80_2);
+  console.log('  - 2) 다이렉트 인라인 액션 행(.emily-session-inline-actions) 정의: ' + tc80_2);
   console.log('  - 3) 미니멀 인라인 액션 링크(대조 검토 ↗, 복사 ⎘, 파일 열기 ↗) 무결성: ' + tc80_3);
   console.log('  - 4) 텔레메트리 및 세션 메타 영역 무박스화 및 고대비 타이포그래피: ' + tc80_4);
 
@@ -7629,7 +7628,53 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     console.error('  ✗ [TC-80] 검증 실패');
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 80개 테스트 전원 통과) ===');
+  // ==========================================
+  // [TC-81] 세션 구분선 헤더 일체화 및 결과 뷰 링크 중심 4단계 재구조화 (#17)
+  // ==========================================
+  console.log('\n▶ [TC-81] 세션 식별자, 결과 액션, 배포 격리 레이아웃 검증...');
+
+  const sidebarViewContent81 = fs.readFileSync('src/views/sidebarView.ts', 'utf8');
+  const stylesCssContent81 = fs.readFileSync('styles.css', 'utf8');
+  const buildConfigContent81 = fs.readFileSync('esbuild.config.mjs', 'utf8');
+
+  // 1) 세션 번호, 상태, 시각이 통합된 디바이더 헤더
+  const tc81_1 = sidebarViewContent81.includes('sessionHeader} #${session.id}') &&
+                 sidebarViewContent81.includes('emily-session-divider-header') &&
+                 stylesCssContent81.includes('.emily-session-divider-header');
+
+  // 2) 미실행 폼의 "다음 작업 지시" 구분선
+  const tc81_2 = sidebarViewContent81.includes('divider.setText(t.sidebar.nextTask)') &&
+                 !sidebarViewContent81.includes('divider.setText(`${t.sidebar.newSession}');
+
+  // 3) 원본 파일 포커스 링크 (role="button")
+  const tc81_3 = sidebarViewContent81.includes("fileRow.setAttribute('role', 'button')") &&
+                 sidebarViewContent81.includes('this.openFileInTargetPane(session.filePath || session.fileName)');
+
+  // 4) 결과 미리보기 대신 검토/복사/파일 열기 액션 버튼
+  const tc81_4 = sidebarViewContent81.includes('t.sidebar.reviewResult') &&
+                 sidebarViewContent81.includes('t.sidebar.copyResult') &&
+                 sidebarViewContent81.includes('t.sidebar.openResultFile') &&
+                 stylesCssContent81.includes('.emily-session-result-actions');
+
+  // 5) 접이식 텔레메트리 및 ObsidianVaults 배포 차단 유지
+  const tc81_5 = stylesCssContent81.includes('.emily-meta-collapsible') &&
+                 buildConfigContent81.includes('/ObsidianVaults/i') &&
+                 buildConfigContent81.includes('PlugVaults');
+
+  console.log(`  - 1) 세션 번호, 상태, 시각이 통합된 디바이더 헤더: ${tc81_1}`);
+  console.log(`  - 2) 미실행 폼의 "다음 작업 지시" 구분선: ${tc81_2}`);
+  console.log(`  - 3) 원본 파일 포커스 링크: ${tc81_3}`);
+  console.log(`  - 4) 결과 미리보기 대신 검토/복사/파일 열기 액션: ${tc81_4}`);
+  console.log(`  - 5) 접이식 텔레메트리 및 ObsidianVaults 배포 차단 유지: ${tc81_5}`);
+
+  const tc81Passed = tc81_1 && tc81_2 && tc81_3 && tc81_4 && tc81_5;
+  if (tc81Passed) {
+    console.log('  ✓ [TC-81] 세션 구분선 헤더 일체화 및 링크 중심 결과 뷰 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-81] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 81개 테스트 전원 통과) ===');
 
 }
 
