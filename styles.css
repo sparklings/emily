@@ -851,91 +851,51 @@ select.emily-select-input {
 }
 
 
-.emily-prompt-target-file {
+/* Minimal Target Document Indicator under Apply Button */
+.emily-target-file-indicator {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  background-color: var(--background-secondary-alt);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  font-size: 11.5px;
-  color: var(--text-normal);
+  gap: 5px;
+  margin-top: -2px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
-  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  transition: color 0.15s ease;
   min-width: 0;
   width: 100%;
-}
-
-.emily-prompt-file-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.emily-prompt-scope-badge {
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 10px;
-  white-space: nowrap;
-  flex-shrink: 0;
   line-height: 1.4;
-  transition: all 0.2s ease;
 }
 
-.emily-prompt-scope-badge.is-selection {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+.emily-target-file-indicator:hover {
+  color: var(--text-normal);
 }
 
-.emily-prompt-scope-badge.is-all {
-  background: var(--background-modifier-border);
-  color: var(--text-muted);
+.emily-target-file-indicator.is-hidden {
+  display: none !important;
 }
 
-.emily-prompt-target-file:hover {
-  border-color: var(--interactive-accent);
-  background-color: var(--background-modifier-hover);
-}
-
-.emily-prompt-target-file.is-locked {
-  border-color: var(--interactive-accent);
-  background-color: var(--background-primary);
-  box-shadow: 0 0 0 1px var(--interactive-accent);
-}
-
-.emily-prompt-file-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.emily-target-file-indicator .emily-target-bullet {
   color: var(--interactive-accent);
+  font-weight: 700;
   flex-shrink: 0;
+  line-height: 1;
 }
 
-.emily-prompt-file-icon svg {
-  width: 13px;
-  height: 13px;
-}
-
-.emily-prompt-file-name {
+.emily-target-file-indicator .emily-target-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
-  color: var(--text-normal);
 }
 
-.emily-prompt-file-name.is-empty {
-  color: var(--text-faint);
-  font-style: italic;
+.emily-target-file-indicator.is-locked {
+  color: var(--text-accent);
 }
 
 .emily-textarea {

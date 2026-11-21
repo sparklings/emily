@@ -466,15 +466,19 @@ export class EmilySidebarView extends ItemView {
     // If a pipeline task is actively running, lock the target document display
     if (this.isExecuting && this.lockedTargetFile) {
       this.promptTargetFileEl.empty();
-      const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'lock');
-      const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name' });
-      nameSpan.setText(this.lockedTargetFile.name);
+      this.promptTargetFileEl.removeClass('is-hidden');
+      this.promptTargetFileEl.style.display = 'flex';
+      this.promptTargetFileEl.addClass('is-locked');
+      this.promptTargetFileEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
+      const lockedLabel = t.sidebar.targetLocked || 'Target Locked';
+      this.promptTargetFileEl.createSpan({
+        text: ` ${this.lockedTargetFile.name} (${lockedLabel})`,
+        cls: 'emily-target-name'
+      });
       this.promptTargetFileEl.setAttribute(
         'title',
         t.sidebar.targetLockedTooltip.replace('{path}', this.lockedTargetFile.path)
       );
-      this.promptTargetFileEl.addClass('is-locked');
       return;
     }
 
@@ -482,35 +486,27 @@ export class EmilySidebarView extends ItemView {
     const target = this.plugin.getTargetMarkdownView();
     if (target?.file) {
       this.promptTargetFileEl.empty();
-      const leftWrap = this.promptTargetFileEl.createDiv({ cls: 'emily-prompt-file-left' });
-      const iconSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'file-text');
-      const nameSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-name' });
-      nameSpan.setText(target.file.name);
-      this.promptTargetFileEl.setAttribute('title', target.file.path);
+      this.promptTargetFileEl.removeClass('is-hidden');
+      this.promptTargetFileEl.style.display = 'flex';
 
       // Real-time selection vs entire document scope indicator
       const sel = target.editor ? target.editor.getSelection() : '';
       const hasSelection = Boolean(sel && sel.trim().length > 0);
-      const scopeBadge = this.promptTargetFileEl.createSpan({
-        cls: `emily-prompt-scope-badge ${hasSelection ? 'is-selection' : 'is-all'}`
+      const selSuffix = hasSelection
+        ? ` (${t.sidebar.scopeSelectionBadge.replace('{count}', sel.length.toLocaleString())})`
+        : '';
+
+      this.promptTargetFileEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
+      this.promptTargetFileEl.createSpan({
+        text: ` ${target.file.name}${selSuffix}`,
+        cls: 'emily-target-name'
       });
-      if (hasSelection) {
-        scopeBadge.setText(
-          t.sidebar.scopeSelectionBadge.replace('{count}', sel.length.toLocaleString())
-        );
-        scopeBadge.setAttribute('title', t.sidebar.scopeSelectionTooltip);
-      } else {
-        scopeBadge.setText(t.sidebar.scopeAllBadge);
-        scopeBadge.setAttribute('title', t.sidebar.scopeAllTooltip);
-      }
+      this.promptTargetFileEl.setAttribute('title', target.file.path);
     } else {
       this.promptTargetFileEl.empty();
-      const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'file-question');
-      const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name is-empty' });
-      nameSpan.setText(t.sidebar.noActiveDoc);
-      this.promptTargetFileEl.setAttribute('title', t.sidebar.noActiveDoc);
+      this.promptTargetFileEl.addClass('is-hidden');
+      this.promptTargetFileEl.style.display = 'none';
+      this.promptTargetFileEl.removeAttribute('title');
     }
   }
 
@@ -977,24 +973,8 @@ export class EmilySidebarView extends ItemView {
   private renderCustomPromptSection(parent: HTMLElement, t: TranslationKeys) {
     const section = parent.createDiv({ cls: 'emily-custom-prompt-container' });
 
-    // Textarea Wrap & Target Document Indicator
+    // Textarea Wrap (Target Document indicator moved below Apply button)
     const promptWrap = section.createDiv({ cls: 'emily-textarea-wrap' });
-
-    // Dedicated target document indicator directly above textarea
-    this.promptTargetFileEl = promptWrap.createDiv({ cls: 'emily-prompt-target-file' });
-    this.promptTargetFileEl.addEventListener('click', () => {
-      void (async () => {
-        if (this.isExecuting && this.lockedTargetFile) {
-          await this.openFileInTargetPane(this.lockedTargetFile.path);
-        } else {
-          const target = this.plugin.getTargetMarkdownView();
-          if (target?.leaf) {
-            this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
-          }
-        }
-      })();
-    });
-    this.updateTargetDocument();
 
     const textareaEl = promptWrap.createEl('textarea', {
       cls: 'emily-textarea',
@@ -1031,6 +1011,22 @@ export class EmilySidebarView extends ItemView {
       text: `${this.customPromptText.length.toLocaleString()}${t.sidebar.charCountSuffix}`,
       cls: 'emily-btn-char-counter'
     });
+
+    // Dedicated target document indicator directly below Apply button
+    this.promptTargetFileEl = section.createDiv({ cls: 'emily-target-file-indicator is-hidden' });
+    this.promptTargetFileEl.addEventListener('click', () => {
+      void (async () => {
+        if (this.isExecuting && this.lockedTargetFile) {
+          await this.openFileInTargetPane(this.lockedTargetFile.path);
+        } else {
+          const target = this.plugin.getTargetMarkdownView();
+          if (target?.leaf) {
+            this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
+          }
+        }
+      })();
+    });
+    this.updateTargetDocument();
 
     // Real-time character count update (without any arbitrary maxlength limit)
     textareaEl.addEventListener('input', () => {
