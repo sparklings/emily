@@ -876,7 +876,7 @@ select.emily-select-input {
 }
 
 .emily-target-file-indicator.is-hidden {
-  display: none !important;
+  display: none;
 }
 
 .emily-target-file-indicator .emily-target-bullet {
@@ -912,7 +912,7 @@ select.emily-select-input {
 }
 
 .emily-task-queue-stream.is-hidden {
-  display: none !important;
+  display: none;
 }
 
 .emily-queue-row {
@@ -1651,7 +1651,7 @@ select.emily-select-input {
 }
 
 .emily-timeline-steps.is-collapsed {
-  display: none !important;
+  display: none;
 }
 
 .emily-timeline-step {
@@ -2374,7 +2374,6 @@ select.emily-select-input {
   font-size: 11px;
   color: var(--text-faint);
   line-height: 1.4;
-  padding: 2px 0;
   padding: 4px 0 2px 0;
 }
 

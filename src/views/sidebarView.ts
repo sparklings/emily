@@ -504,11 +504,9 @@ export class EmilySidebarView extends ItemView {
     if (this.taskQueue.length === 0 && !this.activeTaskId) {
       this.stopQueueTimer();
       this.queueContainerEl.addClass('is-hidden');
-      this.queueContainerEl.style.display = 'none';
       return;
     }
     this.queueContainerEl.removeClass('is-hidden');
-    this.queueContainerEl.style.display = 'flex';
 
     // Active Task row
     if (this.activeTaskId) {
@@ -638,7 +636,6 @@ export class EmilySidebarView extends ItemView {
     if (this.isExecuting && this.lockedTargetFile) {
       this.promptTargetFileEl.empty();
       this.promptTargetFileEl.removeClass('is-hidden');
-      this.promptTargetFileEl.style.display = 'flex';
       this.promptTargetFileEl.addClass('is-locked');
       this.promptTargetFileEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
       const lockedLabel = t.sidebar.targetLocked || 'Target Locked';
@@ -658,7 +655,6 @@ export class EmilySidebarView extends ItemView {
     if (target?.file) {
       this.promptTargetFileEl.empty();
       this.promptTargetFileEl.removeClass('is-hidden');
-      this.promptTargetFileEl.style.display = 'flex';
 
       // Real-time selection vs entire document scope indicator
       const sel = target.editor ? target.editor.getSelection() : '';
@@ -676,7 +672,6 @@ export class EmilySidebarView extends ItemView {
     } else {
       this.promptTargetFileEl.empty();
       this.promptTargetFileEl.addClass('is-hidden');
-      this.promptTargetFileEl.style.display = 'none';
       this.promptTargetFileEl.removeAttribute('title');
     }
   }

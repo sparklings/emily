@@ -30,6 +30,7 @@ epic: "https://github.com/sparklings/emily/issues/11"
 | **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 6** | **[#17] [UI/UX] 세션 구분선 헤더 일체화 및 결과 뷰 링크 중심 4단계 재구조화** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 7** | **[#18] [Branch Sync/Merge] master 직접 푸시(e84693c)에 따른 #12~#16 누락 복구 및 #17 정밀 통합** | 전 파일 정합성 병합 | 완료 |
+| **태스크 8** | **[#19] [Audit/Fix] Obsidian Community Plugin 심사 오류 (no-static-styles-assignment) 및 CSS lint 경고 조치** | `sidebarView.ts`, `styles.css` | 완료 |
 
 ---
 
@@ -85,3 +86,10 @@ epic: "https://github.com/sparklings/emily/issues/11"
 - [x] #12~#16(태스크 큐, 인디케이터, 사고 스트림, 무경계 카드) 기능 유실 원천 방지
 - [x] 81개 전체 통합 테스트(TC-01 ~ TC-81) 100% 통과 확인
 - [x] PlugVaults 배포 빌드 검증 및 `master` 브랜치 완전 동기화 (기능 복구 완료)
+
+### 8단계: Obsidian Community Plugin 심사 오류 및 CSS lint 경고 조치 (#19)
+- [x] `src/views/sidebarView.ts` 내 direct style assignment(`element.style.display = ...`) 완전 제거 및 CSS 클래스(`is-hidden`) 순수 토글 전환
+- [x] `styles.css:2377` 중복 padding 속성 제거
+- [x] `styles.css` 내 `!important` 3곳(라인 879, 915, 1654) 제거 및 자연스러운 클래스 구체성 기반 스타일 재정의
+- [x] `npm run lint` 통과 (0 errors) 및 81개 전체 통합 테스트 100% 통과 검증
+- [x] PlugVaults 빌드 및 배포 검증 (ObsidianVaults 완전 보호 유지)

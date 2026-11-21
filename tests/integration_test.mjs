@@ -7230,7 +7230,6 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
       if (state.isExecuting && state.lockedTargetFile) {
         indicatorEl.empty();
         indicatorEl.removeClass('is-hidden');
-        indicatorEl.style.display = 'flex';
         indicatorEl.addClass('is-locked');
         indicatorEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
         indicatorEl.createSpan({
@@ -7246,7 +7245,6 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
       if (target?.file) {
         indicatorEl.empty();
         indicatorEl.removeClass('is-hidden');
-        indicatorEl.style.display = 'flex';
 
         const sel = target.editor ? target.editor.getSelection() : '';
         const hasSelection = Boolean(sel && sel.trim().length > 0);
@@ -7261,17 +7259,15 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
       } else {
         indicatorEl.empty();
         indicatorEl.addClass('is-hidden');
-        indicatorEl.style.display = 'none';
         indicatorEl.removeAttribute('title');
       }
     }
 
     const indicator = new MockElement('div', 'emily-target-file-indicator is-hidden');
 
-    // 1) 활성 마크다운 문서가 없는 경우: 0px 완전 은닉 (display: none, is-hidden, textContent 빈값)
+    // 1) 활성 마크다운 문서가 없는 경우: 0px 완전 은닉 (is-hidden, textContent 빈값)
     simulateUpdateTargetDocument({ targetView: null, isExecuting: false }, indicator);
     const tc77_1 = indicator.hasClass('is-hidden') &&
-                   indicator.style.display === 'none' &&
                    indicator.children.length === 0 &&
                    !JSON.stringify(indicator).includes('열려있는 마크다운 문서 없음');
 
@@ -7281,7 +7277,6 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
       isExecuting: false
     }, indicator);
     const tc77_2 = !indicator.hasClass('is-hidden') &&
-                   indicator.style.display === 'flex' &&
                    indicator.children.some(c => c.textContent === '•') &&
                    indicator.children.some(c => c.textContent.includes('AI_Research.md')) &&
                    !indicator.children.some(c => c.textContent.includes('선택 영역'));
@@ -7373,11 +7368,9 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
       container.empty();
       if (state.taskQueue.length === 0 && !state.activeTaskId) {
         container.addClass('is-hidden');
-        container.style.display = 'none';
         return;
       }
       container.removeClass('is-hidden');
-      container.style.display = 'flex';
 
       if (state.activeTaskId) {
         const activeRow = container.createDiv({ cls: 'emily-queue-row is-running' });
@@ -7410,7 +7403,7 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
 
     // 1) 큐가 완전히 비어있을 때: 0px 은닉
     simulateRenderQueueStream({ taskQueue: [], activeTaskId: null }, container);
-    const tc78_1 = container.hasClass('is-hidden') && container.style.display === 'none' && container.children.length === 0;
+    const tc78_1 = container.hasClass('is-hidden') && container.children.length === 0;
 
     // 2) 1개 활성 + 2개 대기 작업 상태 렌더링
     const mockState = {
@@ -7423,7 +7416,6 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     };
     simulateRenderQueueStream(mockState, container);
     const tc78_2 = !container.hasClass('is-hidden') &&
-                   container.style.display === 'flex' &&
                    container.children.length === 3 &&
                    container.children[0].className.includes('is-running') &&
                    container.children[0].children.some(c => c.textContent === '● RUNNING') &&
