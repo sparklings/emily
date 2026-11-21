@@ -9,7 +9,7 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Platform: Desktop Only](https://img.shields.io/badge/Platform-Desktop%20Only-orange.svg)]()
 [![Obsidian: v1.7.2+](https://img.shields.io/badge/Obsidian-v1.7.2%2B-purple.svg)](https://obsidian.md)
-[![Version: v1.1.2](https://img.shields.io/badge/Version-v1.1.2-green.svg)](CHANGELOG.md)
+[![Version: v1.2.0](https://img.shields.io/badge/Version-v1.2.0-green.svg)](CHANGELOG.md)
 [![TypeScript: Strict Mode](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue.svg)]()
 [![Privacy: Direct Connection](https://img.shields.io/badge/Privacy-Direct%20Connection-success.svg)](SECURITY.md)
 
@@ -81,13 +81,13 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers**:
 
 ---
 
-## Latest Release Information (v1.1.2)
+## Latest Release Information (v1.2.0)
 
-* **Community Plugin Security & Native Hotkey Compliance**: Fully integrated with Obsidian's native `addCommand` system (customizable in Hotkeys settings) and editor context menu (`editor-menu`), removing rogue global DOM listeners with zero default hotkey conflicts.
-* **Synchronized Live Pipeline & User Cancellation**: Quick translation immediately activates the sidebar's live progress box, elapsed timer, and Cancel (`❌`) button via `AbortController`, with automatic inline placeholder rollback upon cancellation.
-* **Live In-Place Document Replacement**: Edits saved in the Translation Diff Review Modal (`TranslationDiffModal`) are immediately reflected directly in the active Markdown editor and synchronized across sidebar session history.
-* **Audio Transcript STT Disambiguation**: Prevents and auto-heals number concatenation distortion in speech-to-text transcripts (e.g., `101 13 lessons` ➔ `101: 13 lessons`).
-* **Minimalist UI Refinement**: Eliminated redundant information icons and tooltip collisions to provide a clean, professional sidebar interface.
+* **Antigravity-Style Borderless Stream UI**: Overhauled the heavy card and box layout into an Antigravity-inspired borderless, typography-driven streaming interface with high-contrast text and clean divider lines.
+* **Inline Task Queue Stream (FIFO)**: Added a sequential task queue manager supporting multi-hotkey continuous triggering, auto-draining, and individual task dismissal or cancellation.
+* **Minimalist Target Document Indicator**: Replaced bulky "no document" boxes with a sleek inline bullet and document name, real-time character count badge during text selection, and execution lock indicator.
+* **Action-Driven 4-Stage Session Result View**: Unified session header dividers (`──────── 작업 세션 #N · ● 번역 완료 (시간) ∨ ────────`), target file focus navigation links, options parameter summary, and direct action triggers (`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`).
+* **Obsidian Community Plugin Audit Compliance**: Resolved official linter errors (`no-static-styles-assignment`), removed all CSS `!important` declarations, and eliminated duplicate properties for community plugin store release.
 
 For complete release details, see [CHANGELOG.md](CHANGELOG.md).
 
