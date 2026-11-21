@@ -75,8 +75,27 @@ export interface RollingSessionData {
   sessionEl?: HTMLElement;
 }
 
+export interface QueuedTask {
+  id: string;
+  createdAt: number;
+  type: 'quick-selection' | 'custom-pipeline';
+  fileName: string;
+  filePath: string;
+  charCount: number;
+  summary: string;
+  run: () => Promise<void>;
+}
+
 export class EmilySidebarView extends ItemView {
   private plugin: EmilyPlugin;
+
+  // Task Queue State
+  public taskQueue: QueuedTask[] = [];
+  public activeTaskId: string | null = null;
+  public activeTaskSummary: string | null = null;
+  public queueContainerEl: HTMLElement | null = null;
+  private activeTaskStartTime: number | null = null;
+  private queueTimerInterval: number | null = null;
 
   // Rolling Sessions State
   private sessionCounter: number = 0;
@@ -409,6 +428,156 @@ export class EmilySidebarView extends ItemView {
     // 4. Sidebar Floating Navigator (Docked inside sidebar at bottom-right)
     this.renderSidebarNavigator(container);
 
+    this.setupKeyboardHandlers();
+  }
+
+  // Queue Manager Public API
+  public getTaskQueue(): QueuedTask[] {
+    return [...this.taskQueue];
+  }
+
+  public removeQueuedTask(id: string): boolean {
+    const idx = this.taskQueue.findIndex((t) => t.id === id);
+    if (idx !== -1) {
+      this.taskQueue.splice(idx, 1);
+      this.renderQueueStream();
+      return true;
+    }
+    return false;
+  }
+
+  public clearTaskQueue(): void {
+    this.taskQueue = [];
+    this.renderQueueStream();
+  }
+
+  private startQueueTimer(timerSpan: HTMLElement) {
+    if (this.queueTimerInterval !== null) {
+      window.clearInterval(this.queueTimerInterval);
+    }
+    const update = () => {
+      if (!this.activeTaskStartTime) return;
+      const elapsed = ((Date.now() - this.activeTaskStartTime) / 1000).toFixed(1);
+      timerSpan.setText(` · ${elapsed}s`);
+    };
+    update();
+    this.queueTimerInterval = window.setInterval(update, 200);
+  }
+
+  private stopQueueTimer() {
+    if (this.queueTimerInterval !== null) {
+      window.clearInterval(this.queueTimerInterval);
+      this.queueTimerInterval = null;
+    }
+  }
+
+  public onTaskFinished() {
+    this.stopQueueTimer();
+    this.isExecuting = false;
+    this.activeTaskId = null;
+    this.activeTaskSummary = null;
+    this.currentAbortController = null;
+
+    if (this.taskQueue.length > 0) {
+      const nextTask = this.taskQueue.shift();
+      if (nextTask) {
+        this.activeTaskId = nextTask.id;
+        this.activeTaskSummary = nextTask.summary;
+        this.activeTaskStartTime = Date.now();
+        this.renderQueueStream();
+        void nextTask.run();
+        return;
+      }
+    }
+
+    this.lockedTargetFile = null;
+    this.lockedTargetView = null;
+    this.setFormDisabledState(false);
+    if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
+    this.updateTargetDocument();
+    this.renderQueueStream();
+  }
+
+  public renderQueueStream() {
+    if (!this.queueContainerEl) return;
+    this.queueContainerEl.empty();
+    if (this.taskQueue.length === 0 && !this.activeTaskId) {
+      this.stopQueueTimer();
+      this.queueContainerEl.addClass('is-hidden');
+      return;
+    }
+    this.queueContainerEl.removeClass('is-hidden');
+
+    // Active Task row
+    if (this.activeTaskId) {
+      const activeRow = this.queueContainerEl.createDiv({ cls: 'emily-queue-row is-running' });
+      activeRow.createSpan({ text: '● RUNNING', cls: 'emily-queue-badge is-running' });
+      activeRow.createSpan({ text: ` ${this.activeTaskSummary || '작업 실행 중'}`, cls: 'emily-queue-summary' });
+      const timerSpan = activeRow.createSpan({ text: ' · 0.0s', cls: 'emily-queue-timer' });
+      this.startQueueTimer(timerSpan);
+
+      const cancelBtn = activeRow.createEl('button', {
+        cls: 'emily-queue-action-btn is-cancel',
+        text: 'Cancel',
+        attr: { type: 'button', title: '현재 작업 취소' }
+      });
+      cancelBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (this.currentAbortController) {
+          this.currentAbortController.abort();
+        }
+      });
+    }
+
+    // Queued Tasks rows
+    this.taskQueue.forEach((task) => {
+      const queuedRow = this.queueContainerEl!.createDiv({ cls: 'emily-queue-row is-queued' });
+      queuedRow.createSpan({ text: '◌ QUEUED', cls: 'emily-queue-badge is-queued' });
+      queuedRow.createSpan({ text: ` ${task.summary}`, cls: 'emily-queue-summary' });
+      const dismissBtn = queuedRow.createEl('button', {
+        cls: 'emily-queue-action-btn is-dismiss',
+        text: '✕',
+        attr: { type: 'button', title: '대기열에서 제거' }
+      });
+      dismissBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.removeQueuedTask(task.id);
+      });
+    });
+  }
+
+  public collapseThoughtStream(statusBoxEl: HTMLElement, durationSeconds: string, statusText: string = 'Thought') {
+    const header = statusBoxEl.querySelector('.emily-status-header') as HTMLElement;
+    const timeline = statusBoxEl.querySelector('.emily-timeline-steps') as HTMLElement;
+    if (!header || !timeline) return;
+
+    header.empty();
+    header.addClass('is-collapsed');
+    timeline.addClass('is-collapsed');
+
+    const toggleWrap = header.createDiv({ cls: 'emily-thought-toggle-wrap' });
+    toggleWrap.createSpan({
+      text: `${statusText} for ${durationSeconds}s `,
+      cls: 'emily-thought-toggle-label'
+    });
+    const chevron = toggleWrap.createSpan({ text: '›', cls: 'emily-thought-chevron' });
+
+    header.onclick = (e) => {
+      e.stopPropagation();
+      const isCurrentlyCollapsed = timeline.hasClass('is-collapsed');
+      if (isCurrentlyCollapsed) {
+        timeline.removeClass('is-collapsed');
+        header.removeClass('is-collapsed');
+        chevron.setText('⌄');
+      } else {
+        timeline.addClass('is-collapsed');
+        header.addClass('is-collapsed');
+        chevron.setText('›');
+      }
+    };
+  }
+
+  private setupKeyboardHandlers() {
     // Helper: Safely trigger execution from Ctrl+Enter
     const triggerStartTask = (e?: KeyboardEvent) => {
       if (e) {
@@ -417,7 +586,7 @@ export class EmilySidebarView extends ItemView {
         e.stopImmediatePropagation();
       }
       const applyBtn = this.activeFormContainerEl?.querySelector('.emily-btn-primary') as HTMLButtonElement;
-      if (applyBtn && !applyBtn.disabled && !this.isExecuting) {
+      if (applyBtn && !applyBtn.disabled) {
         applyBtn.click();
       }
     };
@@ -466,15 +635,18 @@ export class EmilySidebarView extends ItemView {
     // If a pipeline task is actively running, lock the target document display
     if (this.isExecuting && this.lockedTargetFile) {
       this.promptTargetFileEl.empty();
-      const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'lock');
-      const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name' });
-      nameSpan.setText(this.lockedTargetFile.name);
+      this.promptTargetFileEl.removeClass('is-hidden');
+      this.promptTargetFileEl.addClass('is-locked');
+      this.promptTargetFileEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
+      const lockedLabel = t.sidebar.targetLocked || 'Target Locked';
+      this.promptTargetFileEl.createSpan({
+        text: ` ${this.lockedTargetFile.name} (${lockedLabel})`,
+        cls: 'emily-target-name'
+      });
       this.promptTargetFileEl.setAttribute(
         'title',
         t.sidebar.targetLockedTooltip.replace('{path}', this.lockedTargetFile.path)
       );
-      this.promptTargetFileEl.addClass('is-locked');
       return;
     }
 
@@ -482,35 +654,25 @@ export class EmilySidebarView extends ItemView {
     const target = this.plugin.getTargetMarkdownView();
     if (target?.file) {
       this.promptTargetFileEl.empty();
-      const leftWrap = this.promptTargetFileEl.createDiv({ cls: 'emily-prompt-file-left' });
-      const iconSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'file-text');
-      const nameSpan = leftWrap.createSpan({ cls: 'emily-prompt-file-name' });
-      nameSpan.setText(target.file.name);
-      this.promptTargetFileEl.setAttribute('title', target.file.path);
+      this.promptTargetFileEl.removeClass('is-hidden');
 
       // Real-time selection vs entire document scope indicator
       const sel = target.editor ? target.editor.getSelection() : '';
       const hasSelection = Boolean(sel && sel.trim().length > 0);
-      const scopeBadge = this.promptTargetFileEl.createSpan({
-        cls: `emily-prompt-scope-badge ${hasSelection ? 'is-selection' : 'is-all'}`
+      const selSuffix = hasSelection
+        ? ` (${t.sidebar.scopeSelectionBadge.replace('{count}', sel.length.toLocaleString())})`
+        : '';
+
+      this.promptTargetFileEl.createSpan({ text: '•', cls: 'emily-target-bullet' });
+      this.promptTargetFileEl.createSpan({
+        text: ` ${target.file.name}${selSuffix}`,
+        cls: 'emily-target-name'
       });
-      if (hasSelection) {
-        scopeBadge.setText(
-          t.sidebar.scopeSelectionBadge.replace('{count}', sel.length.toLocaleString())
-        );
-        scopeBadge.setAttribute('title', t.sidebar.scopeSelectionTooltip);
-      } else {
-        scopeBadge.setText(t.sidebar.scopeAllBadge);
-        scopeBadge.setAttribute('title', t.sidebar.scopeAllTooltip);
-      }
+      this.promptTargetFileEl.setAttribute('title', target.file.path);
     } else {
       this.promptTargetFileEl.empty();
-      const iconSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-icon' });
-      setIcon(iconSpan, 'file-question');
-      const nameSpan = this.promptTargetFileEl.createSpan({ cls: 'emily-prompt-file-name is-empty' });
-      nameSpan.setText(t.sidebar.noActiveDoc);
-      this.promptTargetFileEl.setAttribute('title', t.sidebar.noActiveDoc);
+      this.promptTargetFileEl.addClass('is-hidden');
+      this.promptTargetFileEl.removeAttribute('title');
     }
   }
 
@@ -520,7 +682,7 @@ export class EmilySidebarView extends ItemView {
 
     if (this.sessions.length > 0) {
       const divider = parent.createDiv({ cls: 'emily-rolling-divider' });
-      divider.setText(`${t.sidebar.newSession}${this.sessions.length + 1}`);
+      divider.setText(t.sidebar.nextTask);
     }
 
     // Section 1: 교열 (Proofreading)
@@ -977,24 +1139,8 @@ export class EmilySidebarView extends ItemView {
   private renderCustomPromptSection(parent: HTMLElement, t: TranslationKeys) {
     const section = parent.createDiv({ cls: 'emily-custom-prompt-container' });
 
-    // Textarea Wrap & Target Document Indicator
+    // Textarea Wrap (Target Document indicator moved below Apply button)
     const promptWrap = section.createDiv({ cls: 'emily-textarea-wrap' });
-
-    // Dedicated target document indicator directly above textarea
-    this.promptTargetFileEl = promptWrap.createDiv({ cls: 'emily-prompt-target-file' });
-    this.promptTargetFileEl.addEventListener('click', () => {
-      void (async () => {
-        if (this.isExecuting && this.lockedTargetFile) {
-          await this.openFileInTargetPane(this.lockedTargetFile.path);
-        } else {
-          const target = this.plugin.getTargetMarkdownView();
-          if (target?.leaf) {
-            this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
-          }
-        }
-      })();
-    });
-    this.updateTargetDocument();
 
     const textareaEl = promptWrap.createEl('textarea', {
       cls: 'emily-textarea',
@@ -1032,6 +1178,26 @@ export class EmilySidebarView extends ItemView {
       cls: 'emily-btn-char-counter'
     });
 
+    // Dedicated target document indicator directly below Apply button
+    this.promptTargetFileEl = section.createDiv({ cls: 'emily-target-file-indicator is-hidden' });
+    this.promptTargetFileEl.addEventListener('click', () => {
+      void (async () => {
+        if (this.isExecuting && this.lockedTargetFile) {
+          await this.openFileInTargetPane(this.lockedTargetFile.path);
+        } else {
+          const target = this.plugin.getTargetMarkdownView();
+          if (target?.leaf) {
+            this.app.workspace.setActiveLeaf(target.leaf, { focus: true });
+          }
+        }
+      })();
+    });
+    this.updateTargetDocument();
+
+    // Task Queue Stream Container (Above Status Box)
+    this.queueContainerEl = section.createDiv({ cls: 'emily-task-queue-stream is-hidden' });
+    this.renderQueueStream();
+
     // Real-time character count update (without any arbitrary maxlength limit)
     textareaEl.addEventListener('input', () => {
       this.customPromptText = textareaEl.value;
@@ -1047,7 +1213,7 @@ export class EmilySidebarView extends ItemView {
         e.stopPropagation();
         e.stopImmediatePropagation();
         this.customPromptText = textareaEl.value;
-        if (!applyBtn.disabled && !this.isExecuting) {
+        if (!applyBtn.disabled) {
           applyBtn.click();
         }
       }
@@ -1188,6 +1354,31 @@ export class EmilySidebarView extends ItemView {
       }
     }
 
+    if (this.isExecuting) {
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const task: QueuedTask = {
+        id: taskId,
+        createdAt: Date.now(),
+        type: 'custom-pipeline',
+        fileName: activeFile.name,
+        filePath: activeFile.path,
+        charCount: currentDoc.length,
+        summary: promptText ? `지시: "${promptText.slice(0, 18)}..." · ${activeFile.name}` : `Pipeline · ${activeFile.name}`,
+        run: async () => {
+          await this.executePipeline(applyBtn, statusBoxEl, textareaEl, t);
+        }
+      };
+      this.taskQueue.push(task);
+      this.renderQueueStream();
+      new Notice(`작업이 대기열에 추가되었습니다 (${this.taskQueue.length}개 대기 중)`);
+      return;
+    }
+
+    const currentTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    this.activeTaskId = currentTaskId;
+    this.activeTaskSummary = promptText ? `지시: "${promptText.slice(0, 18)}..." · ${activeFile.name}` : `Pipeline · ${activeFile.name}`;
+    this.renderQueueStream();
+
     void this.persistActiveOptions();
 
     // Set UI to Loading & Disabled State (Lock target document & all options during execution)
@@ -1219,17 +1410,13 @@ export class EmilySidebarView extends ItemView {
     statusBoxEl.empty();
     const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
     const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
-    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+    headerLeft.createSpan({ text: 'Thinking...', cls: 'emily-thought-running-label font-semibold text-xs' });
 
     const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
     const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
     badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
     badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
     const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
-    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
 
     const cancelPipelineBtn = headerRight.createEl('button', {
       cls: 'emily-btn-secondary emily-pipeline-cancel-btn',
@@ -1239,7 +1426,7 @@ export class EmilySidebarView extends ItemView {
         title: t.sidebar.cancelBtn
       }
     });
-    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({ text: '✕', cls: 'emily-cancel-icon' });
     cancelPipelineBtn.createSpan({
       text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
       cls: 'emily-pipeline-cancel-text'
@@ -1812,13 +1999,7 @@ export class EmilySidebarView extends ItemView {
           };
         }
 
-        this.isExecuting = false;
-        this.currentAbortController = null;
-        this.setFormDisabledState(false);
-        applyBtn.disabled = false;
-        this.lockedTargetFile = null;
-        this.lockedTargetView = null;
-        this.updateTargetDocument();
+        this.onTaskFinished();
         new Notice(t.sidebar.cancelSuccess);
         return;
       }
@@ -1962,13 +2143,12 @@ export class EmilySidebarView extends ItemView {
             statusBoxEl.empty();
           }
 
-          this.setFormDisabledState(false);
-          applyBtn.disabled = false;
+          this.onTaskFinished();
           new Notice(t.sidebar.cancelSuccess);
         })();
       });
 
-      applyBtn.disabled = false;
+      this.onTaskFinished();
     }
   }
 
@@ -2107,13 +2287,14 @@ export class EmilySidebarView extends ItemView {
     }
     this.plugin.recordSessionFromSidebar?.(sessionData);
 
+    if (this.currentStatusBoxEl) {
+      this.collapseThoughtStream(this.currentStatusBoxEl, (totalTimeMs / 1000).toFixed(1));
+    }
+
     // Release execution lock and restore controls
-    this.isExecuting = false;
-    this.currentAbortController = null;
     this.lockedTargetFile = null;
     void this.persistActiveOptions();
     this.lockedTargetView = null;
-    this.setFormDisabledState(false);
 
     // Reset prompt and regenerate active form below
     this.customPromptText = '';
@@ -2121,6 +2302,7 @@ export class EmilySidebarView extends ItemView {
     if (this.activeFormContainerEl) {
       this.renderActiveForm(this.activeFormContainerEl, t);
     }
+    this.onTaskFinished();
 
     // Smooth scroll down to the newly created form
     window.setTimeout(() => {
@@ -2356,9 +2538,11 @@ export class EmilySidebarView extends ItemView {
     card.setAttribute('data-session-id', String(session.id));
     const t = getTranslation(this.plugin.settings.language);
 
-    // 1. Header: Left = Status Badge, Right = ISO datetime + chevron
-    const header = card.createDiv({ cls: 'emily-session-card-header' });
-    const statusBadge = header.createDiv({ cls: 'emily-session-status-badge' });
+    // 1. Session Divider Header (Divider line across with centered session identity + status + time + toggle)
+    const header = card.createDiv({ cls: 'emily-session-card-header emily-session-divider-header' });
+    const headerLeft = header.createDiv({ cls: 'emily-session-header-left' });
+    headerLeft.createSpan({ text: `${t.sidebar.sessionHeader} #${session.id} · `, cls: 'emily-session-id-label' });
+    const statusBadge = headerLeft.createDiv({ cls: 'emily-session-status-badge' });
     const dot = statusBadge.createSpan({ cls: 'emily-status-dot' });
     if (session.status === 'cancelled') {
       dot.addClass('is-cancelled');
@@ -2373,7 +2557,11 @@ export class EmilySidebarView extends ItemView {
     }
 
     const headerRight = header.createDiv({ cls: 'emily-session-header-right' });
-    headerRight.createSpan({ text: session.timestamp, cls: 'emily-session-time' });
+    const sessionTime = new Date(session.timestamp);
+    const timeLabel = Number.isNaN(sessionTime.getTime())
+      ? session.timestamp
+      : sessionTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    headerRight.createSpan({ text: timeLabel, cls: 'emily-session-time' });
     const headerChevron = headerRight.createSpan({ cls: 'emily-session-header-chevron' });
     setIcon(headerChevron, 'chevron-down');
 
@@ -2391,26 +2579,22 @@ export class EmilySidebarView extends ItemView {
       card.classList.toggle('is-collapsed');
     });
 
-    // 2. Target File row (line-broken with dot, ellipsis and tooltip)
+    // 2. Selected Target File Information (Minimal bullet + click to jump)
     const fileRow = body.createDiv({ cls: 'emily-session-file-row' });
-    fileRow.createSpan({ cls: 'emily-status-dot' });
-    fileRow.createSpan({
-      text: session.fileName,
-      cls: 'emily-session-file-name',
-      attr: { title: session.filePath || session.fileName }
+    fileRow.setAttribute('role', 'button');
+    fileRow.setAttribute('tabindex', '0');
+    fileRow.setAttribute('title', session.filePath || session.fileName);
+    fileRow.createSpan({ text: `• ${session.fileName}`, cls: 'emily-session-file-name' });
+    const openSourceFile = () => {
+      void this.openFileInTargetPane(session.filePath || session.fileName);
+    };
+    fileRow.addEventListener('click', openSourceFile);
+    fileRow.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openSourceFile();
+      }
     });
-
-    // 2-1. Created Output File Row (if new file was created)
-    if (session.targetPath) {
-      const outputRow = body.createDiv({ cls: 'emily-session-output-file' });
-      const fileIcon = outputRow.createSpan();
-      setIcon(fileIcon, 'file-text');
-      outputRow.createSpan({ text: t.sidebar.createdOutputFile.replace('{file}', session.targetPath.split('/').pop() || '') });
-      outputRow.setAttribute('title', t.sidebar.openCreatedFileTooltip);
-      outputRow.addEventListener('click', () => {
-        void this.openFileInTargetPane(session.targetPath!, session.filePath);
-      });
-    }
 
     // 3. User Selected Options Summary Guide
     const optionsSummary = body.createDiv({ cls: 'emily-session-options-summary' });
@@ -2485,124 +2669,62 @@ export class EmilySidebarView extends ItemView {
       promptBox.createSpan({ text: `"${session.promptText}"` });
     }
 
-    // 5. Proofreading Detailed Changes Breakdown (only if proofread was run and items exist)
-    if (session.status === 'cancelled') {
-      const detailsSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const itemsCount = session.items ? session.items.length : session.itemsCount;
-      const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
-      emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
+    // 4. Action-driven Results area (Buttons & Links guidance without raw markdown text)
+    const hasProofreadReview = (session.sessionType === 'proofread' || Boolean(session.items?.length)) && Boolean(session.items && session.items.length > 0);
+    const hasTextResult = Boolean(session.translatedMarkdown);
 
-      if (session.items && session.items.length > 0) {
-        const reopenBtn = detailsSection.createEl('button', {
-          text: t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length)),
-          cls: 'emily-reopen-modal-btn'
+    if (hasProofreadReview || hasTextResult || session.targetPath) {
+      const actionsRow = body.createDiv({ cls: 'emily-session-result-actions emily-session-inline-actions' });
+
+      // 4-1. Review Diff Modal Action Button
+      if (hasProofreadReview || (hasTextResult && session.sessionType !== 'proofread')) {
+        const reviewBtn = actionsRow.createEl('button', {
+          text: t.sidebar.reviewResult || '대조 검토 ↗',
+          cls: 'emily-session-action-btn emily-reopen-modal-btn'
         });
-        reopenBtn.addEventListener('click', (e) => {
+        reviewBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          void this.reopenProofreadModalForSession(session, card);
+          if (session.sessionType === 'proofread') {
+            void this.reopenProofreadModalForSession(session, card);
+          } else {
+            this.reopenTranslationModalForSession(session);
+          }
         });
       }
-    } else if (session.sessionType === 'proofread' || (session.items && session.items.length > 0)) {
-      const detailsSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const detailsHeader = detailsSection.createDiv({ cls: 'emily-session-details-header' });
-      const itemsCount = session.items ? session.items.length : session.itemsCount;
-      detailsHeader.createSpan({
-        text: t.sidebar.proofreadDetailsHeader.replace('{count}', String(itemsCount)),
-        cls: 'font-semibold'
-      });
 
-      if (session.items && session.items.length > 0) {
-        const itemsList = detailsSection.createDiv({ cls: 'emily-session-items-list' });
-        for (const item of session.items) {
-          const itemCard = itemsList.createDiv({ cls: 'emily-session-diff-item' });
-
-          // Meta (Category + Line)
-          const metaRow = itemCard.createDiv({ cls: 'emily-session-diff-meta' });
-          const catBadge = metaRow.createSpan({ cls: 'emily-session-diff-badge' });
-          catBadge.setText(this.getCategoryLabel(item.category, t));
-
-          if (item.line) {
-            metaRow.createSpan({ text: `L.${item.line}`, cls: 'text-muted text-xs' });
-          }
-
-          // Diff Row (Original ➔ Replacement)
-          const contentRow = itemCard.createDiv({ cls: 'emily-session-diff-content' });
-          contentRow.createSpan({ text: item.original, cls: 'emily-session-diff-del' });
-          contentRow.createSpan({ text: '➔', cls: 'emily-session-diff-arrow' });
-
-          const isSpecialCleanItem = item.id === 'timestamp_clean_auto' || item.category === 'timestamp' || item.id === 'korean_bold_auto';
-
-          if (isSpecialCleanItem) {
-            contentRow.createSpan({
-              text: item.replacement,
-              cls: 'emily-session-diff-ins is-non-interactive'
-            });
-          } else {
-            const insSpan = contentRow.createSpan({
-              text: item.replacement,
-              cls: 'emily-session-diff-ins',
-              attr: { title: t.sidebar.jumpToDocTooltip }
-            });
-            insSpan.addEventListener('click', (e) => {
-              e.stopPropagation();
-              void this.jumpToDiffLocation(session.filePath || session.fileName, item);
-            });
-          }
-
-          // Explanation
-          if (item.explanation) {
-            const expRow = itemCard.createDiv({ cls: 'emily-session-diff-explanation' });
-            expRow.createSpan({ text: `💡 ${item.explanation}` });
-          }
-        }
-      } else {
-        const emptyNotice = detailsSection.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
-        emptyNotice.setText(t.sidebar.noIssuesDetected);
+      // 4-2. Copy Result Action Button
+      if (hasTextResult) {
+        const copyBtn = actionsRow.createEl('button', {
+          text: t.sidebar.copyResult || '복사 ⎘',
+          cls: 'emily-session-action-btn emily-reopen-modal-btn emily-copy-btn'
+        });
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void navigator.clipboard.writeText(session.translatedMarkdown || '');
+          new Notice(t.sidebar.resultCopied || (t.common.copy + ' 완료'));
+        });
       }
-    } else if (session.sessionType === 'translation' && (session.translatedMarkdown || session.targetPath)) {
-      const transSection = body.createDiv({ cls: 'emily-session-details-section' });
-      const transHeader = transSection.createDiv({ cls: 'emily-session-details-header' });
-      transHeader.createSpan({
-        text: session.isSameLangEdit ? t.sidebar.reopenEditReviewHeader : t.sidebar.reopenTransReviewHeader,
-        cls: 'font-semibold'
-      });
 
-      const reopenTransBtn = transSection.createEl('button', {
-        text: session.isSameLangEdit
-          ? t.sidebar.reopenTransBtnEdit
-          : t.sidebar.reopenTransBtnReview,
-        cls: 'emily-reopen-modal-btn'
-      });
-      reopenTransBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const targetPath = session.filePath || session.fileName;
-        let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
-        if (!(targetFile instanceof TFile)) {
-          const resolved = this.app.metadataCache.getFirstLinkpathDest(session.fileName || '', session.filePath || '');
-          if (resolved instanceof TFile) {
-            targetFile = resolved;
-          }
-        }
-        if (targetFile instanceof TFile) {
-          const modal = new TranslationDiffModal(
-            this.app,
-            targetFile,
-            session.originalMarkdown || '',
-            session.translatedMarkdown || '',
-            session.translationOptions,
-            this.plugin.getTranslationEngine(),
-            (finalText: string, action: string, targetPath?: string) => {
-              session.translatedMarkdown = finalText;
-              if (targetPath) session.targetPath = targetPath;
-              this.plugin.recordSessionFromSidebar(session);
-            },
-            this.plugin.settings.language
-          );
-          modal.open();
-        } else {
-          new Notice(t.sidebar.cannotFindDocNotice);
-        }
-      });
+      // 4-3. Open Created File Action Button
+      if (session.targetPath) {
+        const outputFileName = session.targetPath.split('/').pop() || session.targetPath;
+        const openFileBtn = actionsRow.createEl('button', {
+          text: t.sidebar.openResultFile ? t.sidebar.openResultFile.replace('{file}', outputFileName) : `파일 열기: ${outputFileName} ↗`,
+          cls: 'emily-session-action-btn emily-reopen-modal-btn emily-session-output-file'
+        });
+        openFileBtn.setAttribute('title', t.sidebar.openCreatedFileTooltip);
+        openFileBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void this.openFileInTargetPane(session.targetPath!, session.filePath);
+        });
+      }
+    } else if (session.sessionType === 'proofread' && session.status !== 'cancelled' && (!session.items || session.items.length === 0)) {
+      const emptyNotice = body.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
+      emptyNotice.setText(t.sidebar.noIssuesDetected);
+    } else if (session.status === 'cancelled') {
+      const emptyNotice = body.createDiv({ cls: 'emily-session-empty-notice text-muted text-xs' });
+      const itemsCount = session.items ? session.items.length : session.itemsCount;
+      emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
     }
 
     // 6. Response Summary & Telemetry Metadata (Collapsible: default 1 line collapsed)
@@ -2617,8 +2739,7 @@ export class EmilySidebarView extends ItemView {
     const summaryBar = metaContainer.createDiv({ cls: 'emily-meta-summary' });
     summaryBar.setAttribute('title', t.sidebar.toggleTelemetryTooltip);
     const summaryLeft = summaryBar.createDiv({ cls: 'emily-meta-summary-left' });
-    summaryLeft.createSpan({ text: '🧠 ' });
-    summaryLeft.createSpan({ text: session.model });
+    summaryLeft.createSpan({ text: session.model, cls: 'font-mono' });
     summaryLeft.createSpan({
       text: ` · ${latencySec}s${speedText}${totalTokensText}`,
       cls: 'text-muted'
@@ -2690,6 +2811,37 @@ export class EmilySidebarView extends ItemView {
     });
 
     return card;
+  }
+
+  private reopenTranslationModalForSession(session: RollingSessionData): void {
+    const t = getTranslation(this.plugin.settings.language);
+    const targetPath = session.filePath || session.fileName;
+    let targetFile = this.app.vault.getAbstractFileByPath(targetPath);
+    if (!(targetFile instanceof TFile)) {
+      const resolved = this.app.metadataCache.getFirstLinkpathDest(session.fileName || '', session.filePath || '');
+      if (resolved instanceof TFile) {
+        targetFile = resolved;
+      }
+    }
+    if (targetFile instanceof TFile) {
+      const modal = new TranslationDiffModal(
+        this.app,
+        targetFile,
+        session.originalMarkdown || '',
+        session.translatedMarkdown || '',
+        session.translationOptions,
+        this.plugin.getTranslationEngine(),
+        (finalText: string, action: string, targetPath?: string) => {
+          session.translatedMarkdown = finalText;
+          if (targetPath) session.targetPath = targetPath;
+          this.plugin.recordSessionFromSidebar(session);
+        },
+        this.plugin.settings.language
+      );
+      modal.open();
+    } else {
+      new Notice(t.sidebar.cannotFindDocNotice);
+    }
   }
 
   private async reopenProofreadModalForSession(session: RollingSessionData, cardEl?: HTMLElement) {
@@ -3193,8 +3345,35 @@ export class EmilySidebarView extends ItemView {
       translateCodeComments: Boolean(this.plugin.settings.defaultTranslateCodeComments)
     };
 
-    // 2. 에디터 선택 영역 직하단에 실시간 인라인 상태 블록 삽입
     const cleanSelected = selectedText.trimEnd();
+
+    // If already executing, enqueue into background Task Queue
+    if (this.isExecuting) {
+      const taskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+      const task: QueuedTask = {
+        id: taskId,
+        createdAt: Date.now(),
+        type: 'quick-selection',
+        fileName: activeFile.name,
+        filePath: activeFile.path,
+        charCount: cleanSelected.length,
+        summary: `Selection (${cleanSelected.length.toLocaleString()}자) · ${activeFile.name}`,
+        run: async () => {
+          await this.executeQuickSelectionTranslation(editor, view, selectedText);
+        }
+      };
+      this.taskQueue.push(task);
+      this.renderQueueStream();
+      new Notice(`작업이 대기열에 추가되었습니다 (${this.taskQueue.length}개 대기 중)`);
+      return;
+    }
+
+    const currentTaskId = `task-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    this.activeTaskId = currentTaskId;
+    this.activeTaskSummary = `Selection (${cleanSelected.length.toLocaleString()}자) · ${activeFile.name}`;
+    this.renderQueueStream();
+
+    // 2. 에디터 선택 영역 직하단에 실시간 인라인 상태 블록 삽입
     const statusTemplate = t.commands.quickTranslateInlineStatus || '⏳ **[Assistant Emily] {lang} 번역 진행 중...** ';
     const inlineStatusText = statusTemplate.replace('{lang}', targetLang);
     const placeholderToken = `<!-- emily-translating-${Date.now()} -->`;
@@ -3228,17 +3407,13 @@ export class EmilySidebarView extends ItemView {
     // 사이드바 상태 헤더 (실행 뱃지 + 타이머 + 작업 취소 버튼)
     const statusHeader = statusBoxEl.createDiv({ cls: 'emily-status-header' });
     const headerLeft = statusHeader.createDiv({ cls: 'emily-status-header-left' });
-    headerLeft.createSpan({ text: `⚡ ${t.sidebar.pipelineStream}`, cls: 'font-semibold text-xs' });
+    headerLeft.createSpan({ text: 'Thinking...', cls: 'emily-thought-running-label font-semibold text-xs' });
 
     const headerRight = statusHeader.createDiv({ cls: 'emily-status-header-right' });
     const badgeSpan = headerRight.createSpan({ cls: 'emily-badge is-active' });
     badgeSpan.createSpan({ cls: 'emily-badge-spinner' });
     badgeSpan.createSpan({ text: t.sidebar.pipelineRunning, cls: 'emily-badge-label' });
     const timerTextEl = badgeSpan.createSpan({ text: '0.0s', cls: 'emily-timer-text' });
-    const dotsAnim = badgeSpan.createSpan({ cls: 'emily-dots-anim' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
-    dotsAnim.createSpan({ text: '.' });
 
     // 작업 취소 버튼 (Cancel Pipeline Button)
     const cancelPipelineBtn = headerRight.createEl('button', {
@@ -3249,7 +3424,7 @@ export class EmilySidebarView extends ItemView {
         title: t.sidebar.cancelBtn
       }
     });
-    cancelPipelineBtn.createSpan({ text: '❌', cls: 'emily-cancel-icon' });
+    cancelPipelineBtn.createSpan({ text: '✕', cls: 'emily-cancel-icon' });
     cancelPipelineBtn.createSpan({
       text: t.sidebar.cancelBtn.replace(/^❌\s*/, ''),
       cls: 'emily-pipeline-cancel-text'
@@ -3369,14 +3544,7 @@ export class EmilySidebarView extends ItemView {
         t
       });
 
-      this.isExecuting = false;
-      this.currentAbortController = null;
-      this.setFormDisabledState(false);
-      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-      this.lockedTargetFile = null;
-      this.lockedTargetView = null;
-      this.updateTargetDocument();
-
+      this.onTaskFinished();
       new Notice(`${t.commands.quickTranslateDone} (${(transResult.totalTimeMs / 1000).toFixed(1)}s)`);
     } catch (err: unknown) {
       stopPipelineTimer();
@@ -3397,31 +3565,12 @@ export class EmilySidebarView extends ItemView {
         }
 
         // B. 사이드바 상태 취소로 전환
-        const badgeEl = statusBoxEl.querySelector('.emily-badge') as HTMLElement;
-        if (badgeEl) {
-          badgeEl.className = 'emily-badge is-warning';
-          badgeEl.empty();
-          badgeEl.createSpan({ text: t.sidebar.pipelineCancelled });
-          badgeEl.createSpan({ cls: 'emily-timer-text', text: `${((Date.now() - pipelineStartTime) / 1000).toFixed(1)}s` });
+        const elapsed = ((Date.now() - pipelineStartTime) / 1000).toFixed(1);
+        if (cancelPipelineBtn) {
+          cancelPipelineBtn.remove();
         }
-
-        this.updateTimelineStep(step2, 'warning', undefined, t.sidebar.pipelineCancelled);
-
-        cancelPipelineBtn.textContent = `✕ ${t.common.close}`;
-        cancelPipelineBtn.disabled = false;
-        cancelPipelineBtn.onclick = (e) => {
-          e.stopPropagation();
-          statusBoxEl.removeClass('is-visible');
-          statusBoxEl.empty();
-        };
-
-        this.isExecuting = false;
-        this.currentAbortController = null;
-        this.setFormDisabledState(false);
-        if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-        this.lockedTargetFile = null;
-        this.lockedTargetView = null;
-        this.updateTargetDocument();
+        this.collapseThoughtStream(statusBoxEl, elapsed, 'Cancelled');
+        this.onTaskFinished();
         new Notice(t.sidebar.cancelSuccess);
         return;
       }
@@ -3455,13 +3604,7 @@ export class EmilySidebarView extends ItemView {
       }
       this.updateTimelineStep(step2, 'error', undefined, rawMsg);
 
-      this.isExecuting = false;
-      this.setFormDisabledState(false);
-      if (this.currentApplyBtn) this.currentApplyBtn.disabled = false;
-      this.lockedTargetFile = null;
-      this.lockedTargetView = null;
-      this.updateTargetDocument();
-
+      this.onTaskFinished();
       new Notice(`❌ 번역 실패: ${rawMsg}`);
     }
   }

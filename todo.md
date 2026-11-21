@@ -1,0 +1,95 @@
+---
+created: 2026-11-21
+last_updated: 2026-11-21
+tags:
+  - assistant-emily
+  - ui-refactoring
+  - antigravity-stream
+  - task-queue
+  - todo
+status: completed
+epic: "https://github.com/sparklings/emily/issues/11"
+---
+
+# [Epic #11] 오른쪽 사이드바 UI 전면 개편 작업 계획서
+
+> **개요**: 기존의 복잡하고 무거운 박스/패널(Panel/Box) 구조를 완전히 탈피하고, Antigravity IDE 스타일의 **절제된 무경계 스트림(Borderless Stream) UI**, **단축키 연속 입력 대응 태스크 큐(Task Queue)**, 그리고 **직관적인 타깃 문서 인라인 인디케이터** 를 구현합니다.
+> 
+> 본 작업은 **"1이슈 1커밋 점진적 개발"** 원칙에 따라 5개의 세부 하위 이슈로 분할되어 개별 완료 및 검증됩니다.
+
+---
+
+## 🗂️ 세부 단위 작업 트래커 (Sub-Issues)
+
+| 단계 | 서브 이슈 번호 & 제목 | 수정 대상 파일 | 상태 |
+| :---: | :--- | :--- | :---: |
+| **태스크 1** | **[#12] [UI] 타깃 문서 인디케이터 무박스화 및 '문서 없음' 박스 완전 제거** | `sidebarView.ts`, `styles.css` | 완료 |
+| **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 완료 |
+| **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
+| **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
+| **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 완료 |
+| **태스크 6** | **[#17] [UI/UX] 세션 구분선 헤더 일체화 및 결과 뷰 링크 중심 4단계 재구조화** | `sidebarView.ts`, `styles.css` | 완료 |
+| **태스크 7** | **[#18] [Branch Sync/Merge] master 직접 푸시(e84693c)에 따른 #12~#16 누락 복구 및 #17 정밀 통합** | 전 파일 정합성 병합 | 완료 |
+| **태스크 8** | **[#19] [Audit/Fix] Obsidian Community Plugin 심사 오류 (no-static-styles-assignment) 및 CSS lint 경고 조치** | `sidebarView.ts`, `styles.css` | 완료 |
+
+---
+
+## 📋 세부 단계별 구현 체크리스트
+
+### 1단계: 타깃 문서 인디케이터 무박스화 (#12)
+- [x] 입력창 상단 기존 `promptTargetFileEl` 박스 및 `noActiveDoc`("열려있는 마크다운 문서 없음") 레이블 완전 제거
+- [x] `[작업 시작하기]` 버튼 바로 아래에 `• 파일명.md (선택 N자)` 형태의 미니멀 인라인 인디케이터 신설
+- [x] 활성 마크다운 에디터 부재 시 해당 인디케이터가 `display: none`으로 0px 완전 은닉 처리 검증
+- [x] 파일명 클릭 시 해당 마크다운 탭(Leaf)으로 즉각 포커스 이동 핸들러 연결
+- [x] **[TC-77]** 타깃 문서 버튼 직하단 불릿 조건부 렌더링 및 빈 문서 은닉 단위 테스트 추가
+
+### 2단계: 백그라운드 태스크 큐 매니저 엔진 구현 (#13)
+- [x] `QueuedTask` 인터페이스 정의 (ID, 타임스탬프, 파일명, 텍스트 버퍼, 글자 수, 번역/교열 옵션)
+- [x] 파이프라인 연산 중(`isExecuting === true`) 단축키(`Ctrl+Shift+C`) 또는 버튼 추가 호출 시 작업을 유실 없이 순차 적재하는 FIFO 큐 구축
+- [x] 활성 작업 완료(`resolve`) 또는 취소(`abort`) 시 큐의 다음 항목을 자동으로 꺼내어 지연 없이 연속 실행하는 오토 드레인(Auto-drain) 파이프라인 구축
+- [x] 대기 중인 특정 큐 항목의 개별 제거(`removeQueuedTask`) 핸들러 구현
+- [x] **[TC-76]** 단축키 연속 호출 시 작업 큐 적재 및 순차 실행(FIFO) 무결성 검증 추가
+
+### 3단계: 인라인 태스크 큐 스트림 UI (#14)
+- [x] 박스 테두리 없는 고밀도 인라인 상태 행 렌더러 구현
+- [x] 활성 작업 행 (`● RUNNING   Selection (N자) · N.Ns  [Cancel]`) 렌더링
+- [x] 대기 작업 행 (`◌ QUEUED    Selection (N자) · 파일명 [×]`) 렌더링
+- [x] 대기 작업의 `[×]` 버튼 클릭 시 큐에서 즉시 제거(Dismiss) 인터랙션 구현
+- [x] 대기열이 0개일 때는 큐 UI 영역 전체가 0px로 자동 은닉 검증
+
+### 4단계: Antigravity 스타일 무경계 사고 스트림 (Thought Stream) (#15)
+- [x] 기존 무거운 `emily-status-box` 패널 컨테이너 완전 제거
+- [x] 1.5px 수직 가이드라인(`border-left: 1.5px solid var(--text-faint)`) 기반 모노스페이스 페이즈 트레이스 렌더링
+- [x] 실행 중 단계별 로그 실시간 출력 (`parse` ➔ `mask` ➔ `infer` ➔ `restore`)
+- [x] 작업 완료 즉시 `Thought for X.Xs ›` 1줄 인라인 자동 축약(Auto-collapse) 동작
+- [x] 클릭 시 부드럽게 세부 단계를 펼치고 접는 아코디언 토글 인터랙션 구현
+- [x] **[TC-79]** 사고 스트림 단계별 출력 및 토글 무결성 검증 추가
+
+### 5단계: 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 (#16)
+- [x] 기존 `.emily-session-card` 박스/패널 컨테이너 완전 제거 및 무경계 인라인 스트림화
+- [x] 캔버스 본문 폰트 기반 다이렉트 1~2줄 텍스트 요약 결과(`.emily-session-result-preview`) 렌더링
+- [x] 인라인 하이퍼링크 스타일 액션 연결 (`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`)
+- [x] 다크 테마/라이트 테마 전반에서 절제되고 세련된 고대비 폰트 가독성 및 여백 최적화
+- [x] **[TC-80]** 80개 통합 테스트 전체 통과(`npm test`) 및 프로덕션 빌드(`npm run build`) 확인
+
+### 6단계: 세션 구분선 헤더 일체화 및 결과 뷰 링크 중심 4단계 재구조화 (#17)
+- [x] 각 세션 최상단에 디바이더 스타일 헤더(`──────── 작업 세션 #N · ● 번역 완료 (시간) ∨ ────────`) 일체화
+- [x] 선택한 대상 파일 정보(`• 파일명.md`) 인라인 불릿 및 탭 포커스 링크 연결
+- [x] 사용자가 선택한 옵션 설명(번역/교열/지시사항 파라미터) 간결한 다이렉트 텍스트 요약
+- [x] 긴 번역 결과 마크다운 본문 프리뷰 완전 제거 및 직관적인 인라인 액션 버튼(`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`) 재배치
+- [x] 하단 활성 입력 폼 상단 디바이더를 `──────── 다음 작업 지시 (Next Task) ────────`로 분리
+- [x] **[TC-81]** 세션 구분선 헤더 일체화 및 링크 중심 결과 뷰 무결성 검증 추가
+- [x] PlugVaults 빌드 및 배포 검증 (ObsidianVaults 완전 보호 유지)
+
+### 7단계: master 브랜치 직접 푸시 회귀 복구 및 정밀 병합 (#18)
+- [x] `develop` 브랜치에 #17 신규 i18n 및 4단계 액션 중심 결과 뷰 로직 정밀 통합
+- [x] #12~#16(태스크 큐, 인디케이터, 사고 스트림, 무경계 카드) 기능 유실 원천 방지
+- [x] 81개 전체 통합 테스트(TC-01 ~ TC-81) 100% 통과 확인
+- [x] PlugVaults 배포 빌드 검증 및 `master` 브랜치 완전 동기화 (기능 복구 완료)
+
+### 8단계: Obsidian Community Plugin 심사 오류 및 CSS lint 경고 조치 (#19)
+- [x] `src/views/sidebarView.ts` 내 direct style assignment(`element.style.display = ...`) 완전 제거 및 CSS 클래스(`is-hidden`) 순수 토글 전환
+- [x] `styles.css:2377` 중복 padding 속성 제거
+- [x] `styles.css` 내 `!important` 3곳(라인 879, 915, 1654) 제거 및 자연스러운 클래스 구체성 기반 스타일 재정의
+- [x] `npm run lint` 통과 (0 errors) 및 81개 전체 통합 테스트 100% 통과 검증
+- [x] PlugVaults 빌드 및 배포 검증 (ObsidianVaults 완전 보호 유지)

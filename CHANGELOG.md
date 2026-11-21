@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ---
 
+## [1.2.0] - 2026-11-21
+
+### Added
+* **Antigravity-Style Borderless Stream UI & Thought Stream (#15, #16)**:
+  * Overhauled the heavy card and boxed container architecture into a minimalist, borderless typography stream.
+  * Added real-time Thought Stream with 1.5px vertical guide line during inference (`parse` ➔ `mask` ➔ `infer` ➔ `restore`), automatically collapsing into a single line summary (`Thought for X.Xs ›`) upon completion with interactive toggle expansion.
+  * Converted legacy `.emily-session-card` into direct typography canvas with high-contrast text and zero border clutter.
+* **Inline Task Queue Stream (FIFO) (#13, #14)**:
+  * Implemented background FIFO task queue manager supporting multi-hotkey continuous triggering without loss.
+  * Added high-density inline stream indicators (`● RUNNING`, `◌ QUEUED`) with individual task dismissal (`✕`) and active task cancellation (`Cancel`).
+* **Minimalist Target Document Indicator (#12)**:
+  * Replaced bulky target document status boxes with an inline bullet (`•`) and active file name.
+  * Added real-time character count badge for selected text ranges (`(선택 영역 (N자))`).
+  * Added locked target indicator (`(작업 대상 고정)`) during active pipeline execution.
+* **Action-Driven 4-Stage Session Result View (#17)**:
+  * Unified session header dividers (`──────── 작업 세션 #N · ● 번역 완료 (시간) ∨ ────────`).
+  * Added target file focus navigation links (`• 파일명.md`).
+  * Restructured result actions to direct inline buttons (`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`), removing redundant full markdown text previews.
+  * Added separated active form divider (`──────── 다음 작업 지시 (Next Task) ────────`).
+* **Comprehensive Integration Test Suite Expansion (TC-76 ~ TC-81)**:
+  * Added automated tests for task queue FIFO management, target document indicator auto-hide, inline queue stream, thought stream auto-collapse, typography result view, and 4-stage action layout.
+
+### Fixed
+* **Obsidian Community Plugin Audit Compliance (#19)**:
+  * Completely eliminated direct style assignments (`element.style.display = '...'`) in favor of Obsidian idiomatic `.is-hidden` CSS classes, passing `obsidianmd/no-static-styles-assignment` with 0 errors.
+  * Removed all 3 occurrences of `!important` in `styles.css` (`.emily-target-file-indicator.is-hidden`, `.emily-task-queue-stream.is-hidden`, `.emily-timeline-steps.is-collapsed`) by leveraging natural selector specificity.
+  * Cleaned duplicate CSS properties (`padding: 2px 0` duplicate in `.emily-session-empty-notice`).
+
+---
+
 ## [1.1.2] - 2026-10-25
 
 ### Added

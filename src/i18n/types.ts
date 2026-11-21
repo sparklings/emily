@@ -280,6 +280,12 @@ export interface TranslationStrings {
     targetLockedTooltip: string;
     noActiveDoc: string;
     newSession: string;
+    nextTask: string;
+    sessionHeader: string;
+    reviewResult: string;
+    copyResult: string;
+    resultCopied: string;
+    openResultFile: string;
     proofreading: string;
     proofreadScope: string;
     spelling: string;

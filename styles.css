@@ -851,91 +851,157 @@ select.emily-select-input {
 }
 
 
-.emily-prompt-target-file {
+/* Minimal Target Document Indicator under Apply Button */
+.emily-target-file-indicator {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 6px 10px;
-  background-color: var(--background-secondary-alt);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 8px;
-  font-size: 11.5px;
-  color: var(--text-normal);
+  gap: 5px;
+  margin-top: -2px;
+  padding: 2px 4px;
+  font-size: 11px;
+  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
-  transition: all 0.15s ease;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  transition: color 0.15s ease;
   min-width: 0;
   width: 100%;
-}
-
-.emily-prompt-file-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.emily-prompt-scope-badge {
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 10px;
-  white-space: nowrap;
-  flex-shrink: 0;
   line-height: 1.4;
-  transition: all 0.2s ease;
 }
 
-.emily-prompt-scope-badge.is-selection {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+.emily-target-file-indicator:hover {
+  color: var(--text-normal);
 }
 
-.emily-prompt-scope-badge.is-all {
-  background: var(--background-modifier-border);
-  color: var(--text-muted);
+.emily-target-file-indicator.is-hidden {
+  display: none;
 }
 
-.emily-prompt-target-file:hover {
-  border-color: var(--interactive-accent);
-  background-color: var(--background-modifier-hover);
-}
-
-.emily-prompt-target-file.is-locked {
-  border-color: var(--interactive-accent);
-  background-color: var(--background-primary);
-  box-shadow: 0 0 0 1px var(--interactive-accent);
-}
-
-.emily-prompt-file-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.emily-target-file-indicator .emily-target-bullet {
   color: var(--interactive-accent);
+  font-weight: 700;
   flex-shrink: 0;
+  line-height: 1;
 }
 
-.emily-prompt-file-icon svg {
-  width: 13px;
-  height: 13px;
-}
-
-.emily-prompt-file-name {
+.emily-target-file-indicator .emily-target-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
+}
+
+.emily-target-file-indicator.is-locked {
+  color: var(--text-accent);
+}
+
+/* Antigravity Minimal Task Queue Stream */
+.emily-task-queue-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 2px;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.emily-task-queue-stream.is-hidden {
+  display: none;
+}
+
+.emily-queue-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  line-height: 1.4;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  transition: background-color 0.15s ease;
+  min-width: 0;
+}
+
+.emily-queue-row:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.emily-queue-row.is-running {
   color: var(--text-normal);
 }
 
-.emily-prompt-file-name.is-empty {
+.emily-queue-row.is-queued {
+  color: var(--text-muted);
+}
+
+.emily-queue-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.emily-queue-badge.is-running {
+  color: var(--interactive-accent);
+}
+
+.emily-queue-badge.is-queued {
   color: var(--text-faint);
-  font-style: italic;
+}
+
+.emily-queue-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.emily-queue-timer {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.emily-queue-action-btn {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  padding: 1px 5px;
+  font-size: 10.5px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  line-height: 1.2;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.emily-queue-action-btn.is-cancel {
+  color: var(--text-muted);
+  border: 1px solid var(--background-modifier-border);
+}
+
+.emily-queue-action-btn.is-cancel:hover {
+  color: var(--text-error, #e5534b);
+  border-color: var(--text-error, #e5534b);
+}
+
+.emily-queue-action-btn.is-dismiss {
+  color: var(--text-faint);
+  font-weight: 700;
+}
+
+.emily-queue-action-btn.is-dismiss:hover {
+  color: var(--text-error, #e5534b);
+  background-color: var(--background-modifier-hover);
 }
 
 .emily-textarea {
@@ -1285,15 +1351,17 @@ select.emily-select-input {
   color: var(--text-error, var(--color-red, #e05252));
 }
 
-/* Verbose Status & Stream Log Box */
+/* Verbose Status & Antigravity Thought Stream Box */
 .emily-status-box {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  padding: 8px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 2px 0;
+  margin-top: 4px;
+  margin-bottom: 4px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   font-family: var(--font-monospace);
   font-size: 11px;
 }
@@ -1304,8 +1372,42 @@ select.emily-select-input {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--divider-color);
+  padding: 2px 0;
+  border-bottom: none;
+  cursor: pointer;
+  user-select: none;
+}
+
+.emily-thought-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 11px;
+  font-family: var(--font-monospace);
+  color: var(--text-faint);
+  transition: color 0.15s ease;
+  padding: 2px 0;
+}
+
+.emily-thought-toggle-wrap:hover {
+  color: var(--text-muted);
+}
+
+.emily-thought-toggle-label {
+  font-weight: 500;
+}
+
+.emily-thought-chevron {
+  font-size: 11px;
+  line-height: 1;
+  color: var(--text-faint);
+}
+
+.emily-thought-running-label {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
 }
 
 .emily-status-header-left {
@@ -1534,42 +1636,39 @@ select.emily-select-input {
 }
 
 /* ==========================================================================
-   Timeline Steps Component (Dot-Line UI)
+   Timeline Steps Component (Antigravity Thought Rail UI)
    ========================================================================== */
 .emily-timeline-steps {
+  border-left: 1.5px solid var(--background-modifier-border);
+  margin-left: 6px;
+  padding-left: 10px;
   display: flex;
   flex-direction: column;
   position: relative;
-  padding: 6px 0 2px 2px;
+  gap: 6px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.emily-timeline-steps.is-collapsed {
+  display: none;
 }
 
 .emily-timeline-step {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 8px;
   position: relative;
-  padding-bottom: 12px;
+  padding-bottom: 4px;
 }
 
 .emily-timeline-step:last-child {
   padding-bottom: 0;
 }
 
-/* Vertical Connecting Line */
+/* Hide legacy vertical connecting line since border-left handles it continuously */
 .emily-timeline-step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: 13px;
-  bottom: -2px;
-  left: 4px;
-  width: 2px;
-  background-color: var(--background-modifier-border, rgba(255, 255, 255, 0.1));
-  transition: background-color 0.25s ease;
-  z-index: 1;
-}
-
-.emily-timeline-step.is-done:not(:last-child)::after {
-  background-color: var(--interactive-accent, #7b6cd9);
+  display: none;
 }
 
 /* Dot / Marker Node */
@@ -1578,21 +1677,40 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 10px;
+  width: 6px;
   flex-shrink: 0;
-  padding-top: 3px;
+  padding-top: 4px;
+  margin-left: -14px;
+  margin-right: 6px;
   z-index: 2;
 }
 
 .emily-timeline-dot {
   display: block;
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  border: 2px solid var(--text-faint, #666);
-  background-color: var(--background-secondary, #262626);
+  border: none;
+  background-color: var(--text-faint);
   box-sizing: border-box;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+}
+
+.emily-timeline-step.is-active .emily-timeline-dot {
+  background-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--background-modifier-accent, rgba(123, 108, 217, 0.25));
+}
+
+.emily-timeline-step.is-done .emily-timeline-dot {
+  background-color: var(--text-muted);
+}
+
+.emily-timeline-step.is-error .emily-timeline-dot {
+  background-color: var(--text-error, #e5534b);
+}
+
+.emily-timeline-step.is-warning .emily-timeline-dot {
+  background-color: var(--color-orange, #cb7634);
 }
 
 /* Step Content Body */
@@ -1824,13 +1942,13 @@ select.emily-select-input {
   justify-content: space-between;
 }
 
-/* Collapsible Telemetry / Metadata Panel */
+/* Antigravity Style Borderless Collapsible Telemetry */
 .emily-meta-collapsible {
-  background-color: var(--background-primary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  overflow: hidden;
-  margin-top: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  margin-top: 4px;
   font-size: 11px;
 }
 
@@ -1838,17 +1956,17 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 3px 0;
   cursor: pointer;
-  background-color: var(--background-primary);
+  background: transparent;
   user-select: none;
-  transition: background-color 0.15s ease;
-  color: var(--text-muted);
+  transition: opacity 0.15s ease;
+  color: var(--text-faint);
 }
 
 .emily-meta-summary:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--text-normal);
+  background: transparent;
+  color: var(--text-muted);
 }
 
 .emily-meta-summary-left {
@@ -1875,11 +1993,13 @@ select.emily-select-input {
 
 .emily-meta-details {
   display: none;
-  padding: 8px 10px;
-  border-top: 1px solid var(--divider-color);
-  background-color: var(--background-secondary);
+  padding: 6px 0 6px 8px;
+  border-top: none;
+  border-left: 1.5px solid var(--background-modifier-border);
+  background: transparent;
   flex-direction: column;
   gap: 6px;
+  margin-top: 2px;
 }
 
 .emily-meta-collapsible.is-expanded .emily-meta-details {
@@ -1967,54 +2087,99 @@ select.emily-select-input {
   transform: scale(0.95);
 }
 
-/* Rolling History Session Card */
+/* Rolling History Session Row (Antigravity Direct Typography Stream) */
 .emily-session-card {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--emily-border-radius);
-  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  padding: 10px 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  box-shadow: none;
   position: relative;
-  transition: border-color 0.2s ease;
+  transition: opacity 0.15s ease;
+}
+
+.emily-session-card:first-child {
+  border-top: none;
 }
 
 .emily-session-card:hover {
-  border-color: var(--interactive-accent);
+  border-color: var(--background-modifier-border);
 }
 
 .emily-session-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--divider-color);
-  padding-bottom: 6px;
+  border-bottom: none;
+  padding-bottom: 2px;
   cursor: pointer;
   user-select: none;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .emily-session-card-header:hover {
-  color: var(--interactive-accent);
+  opacity: 0.85;
+}
+
+/* Antigravity Session Divider Header */
+.emily-session-divider-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: none;
+  transition: opacity 0.15s ease;
+}
+
+.emily-session-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-normal);
+  white-space: nowrap;
+  order: 1;
+}
+
+.emily-session-divider-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--divider-color);
+  order: 2;
 }
 
 .emily-session-header-right {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  order: 3;
+}
+
+.emily-session-id-label {
+  color: var(--text-muted);
+  font-family: var(--font-monospace);
+  font-size: 11px;
+  font-weight: 500;
 }
 
 .emily-session-header-chevron {
   display: inline-flex;
   align-items: center;
   transition: transform 0.2s ease;
-  color: var(--text-muted);
+  color: var(--text-faint);
 }
 
 .emily-session-card.is-collapsed {
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .emily-session-card.is-collapsed .emily-session-card-header {
@@ -2033,7 +2198,8 @@ select.emily-select-input {
 .emily-session-card-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  padding-left: 2px;
 }
 
 .emily-session-status-badge {
@@ -2043,11 +2209,12 @@ select.emily-select-input {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-normal);
+  letter-spacing: 0.2px;
 }
 
 .emily-session-time {
   font-size: 10.5px;
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-family: var(--font-monospace);
 }
 
@@ -2055,12 +2222,22 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  background-color: var(--background-primary);
+  padding: 2px 4px;
+  background: transparent;
   border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
+  border: none;
   font-size: 11.5px;
   min-width: 0;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.emily-session-file-row:hover,
+.emily-session-file-row:focus-visible {
+  color: var(--interactive-accent);
+  background-color: var(--background-modifier-hover);
+  outline: none;
 }
 
 .emily-session-file-label {
@@ -2070,7 +2247,7 @@ select.emily-select-input {
 }
 
 .emily-session-file-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-normal);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2079,22 +2256,24 @@ select.emily-select-input {
 }
 
 .emily-session-output-file {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background-color: var(--background-secondary-alt);
+  padding: 3px 8px;
+  background: transparent;
   border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  width: fit-content;
 }
 
 .emily-session-output-file:hover {
   background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
   color: var(--interactive-accent);
 }
 
@@ -2105,12 +2284,12 @@ select.emily-select-input {
 .emily-session-options-summary {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 11.5px;
-  background-color: var(--background-primary);
-  padding: 6px 8px;
-  border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
+  gap: 3px;
+  font-size: 11px;
+  background: transparent;
+  padding: 2px 0;
+  border-radius: 0;
+  border: none;
 }
 
 .emily-session-options-summary .emily-meta-row {
@@ -2121,7 +2300,7 @@ select.emily-select-input {
 }
 
 .emily-option-tag-title {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: 11px;
   min-width: 32px;
   flex-shrink: 0;
@@ -2129,8 +2308,8 @@ select.emily-select-input {
 }
 
 .emily-option-tags {
-  color: var(--text-normal);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 400;
   font-size: 11px;
   line-height: 1.4;
   word-break: break-word;
@@ -2138,40 +2317,62 @@ select.emily-select-input {
 }
 
 .emily-session-prompt-box {
-  background-color: var(--background-primary);
-  border-radius: var(--radius-s, 4px);
-  padding: 6px 8px;
+  background: transparent;
+  border-radius: 0;
+  padding: 2px 8px;
   font-size: 11.5px;
-  color: var(--text-muted);
-  border-left: 2px solid var(--interactive-accent);
+  color: var(--text-normal);
+  border-left: 2px solid var(--text-faint);
   line-height: 1.4;
+}
+
+.emily-session-result-preview {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-normal);
+  padding: 4px 8px;
+  background: transparent;
+  border-left: 2px solid var(--interactive-accent);
+  margin: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.95;
+}
+
+.emily-session-result-actions,
+.emily-session-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 /* Session Card - Proofread Detailed Items Breakdown */
 .emily-session-details-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background-color: var(--background-primary);
-  border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
-  padding: 8px 10px;
+  gap: 4px;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 2px 0;
 }
 
 .emily-session-details-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-normal);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--divider-color);
+  color: var(--text-muted);
+  padding-bottom: 2px;
+  border-bottom: none;
 }
 
 .emily-session-empty-notice {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-faint);
   line-height: 1.4;
   padding: 4px 0 2px 0;
 }
@@ -2222,11 +2423,12 @@ select.emily-select-input {
 .emily-session-diff-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  padding: 6px 8px;
+  gap: 3px;
+  background-color: transparent;
+  border: none;
+  border-left: 1.5px solid var(--background-modifier-border);
+  border-radius: 0;
+  padding: 2px 8px;
   font-size: 11.5px;
 }
 
@@ -2433,29 +2635,48 @@ select.emily-select-input {
   animation: emily-modal-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-/* Reopen Diff Modal Button in Session Card */
+/* Inline Action Link in Session (Antigravity Style) */
+.emily-session-action-btn,
 .emily-reopen-modal-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 6px;
-  padding: 6px 12px;
-  font-size: 11.5px;
-  font-weight: 600;
+  gap: 4px;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
   border-radius: var(--radius-s, 4px);
-  background-color: var(--interactive-accent, #7b6cd9);
-  color: var(--text-on-accent, #ffffff);
-  border: none;
+  background-color: transparent;
+  color: var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+.emily-session-action-btn:hover,
+.emily-session-action-btn:focus-visible,
 .emily-reopen-modal-btn:hover {
-  background-color: var(--interactive-accent-hover, #6857cb);
-  box-shadow: 0 0 8px rgba(123, 108, 217, 0.4);
-  transform: translateY(-1px);
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent-hover);
+  box-shadow: none;
+  transform: none;
+  outline: none;
+}
+
+.emily-session-action-btn.emily-copy-btn,
+.emily-reopen-modal-btn.emily-copy-btn,
+.emily-copy-btn {
+  color: var(--text-muted);
+}
+
+.emily-session-action-btn.emily-copy-btn:hover,
+.emily-reopen-modal-btn.emily-copy-btn:hover,
+.emily-copy-btn:hover {
+  color: var(--text-normal);
+  border-color: var(--text-muted);
 }
 
 /* ==========================================================================
