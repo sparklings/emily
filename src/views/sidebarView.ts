@@ -2590,11 +2590,10 @@ export class EmilySidebarView extends ItemView {
     // 2-1. Created Output File Row (if new file was created)
     if (session.targetPath) {
       const outputRow = body.createDiv({ cls: 'emily-session-output-file' });
-      const fileIcon = outputRow.createSpan();
-      setIcon(fileIcon, 'file-text');
-      outputRow.createSpan({ text: t.sidebar.createdOutputFile.replace('{file}', session.targetPath.split('/').pop() || '') });
+      outputRow.createSpan({ text: `${t.sidebar.createdOutputFile.replace('{file}', session.targetPath.split('/').pop() || '')} ↗` });
       outputRow.setAttribute('title', t.sidebar.openCreatedFileTooltip);
-      outputRow.addEventListener('click', () => {
+      outputRow.addEventListener('click', (e) => {
+        e.stopPropagation();
         void this.openFileInTargetPane(session.targetPath!, session.filePath);
       });
     }
@@ -2680,8 +2679,11 @@ export class EmilySidebarView extends ItemView {
       emptyNotice.setText(t.sidebar.cancelledNoticeInCard.replace('{count}', String(itemsCount)));
 
       if (session.items && session.items.length > 0) {
-        const reopenBtn = detailsSection.createEl('button', {
-          text: t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length)),
+        const actionsRow = detailsSection.createDiv({ cls: 'emily-session-inline-actions' });
+        const rawReopenText = t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length));
+        const cleanReopenText = rawReopenText.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
+        const reopenBtn = actionsRow.createEl('button', {
+          text: `${cleanReopenText} ↗`,
           cls: 'emily-reopen-modal-btn'
         });
         reopenBtn.addEventListener('click', (e) => {
@@ -2699,6 +2701,18 @@ export class EmilySidebarView extends ItemView {
       });
 
       if (session.items && session.items.length > 0) {
+        const actionsRow = detailsSection.createDiv({ cls: 'emily-session-inline-actions' });
+        const rawReopenText = t.sidebar.reopenProofreadBtn.replace('{count}', String(session.items.length));
+        const cleanReopenText = rawReopenText.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
+        const reopenBtn = actionsRow.createEl('button', {
+          text: `${cleanReopenText} ↗`,
+          cls: 'emily-reopen-modal-btn'
+        });
+        reopenBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void this.reopenProofreadModalForSession(session, card);
+        });
+
         const itemsList = detailsSection.createDiv({ cls: 'emily-session-items-list' });
         for (const item of session.items) {
           const itemCard = itemsList.createDiv({ cls: 'emily-session-diff-item' });
@@ -2754,10 +2768,18 @@ export class EmilySidebarView extends ItemView {
         cls: 'font-semibold'
       });
 
-      const reopenTransBtn = transSection.createEl('button', {
-        text: session.isSameLangEdit
-          ? t.sidebar.reopenTransBtnEdit
-          : t.sidebar.reopenTransBtnReview,
+      // Direct typography result preview (1-2 lines)
+      if (session.translatedMarkdown) {
+        const preview = transSection.createDiv({ cls: 'emily-session-result-preview' });
+        const cleanSnippet = session.translatedMarkdown.trim().slice(0, 140);
+        preview.setText(cleanSnippet + (session.translatedMarkdown.length > 140 ? '…' : ''));
+      }
+
+      const actionsRow = transSection.createDiv({ cls: 'emily-session-inline-actions' });
+      const rawReviewLabel = session.isSameLangEdit ? t.sidebar.reopenTransBtnEdit : t.sidebar.reopenTransBtnReview;
+      const cleanReviewLabel = rawReviewLabel.replace(/^[\s\p{Emoji}\p{Extended_Pictographic}]+/u, '').trim();
+      const reopenTransBtn = actionsRow.createEl('button', {
+        text: `${cleanReviewLabel} ↗`,
         cls: 'emily-reopen-modal-btn'
       });
       reopenTransBtn.addEventListener('click', (e) => {
@@ -2790,6 +2812,18 @@ export class EmilySidebarView extends ItemView {
           new Notice(t.sidebar.cannotFindDocNotice);
         }
       });
+
+      if (session.translatedMarkdown) {
+        const copyBtn = actionsRow.createEl('button', {
+          text: `${t.common.copy || '복사'} ⎘`,
+          cls: 'emily-reopen-modal-btn emily-copy-btn'
+        });
+        copyBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          void navigator.clipboard.writeText(session.translatedMarkdown || '');
+          new Notice((t.common.copy || '복사') + ' 완료');
+        });
+      }
     }
 
     // 6. Response Summary & Telemetry Metadata (Collapsible: default 1 line collapsed)
@@ -2804,8 +2838,7 @@ export class EmilySidebarView extends ItemView {
     const summaryBar = metaContainer.createDiv({ cls: 'emily-meta-summary' });
     summaryBar.setAttribute('title', t.sidebar.toggleTelemetryTooltip);
     const summaryLeft = summaryBar.createDiv({ cls: 'emily-meta-summary-left' });
-    summaryLeft.createSpan({ text: '🧠 ' });
-    summaryLeft.createSpan({ text: session.model });
+    summaryLeft.createSpan({ text: session.model, cls: 'font-mono' });
     summaryLeft.createSpan({
       text: ` · ${latencySec}s${speedText}${totalTokensText}`,
       cls: 'text-muted'

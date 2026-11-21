@@ -1942,13 +1942,13 @@ select.emily-select-input {
   justify-content: space-between;
 }
 
-/* Collapsible Telemetry / Metadata Panel */
+/* Antigravity Style Borderless Collapsible Telemetry */
 .emily-meta-collapsible {
-  background-color: var(--background-primary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  overflow: hidden;
-  margin-top: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  margin-top: 4px;
   font-size: 11px;
 }
 
@@ -1956,17 +1956,17 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 3px 0;
   cursor: pointer;
-  background-color: var(--background-primary);
+  background: transparent;
   user-select: none;
-  transition: background-color 0.15s ease;
-  color: var(--text-muted);
+  transition: opacity 0.15s ease;
+  color: var(--text-faint);
 }
 
 .emily-meta-summary:hover {
-  background-color: var(--background-modifier-hover);
-  color: var(--text-normal);
+  background: transparent;
+  color: var(--text-muted);
 }
 
 .emily-meta-summary-left {
@@ -1993,11 +1993,13 @@ select.emily-select-input {
 
 .emily-meta-details {
   display: none;
-  padding: 8px 10px;
-  border-top: 1px solid var(--divider-color);
-  background-color: var(--background-secondary);
+  padding: 6px 0 6px 8px;
+  border-top: none;
+  border-left: 1.5px solid var(--background-modifier-border);
+  background: transparent;
   flex-direction: column;
   gap: 6px;
+  margin-top: 2px;
 }
 
 .emily-meta-collapsible.is-expanded .emily-meta-details {
@@ -2085,37 +2087,42 @@ select.emily-select-input {
   transform: scale(0.95);
 }
 
-/* Rolling History Session Card */
+/* Rolling History Session Row (Antigravity Direct Typography Stream) */
 .emily-session-card {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--emily-border-radius);
-  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+  border-radius: 0;
+  padding: 10px 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  gap: 6px;
+  box-shadow: none;
   position: relative;
-  transition: border-color 0.2s ease;
+  transition: opacity 0.15s ease;
+}
+
+.emily-session-card:first-child {
+  border-top: none;
 }
 
 .emily-session-card:hover {
-  border-color: var(--interactive-accent);
+  border-color: var(--background-modifier-border);
 }
 
 .emily-session-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--divider-color);
-  padding-bottom: 6px;
+  border-bottom: none;
+  padding-bottom: 2px;
   cursor: pointer;
   user-select: none;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .emily-session-card-header:hover {
-  color: var(--interactive-accent);
+  opacity: 0.85;
 }
 
 .emily-session-header-right {
@@ -2128,11 +2135,11 @@ select.emily-select-input {
   display: inline-flex;
   align-items: center;
   transition: transform 0.2s ease;
-  color: var(--text-muted);
+  color: var(--text-faint);
 }
 
 .emily-session-card.is-collapsed {
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .emily-session-card.is-collapsed .emily-session-card-header {
@@ -2151,7 +2158,8 @@ select.emily-select-input {
 .emily-session-card-body {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  padding-left: 2px;
 }
 
 .emily-session-status-badge {
@@ -2161,11 +2169,12 @@ select.emily-select-input {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-normal);
+  letter-spacing: 0.2px;
 }
 
 .emily-session-time {
   font-size: 10.5px;
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-family: var(--font-monospace);
 }
 
@@ -2173,12 +2182,13 @@ select.emily-select-input {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  background-color: var(--background-primary);
-  border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
+  padding: 1px 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
   font-size: 11.5px;
   min-width: 0;
+  color: var(--text-muted);
 }
 
 .emily-session-file-label {
@@ -2188,7 +2198,7 @@ select.emily-select-input {
 }
 
 .emily-session-file-name {
-  font-weight: 600;
+  font-weight: 500;
   color: var(--text-normal);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2197,22 +2207,24 @@ select.emily-select-input {
 }
 
 .emily-session-output-file {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background-color: var(--background-secondary-alt);
+  padding: 3px 8px;
+  background: transparent;
   border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
   color: var(--text-normal);
-  font-size: 11.5px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  width: fit-content;
 }
 
 .emily-session-output-file:hover {
   background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
   color: var(--interactive-accent);
 }
 
@@ -2223,12 +2235,12 @@ select.emily-select-input {
 .emily-session-options-summary {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  font-size: 11.5px;
-  background-color: var(--background-primary);
-  padding: 6px 8px;
-  border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
+  gap: 3px;
+  font-size: 11px;
+  background: transparent;
+  padding: 2px 0;
+  border-radius: 0;
+  border: none;
 }
 
 .emily-session-options-summary .emily-meta-row {
@@ -2239,7 +2251,7 @@ select.emily-select-input {
 }
 
 .emily-option-tag-title {
-  color: var(--text-muted);
+  color: var(--text-faint);
   font-size: 11px;
   min-width: 32px;
   flex-shrink: 0;
@@ -2247,8 +2259,8 @@ select.emily-select-input {
 }
 
 .emily-option-tags {
-  color: var(--text-normal);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 400;
   font-size: 11px;
   line-height: 1.4;
   word-break: break-word;
@@ -2256,41 +2268,62 @@ select.emily-select-input {
 }
 
 .emily-session-prompt-box {
-  background-color: var(--background-primary);
-  border-radius: var(--radius-s, 4px);
-  padding: 6px 8px;
+  background: transparent;
+  border-radius: 0;
+  padding: 2px 8px;
   font-size: 11.5px;
-  color: var(--text-muted);
-  border-left: 2px solid var(--interactive-accent);
+  color: var(--text-normal);
+  border-left: 2px solid var(--text-faint);
   line-height: 1.4;
+}
+
+.emily-session-result-preview {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-normal);
+  padding: 4px 8px;
+  background: transparent;
+  border-left: 2px solid var(--interactive-accent);
+  margin: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.95;
+}
+
+.emily-session-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 /* Session Card - Proofread Detailed Items Breakdown */
 .emily-session-details-section {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background-color: var(--background-primary);
-  border-radius: var(--radius-s, 4px);
-  border: 1px solid var(--divider-color);
-  padding: 8px 10px;
+  gap: 4px;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  padding: 2px 0;
 }
 
 .emily-session-details-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-normal);
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--divider-color);
+  color: var(--text-muted);
+  padding-bottom: 2px;
+  border-bottom: none;
 }
 
 .emily-session-empty-notice {
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--text-faint);
   line-height: 1.4;
+  padding: 2px 0;
   padding: 4px 0 2px 0;
 }
 
@@ -2340,11 +2373,12 @@ select.emily-select-input {
 .emily-session-diff-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--divider-color);
-  border-radius: var(--radius-s, 4px);
-  padding: 6px 8px;
+  gap: 3px;
+  background-color: transparent;
+  border: none;
+  border-left: 1.5px solid var(--background-modifier-border);
+  border-radius: 0;
+  padding: 2px 8px;
   font-size: 11.5px;
 }
 
@@ -2551,29 +2585,40 @@ select.emily-select-input {
   animation: emily-modal-shake 0.35s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
-/* Reopen Diff Modal Button in Session Card */
+/* Inline Action Link in Session (Antigravity Style) */
 .emily-reopen-modal-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 6px;
-  padding: 6px 12px;
-  font-size: 11.5px;
-  font-weight: 600;
+  gap: 4px;
+  width: fit-content;
+  margin-top: 2px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
   border-radius: var(--radius-s, 4px);
-  background-color: var(--interactive-accent, #7b6cd9);
-  color: var(--text-on-accent, #ffffff);
-  border: none;
+  background-color: transparent;
+  color: var(--interactive-accent);
+  border: 1px solid var(--background-modifier-border);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .emily-reopen-modal-btn:hover {
-  background-color: var(--interactive-accent-hover, #6857cb);
-  box-shadow: 0 0 8px rgba(123, 108, 217, 0.4);
-  transform: translateY(-1px);
+  background-color: var(--background-modifier-hover);
+  border-color: var(--interactive-accent);
+  color: var(--interactive-accent-hover);
+  box-shadow: none;
+  transform: none;
+}
+
+.emily-copy-btn {
+  color: var(--text-muted);
+}
+
+.emily-copy-btn:hover {
+  color: var(--text-normal);
+  border-color: var(--text-muted);
 }
 
 /* ==========================================================================

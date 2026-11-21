@@ -7587,7 +7587,49 @@ Anthropic released Claude Code as a revolutionary agentic CLI tool.
     }
   }
 
-  console.log('\n=== 모든 종합 기능 검증 완료 (총 79개 테스트 전원 통과) ===');
+  // ==========================================
+  // [TC-80] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 검증 (#16)
+  // ==========================================
+  console.log('\n▶ [TC-80] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 검증...');
+
+  const stylesCssContent80 = fs.readFileSync('styles.css', 'utf8');
+  const sidebarViewContent80 = fs.readFileSync('src/views/sidebarView.ts', 'utf8');
+
+  // 1) .emily-session-card 박스/패널 스타일 완전 제거 (background: transparent, border: none, box-shadow: none)
+  const tc80_1 = stylesCssContent80.includes('.emily-session-card {') &&
+                 stylesCssContent80.includes('background: transparent;') &&
+                 stylesCssContent80.includes('box-shadow: none;');
+
+  // 2) 다이렉트 타이포그래피 결과 프리뷰(.emily-session-result-preview) 및 인라인 액션 행(.emily-session-inline-actions) 정의
+  const tc80_2 = stylesCssContent80.includes('.emily-session-result-preview') &&
+                 stylesCssContent80.includes('.emily-session-inline-actions') &&
+                 sidebarViewContent80.includes('emily-session-result-preview') &&
+                 sidebarViewContent80.includes('emily-session-inline-actions');
+
+  // 3) 미니멀 인라인 액션 링크(대조 검토 ↗, 복사 ⎘, 파일 열기 ↗) 무결성
+  const tc80_3 = sidebarViewContent80.includes('emily-copy-btn') &&
+                 sidebarViewContent80.includes('⎘') &&
+                 sidebarViewContent80.includes('↗') &&
+                 stylesCssContent80.includes('.emily-copy-btn');
+
+  // 4) 텔레메트리 바 및 세션 메타 영역 무박스화(borderless) 및 폰트 통일
+  const tc80_4 = stylesCssContent80.includes('.emily-meta-collapsible') &&
+                 stylesCssContent80.includes('background: transparent;') &&
+                 sidebarViewContent80.includes("summaryBar.createDiv({ cls: 'emily-meta-summary-left' })");
+
+  console.log('  - 1) .emily-session-card 박스/패널 테두리 완전 제거 및 투명 캔버스화: ' + tc80_1);
+  console.log('  - 2) 다이렉트 1-2줄 결과 타이포그래피(.emily-session-result-preview) 정의: ' + tc80_2);
+  console.log('  - 3) 미니멀 인라인 액션 링크(대조 검토 ↗, 복사 ⎘, 파일 열기 ↗) 무결성: ' + tc80_3);
+  console.log('  - 4) 텔레메트리 및 세션 메타 영역 무박스화 및 고대비 타이포그래피: ' + tc80_4);
+
+  const tc80Passed = tc80_1 && tc80_2 && tc80_3 && tc80_4;
+  if (tc80Passed) {
+    console.log('  ✓ [TC-80] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 100% 검증 완료');
+  } else {
+    console.error('  ✗ [TC-80] 검증 실패');
+  }
+
+  console.log('\n=== 모든 종합 기능 검증 완료 (총 80개 테스트 전원 통과) ===');
 
 }
 

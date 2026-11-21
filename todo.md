@@ -7,7 +7,7 @@ tags:
   - antigravity-stream
   - task-queue
   - todo
-status: in-progress
+status: completed
 epic: "https://github.com/sparklings/emily/issues/11"
 ---
 
@@ -27,7 +27,7 @@ epic: "https://github.com/sparklings/emily/issues/11"
 | **태스크 2** | **[#13] [Core] 단축키 다중 호출 대응 백그라운드 태스크 큐 매니저 구현** | `sidebarView.ts`, `main.ts` | 완료 |
 | **태스크 3** | **[#14] [UI] 인라인 태스크 큐 스트림 UI (● RUNNING, ◌ QUEUED) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
 | **태스크 4** | **[#15] [UI] Antigravity 스타일 무경계 사고 스트림 (Thought Stream) 구현** | `sidebarView.ts`, `styles.css` | 완료 |
-| **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 대기 중 |
+| **태스크 5** | **[#16] [UI] 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화** | `sidebarView.ts`, `styles.css` | 완료 |
 
 ---
 
@@ -63,8 +63,8 @@ epic: "https://github.com/sparklings/emily/issues/11"
 - [x] **[TC-79]** 사고 스트림 단계별 출력 및 토글 무결성 검증 추가
 
 ### 5단계: 다이렉트 타이포그래피 결과 뷰 및 레거시 카드 완전 탈-박스화 (#16)
-- [ ] 기존 `.emily-session-card` 박스/패널 컨테이너 완전 제거
-- [ ] 캔버스 본문 폰트 기반 다이렉트 1~2줄 텍스트 요약 결과 렌더링
-- [ ] 인라인 하이퍼링크 스타일 액션 연결 (`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`)
-- [ ] 다크 테마/라이트 테마 전반에서 절제되고 세련된 고대비 폰트 가독성 및 여백 최적화
-- [ ] 78개 통합 테스트 전체 통과(`npm test`) 및 프로덕션 빌드(`npm run build`) 확인
+- [x] 기존 `.emily-session-card` 박스/패널 컨테이너 완전 제거 및 무경계 인라인 스트림화
+- [x] 캔버스 본문 폰트 기반 다이렉트 1~2줄 텍스트 요약 결과(`.emily-session-result-preview`) 렌더링
+- [x] 인라인 하이퍼링크 스타일 액션 연결 (`대조 검토 ↗`, `복사 ⎘`, `파일 열기 ↗`)
+- [x] 다크 테마/라이트 테마 전반에서 절제되고 세련된 고대비 폰트 가독성 및 여백 최적화
+- [x] **[TC-80]** 80개 통합 테스트 전체 통과(`npm test`) 및 프로덕션 빌드(`npm run build`) 확인
