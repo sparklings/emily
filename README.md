@@ -18,6 +18,7 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 ## Key Features
 
 * **Antigravity-Style Dynamic Workflow**: A clean, borderless streaming interface that replaces bulky status cards with high-contrast typography. Includes a background FIFO Task Queue for multi-hotkey continuous triggering, real-time Thought Stream with auto-collapse, live target document indicators, and an action-driven 4-stage session result layout (`[Review Diff ↗]`, `[Copy ⎘]`, `[Open File ↗]`).
+* **Hotkey-Driven Selection Translation & Proofreading**: Instantly trigger selection translation (`emily-quick-translate-selection-append`) or selection AI proofreading via customizable Obsidian hotkeys or editor context menu (`editor-menu`) without breaking writing flow.
 * **Markdown & OFM Syntax Token Masking**: Internal WikiLinks (`[[Note]]`), hashtags (`#tag`), LaTeX math (`$...$`), callouts (`> [!note]`), and chapter timestamps (`TOCTIME`) are isolated into dedicated placeholders prior to LLM processing to protect document structure and links.
 * **Context-Aware Professional Translation & Tone Alignment**: Supports Full Document Translation (default), Selection-Scoped Translation, and Paragraph Bilingual Parallel Alignment (1:1 sentence comparison) with consistent tone rewrites (Academic, Polite, Friendly).
 * **Video Clipping Note Partitioning & 1,800-Character Smart Chunking**: Retains Pre-Transcript metadata (video embeds, timestamps, contact lists) with original line breaks intact; only strips timestamps in subtitle transcripts and reflows fragmented speech into coherent paragraphs.
@@ -33,8 +34,8 @@ Assistant Emily provides comprehensive, step-by-step user manuals and technical 
 | :--- | :--- | :--- |
 | **Part 1** | [Quick Start & Installation](docs/01-quick-start.md) | 3-minute setup, community plugin installation, hotkey and context menu translation |
 | **Part 2** | [FreeLLMAPI & Device Profiles](docs/02-ai-providers-setup.md) | FreeLLMAPI integration, model selection, and isolated multi-device profiles |
-| **Part 3** | [Smart Translation & Hotkeys](docs/03-translation-and-hotkeys.md) | Selection append, 1,800-char chunking, 1:1 paragraph bilingual matching, cancel support |
-| **Part 4** | [Proofreading & Live Diff Review](docs/04-proofreading-and-diff-review.md) | Spelling, grammar, context refinement, interactive diff review, and live document sync |
+| **Part 3** | [Smart Translation & Hotkeys](docs/03-translation-and-hotkeys.md) | Selection append, quick hotkeys, 1,800-char chunking, 1:1 bilingual matching |
+| **Part 4** | [Proofreading & Live Diff Review](docs/04-proofreading-and-diff-review.md) | Selection proofreading hotkeys, spelling, grammar, diff review, and live sync |
 | **Part 5** | [Video Clipping & Transcripts](docs/05-video-clipping-and-transcripts.md) | Pre-transcript metadata lock, subtitle cleaning, H3 sub-titles, STT disambiguation |
 | **Part 6** | [OFM Syntax Masking & Safety](docs/06-syntax-masking-and-safety.md) | 10-element UUID token taxonomy, TOCTIME chapter locking, OFM self-healing |
 | **Part 7** | [Troubleshooting & FAQ](docs/07-troubleshooting.md) | Diagnostics, 502/413 error remedies, hotkey customization, and frequently asked questions |
@@ -81,6 +82,7 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers**:
 | | `Callout continuity` | Restores missing `>` quote prefixes across multi-line Obsidian callouts |
 | **Workflow & UX** | `Borderless Thought Stream` | Real-time reasoning trace with auto-collapse (`Thought for X.Xs ›`) |
 | | `Background Task Queue (FIFO)` | Queues multiple translation/proofread requests sequentially with individual cancel |
+| | `Selection Hotkeys & Menu` | One-touch hotkeys for selection translation and proofreading with live inline feedback |
 | | `Action-Driven Session View` | Clean 4-stage result summary with direct diff review and target file jump links |
 
 ---
