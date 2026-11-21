@@ -17,6 +17,7 @@ The formal project name is **Assistant Emily**, and the Obsidian Community Plugi
 
 ## Key Features
 
+* **Antigravity-Style Dynamic Workflow**: A clean, borderless streaming interface that replaces bulky status cards with high-contrast typography. Includes a background FIFO Task Queue for multi-hotkey continuous triggering, real-time Thought Stream with auto-collapse, live target document indicators, and an action-driven 4-stage session result layout (`[Review Diff ↗]`, `[Copy ⎘]`, `[Open File ↗]`).
 * **Markdown & OFM Syntax Token Masking**: Internal WikiLinks (`[[Note]]`), hashtags (`#tag`), LaTeX math (`$...$`), callouts (`> [!note]`), and chapter timestamps (`TOCTIME`) are isolated into dedicated placeholders prior to LLM processing to protect document structure and links.
 * **Context-Aware Professional Translation & Tone Alignment**: Supports Full Document Translation (default), Selection-Scoped Translation, and Paragraph Bilingual Parallel Alignment (1:1 sentence comparison) with consistent tone rewrites (Academic, Polite, Friendly).
 * **Video Clipping Note Partitioning & 1,800-Character Smart Chunking**: Retains Pre-Transcript metadata (video embeds, timestamps, contact lists) with original line breaks intact; only strips timestamps in subtitle transcripts and reflows fragmented speech into coherent paragraphs.
@@ -78,6 +79,9 @@ Open Obsidian **Settings ➔ Assistant Emily ➔ AI Providers**:
 | **Tone & Style** | `Academic` / `Polite` / `Friendly` | Unifies sentence endings and stylistic registers across the entire document |
 | **OFM Normalization** | `Heading newline padding` | Automatically guarantees blank lines around headings (`#`–`######`) |
 | | `Callout continuity` | Restores missing `>` quote prefixes across multi-line Obsidian callouts |
+| **Workflow & UX** | `Borderless Thought Stream` | Real-time reasoning trace with auto-collapse (`Thought for X.Xs ›`) |
+| | `Background Task Queue (FIFO)` | Queues multiple translation/proofread requests sequentially with individual cancel |
+| | `Action-Driven Session View` | Clean 4-stage result summary with direct diff review and target file jump links |
 
 ---
 

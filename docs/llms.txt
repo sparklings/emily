@@ -7,11 +7,12 @@
 - Documentation: https://github.com/sparklings/emily/tree/master/docs
 - Wiki: https://github.com/sparklings/emily/wiki
 - License: MIT
-- Version: 1.1.2
+- Version: 1.2.0
 - AI Backend: FreeLLMAPI (https://api.freellmapi.com/v1)
 
 ## Core Capabilities
 - Lossless Syntax Masking: 10-element UUID token taxonomy safeguarding Obsidian Flavored Markdown (OFM)
 - FreeLLMAPI Dedicated Integration: 34+ providers, 635 endpoints, ~7.4B tokens/month at zero cost
 - Selection and Full Document Translation with 1,800-character Smart Chunking
+- Antigravity-Style Dynamic Workflow: Borderless Thought Stream, Background FIFO Task Queue, and Action-Driven Session Views
 - Side-by-Side Proofreading Diff Modal with interactive line-by-line sync
